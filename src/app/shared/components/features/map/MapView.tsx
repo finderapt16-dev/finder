@@ -1,10 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { hasValidApartmentCoordinates } from "@/app/shared/utils/mapCoordinates";
-// @ts-ignore
 import L from "leaflet";
-// @ts-ignore
-import "leaflet/dist/leaflet.css";
 
 const markerColors = {
   available: "#2563eb",

@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-// @ts-ignore
 import L from "leaflet";
-// @ts-ignore
-import "leaflet/dist/leaflet.css";
 import { Label } from "../ui/label";
 
 // Fix for default marker icon in Leaflet
