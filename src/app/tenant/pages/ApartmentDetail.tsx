@@ -26,6 +26,7 @@ import { Badge } from "@/app/shared/components/ui/badge";
 import { Button } from "@/app/shared/components/ui/button";
 import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
+import { getTenantType, isTenantRole } from "@/app/shared/services/authService";
 import type { Apartment, ApartmentRoom } from "@/app/shared/data/apartments";
 import { fetchApartmentWithImages, getLandlordVerification, recordApartmentView, updateApartment } from "@/app/shared/data/apartments";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
@@ -101,7 +102,7 @@ export function ApartmentDetail() {
           setLandlord(null);
           setVerified(false);
         }
-        if (listing && isTenantVisibleApartment({ ...listing, landlordVerified }) && (user?.role === "student" || user?.role === "employee") && listing.landlordId !== user.id) {
+        if (listing && user && isTenantVisibleApartment({ ...listing, landlordVerified }) && isTenantRole(user.role) && listing.landlordId !== user.id) {
           const viewKey = `${routeLocation.key}:${user.id}:${listing.id}`;
           if (recordedDetailViewKeys.has(viewKey)) return;
           recordedDetailViewKeys.add(viewKey);
@@ -131,7 +132,7 @@ export function ApartmentDetail() {
   const favorite = apartment ? isFavorite(apartment.id) : false;
   const canEdit = apartment ? canEditApartment(apartment.id, apartment.landlordId) : false;
   const ownListing = user?.role === "landlord" && (apartment?.landlordId === user.id || canEdit);
-  const renter = user?.role === "student" || user?.role === "employee";
+  const renter = isTenantRole(user?.role);
 
   const handleBack = () => {
     if (returnTo) return navigate(returnTo);
@@ -198,7 +199,8 @@ export function ApartmentDetail() {
   const activeSidebarLabel = ownListing ? "My Properties" : "Browse All";
   const Sidebar = () => {
     if (user?.role !== "landlord") {
-      const portalLabel = user?.role === "student" ? "Student Portal" : "Employee Portal";
+      const tenantType = getTenantType(user);
+      const portalLabel = tenantType === "student" ? "Student Portal" : tenantType === "employee" ? "Employee Portal" : "Tenant Portal";
       const displayName = user?.name?.trim();
 
       return (

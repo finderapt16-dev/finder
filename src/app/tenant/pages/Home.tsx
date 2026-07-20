@@ -49,6 +49,7 @@ import { Label } from "@/app/shared/components/ui/label";
 import { Switch } from "@/app/shared/components/ui/switch";
 import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
+import { getTenantType, isTenantRole } from "@/app/shared/services/authService";
 import type { Apartment } from "@/app/shared/data/apartments";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import {
@@ -319,7 +320,7 @@ function TenantBrowse() {
     });
 
     if (sortBy === "recommended") {
-      const isTenant = user?.role === "student" || user?.role === "employee";
+      const isTenant = isTenantRole(user?.role);
 
       if (isTenant) {
         const preferences: TenantPreferences = {
@@ -328,7 +329,7 @@ function TenantBrowse() {
           petFriendly,
           parking,
           furnished,
-          tenantType: user?.role === "student" ? "student" : "employee",
+          tenantType: getTenantType(user) ?? "other",
         };
 
         const apartmentViewCounts = new globalThis.Map<string, number>();
@@ -359,7 +360,7 @@ function TenantBrowse() {
       }
       return compareOptionalNumber(getAvailableApartmentPrice(a), getAvailableApartmentPrice(b), "asc");
     });
-  }, [allApartments, searchQuery, priceRange, budgetFilterEnabled, bedrooms, petFriendly, parking, furnished, sortBy, user?.role, landlordById, userFavorites, viewRows, favoriteRows]);
+  }, [allApartments, searchQuery, priceRange, budgetFilterEnabled, bedrooms, petFriendly, parking, furnished, sortBy, user?.role, user?.tenantType, landlordById, userFavorites, viewRows, favoriteRows]);
 
   const totalPages = Math.max(1, Math.ceil(filteredApartments.length / itemsPerPage));
   const safePage = Math.min(currentPage, totalPages);
@@ -401,7 +402,8 @@ function TenantBrowse() {
 
   const mapCenter = DEFAULT_LA_PAZ_MAP_CENTER;
   const displayName = user?.name?.trim();
-  const portalLabel = user?.role === "student" ? "Student Portal" : "Employee Portal";
+  const tenantType = getTenantType(user);
+  const portalLabel = tenantType === "student" ? "Student Portal" : tenantType === "employee" ? "Employee Portal" : "Tenant Portal";
 
   const resetFilters = () => {
     setSearchQuery("");

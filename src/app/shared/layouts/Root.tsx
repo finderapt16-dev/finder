@@ -5,13 +5,14 @@ import { Toaster } from "../components/ui/sonner";
 import { ApartmentsProvider } from "../contexts/ApartmentsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { pageTransition } from "../utils/motionPresets";
+import { isTenantRole } from "../services/authService";
 
 function RootContent() {
   const location = useLocation();
   const outlet = useOutlet();
   const prefersReducedMotion = useReducedMotion();
   const { user } = useAuth();
-  const supportedRole = user?.role === "student" || user?.role === "employee" || user?.role === "landlord" || user?.role === "admin";
+  const supportedRole = isTenantRole(user?.role) || user?.role === "landlord" || user?.role === "admin";
   const hideChatbot = location.pathname === "/" || location.pathname === "/login" || location.pathname === "/signup" || location.pathname === "/forgot-password" || !supportedRole;
 
   return (
@@ -42,11 +43,10 @@ function RootContent() {
       {!hideChatbot && (
         <Chatbot
           userRole={
-            user?.role === "student" ||
-            user?.role === "employee" ||
+            isTenantRole(user?.role) ||
             user?.role === "landlord" ||
             user?.role === "admin"
-              ? user.role
+              ? user?.role ?? null
               : null
           }
         />

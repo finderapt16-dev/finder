@@ -9,6 +9,7 @@ import { Input } from "@/app/shared/components/ui/input";
 import { Label } from "@/app/shared/components/ui/label";
 import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
+import { getTenantType, isTenantRole } from "@/app/shared/services/authService";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import { Settings as AccountSettings } from "@/app/shared/pages/settings/Settings";
 import {
@@ -175,7 +176,7 @@ export function StudentEmployeeDashboard() {
   useEffect(() => {
     applyTenantPreferences(defaultTenantPreferences);
 
-    if (!user?.id || (user.role !== "student" && user.role !== "employee")) return;
+    if (!user?.id || !isTenantRole(user.role)) return;
 
     let mounted = true;
     const tenantId = user.id;
@@ -218,13 +219,13 @@ export function StudentEmployeeDashboard() {
       petFriendly: prefPetFriendly,
       parking: prefParking,
       furnished: prefFurnished,
-      tenantType: user?.role === "student" ? "student" : "employee",
+      tenantType: getTenantType(user) ?? "other",
     };
-  }, [maxBudget, preferredArea, recommendationLocation, prefPetFriendly, prefParking, prefFurnished, saveBudgetPreferences, user?.role]);
+  }, [maxBudget, preferredArea, recommendationLocation, prefPetFriendly, prefParking, prefFurnished, saveBudgetPreferences, user?.role, user?.tenantType]);
 
   // Personalized recommendations based on saved tenant preferences
   const suggestedApartments = useMemo(() => {
-    if (user?.role === "student" || user?.role === "employee") {
+    if (isTenantRole(user?.role)) {
       const apartmentViewCounts = new Map<string, number>();
       dashboardViewRows.forEach((row) => {
         const apartmentId = row.apartment_id ?? row.apartmentId ?? "";
@@ -292,10 +293,13 @@ export function StudentEmployeeDashboard() {
       });
   }, [favoriteApartments, favoriteFilter, favoriteSort]);
   const displayName = user?.name?.trim();
-  const portalLabel = user?.role === "student" ? "Student Portal" : "Employee Portal";
-  const dashboardSubtitle = user?.role === "student"
+  const tenantType = getTenantType(user);
+  const portalLabel = tenantType === "student" ? "Student Portal" : tenantType === "employee" ? "Employee Portal" : "Tenant Portal";
+  const dashboardSubtitle = tenantType === "student"
     ? "Find a verified place that fits your study routine."
-    : "Discover your ideal home near your workplace.";
+    : tenantType === "employee"
+      ? "Discover your ideal home near your workplace."
+      : "Discover a verified home that fits your everyday needs.";
 
   const handleLogout = () => { logout?.(); navigate("/"); };
 
@@ -330,7 +334,7 @@ export function StudentEmployeeDashboard() {
     try {
       const createdReport = await createReport({
         reporter_id: user.id,
-        reporter_role: user.role === "student" || user.role === "employee" ? user.role : "student",
+        reporter_role: getTenantType(user) ?? "tenant",
         apartment_id: reportForm.apartment,
         category: "Apartment problem",
         issue_type: "Tenant-submitted problem",

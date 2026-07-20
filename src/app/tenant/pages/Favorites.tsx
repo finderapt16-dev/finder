@@ -31,6 +31,7 @@ import { Badge } from "@/app/shared/components/ui/badge";
 import { Button } from "@/app/shared/components/ui/button";
 import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
+import { getTenantType } from "@/app/shared/services/authService";
 import { listFavoriteApartments, type Apartment } from "@/app/shared/data/apartments";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
@@ -133,7 +134,8 @@ export function Favorites() {
 
   const favoriteCount = favoriteApartments.length;
   const displayName = user?.name?.trim();
-  const portalLabel = user?.role === "student" ? "Student Portal" : "Employee Portal";
+  const tenantType = getTenantType(user);
+  const portalLabel = tenantType === "student" ? "Student Portal" : tenantType === "employee" ? "Employee Portal" : "Tenant Portal";
 
   const removeFavorite = async (apartmentId: string) => {
     if (!user?.id) return;

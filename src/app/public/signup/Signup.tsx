@@ -2,7 +2,8 @@ import { AppLogo } from "@/app/shared/components/common/AppLogo";
 import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
 import { Alert, AlertDescription } from "@/app/shared/components/ui/alert";
 import { Button } from "@/app/shared/components/ui/button";
-import { useAuth, UserRole } from "@/app/shared/contexts/AuthContext";
+import { useAuth, type UserRole } from "@/app/shared/contexts/AuthContext";
+import type { TenantType } from "@/app/shared/services/authService";
 import {
   AlertCircle,
   ArrowRight,
@@ -58,7 +59,7 @@ function FloatInput({
           onBlur={() => setFocused(false)}
           placeholder={placeholder}
           required={required}
-          className={`w-full bg-transparent text-slate-800 text-sm font-medium outline-none pt-5 pb-2 ${icon ? "pl-10" : "pl-4"} ${suffix ? "pr-10" : "pr-4"} placeholder:text-transparent`}
+          className={`w-full bg-transparent text-slate-800 text-sm font-medium outline-none pt-5 pb-2 ${icon ? "pl-10" : "pl-4"} ${suffix ? "pr-10" : "pr-4"} placeholder:text-transparent focus:placeholder:text-slate-400`}
         />
         <label
           htmlFor={id}
@@ -163,8 +164,10 @@ export function Signup() {
     email: "", mobileNumber: "", address: "",
     password: "", confirmPassword: "",
     role: "" as UserRole | "",
+    tenantType: "" as TenantType | "",
     school: "", guardian: "", guardianAddress: "", guardianContact: "",
     company: "", workAddress: "", permitNumber: "",
+    otherOccupation: "", otherOrganization: "", otherWorkplace: "",
   });
 
   const set = (key: string, value: string) =>
@@ -178,10 +181,12 @@ export function Signup() {
   const doneContact = !!formData.email && !!formData.mobileNumber;
   const doneRole = (() => {
     if (!formData.role) return false;
-    if (formData.role === "student")
+    if (formData.role === "tenant" && formData.tenantType === "student")
       return !!formData.school && !!formData.guardian && !!formData.guardianContact;
-    if (formData.role === "employee")
+    if (formData.role === "tenant" && formData.tenantType === "employee")
       return !!formData.company && !!formData.workAddress;
+    if (formData.role === "tenant" && formData.tenantType === "other")
+      return !!formData.otherOccupation;
     if (formData.role === "landlord") return !!formData.permitNumber;
     return false;
   })();
@@ -195,6 +200,11 @@ export function Signup() {
     e.preventDefault();
     setError("");
     if (!formData.role) { setError("Please select a role."); return; }
+    if (formData.role === "tenant" && !formData.tenantType) { setError("Please select a tenant type."); return; }
+    if (formData.role === "tenant" && formData.tenantType === "student" && (!formData.school || !formData.guardian || !formData.guardianContact || !formData.guardianAddress)) { setError("Please complete the required student details."); return; }
+    if (formData.role === "tenant" && formData.tenantType === "employee" && (!formData.company || !formData.workAddress)) { setError("Please complete the required employment details."); return; }
+    if (formData.role === "tenant" && formData.tenantType === "other" && !formData.otherOccupation.trim()) { setError("Occupation / Tenant Type is required."); return; }
+    if (formData.role === "landlord" && !formData.permitNumber.trim()) { setError("Business permit number is required."); return; }
     if (!formData.firstName || !formData.lastName) { setError("Full name is required."); return; }
     if (!formData.address) { setError("Home address is required."); return; }
     if (!formData.mobileNumber) { setError("Mobile number is required."); return; }
@@ -210,15 +220,19 @@ export function Signup() {
         email: formData.email,
         password: formData.password,
         role: formData.role as UserRole,
+        tenantType: formData.role === "tenant" ? formData.tenantType as TenantType : undefined,
         middleInitial: formData.middleInitial,
         address: formData.address,
         mobileNumber: formData.mobileNumber,
-        school: formData.school,
-        guardianName: formData.guardian,
-        guardianAddress: formData.guardianAddress,
-        guardianContact: formData.guardianContact,
-        company: formData.company,
-        workAddress: formData.workAddress,
+        school: formData.tenantType === "student" ? formData.school : undefined,
+        guardianName: formData.tenantType === "student" ? formData.guardian : undefined,
+        guardianAddress: formData.tenantType === "student" ? formData.guardianAddress : undefined,
+        guardianContact: formData.tenantType === "student" ? formData.guardianContact : undefined,
+        company: formData.tenantType === "employee" ? formData.company : undefined,
+        workAddress: formData.tenantType === "employee" ? formData.workAddress : undefined,
+        otherOccupation: formData.tenantType === "other" ? formData.otherOccupation : undefined,
+        otherOrganization: formData.tenantType === "other" ? formData.otherOrganization : undefined,
+        otherWorkplace: formData.tenantType === "other" ? formData.otherWorkplace : undefined,
         permitNumber: formData.permitNumber,
         permitDocument: permitFile ?? undefined,
         idDocument: idFile ?? undefined,
@@ -390,10 +404,9 @@ export function Signup() {
               {/* ── Role cards ─────────────────────────────────── */}
               <div className="space-y-2">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">I am registering as a...</p>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-2 gap-2.5">
                   {[
-                    { id: "student", label: "Student", sub: "Near school", icon: GraduationCap, grad: "from-amber-500 to-amber-600" },
-                    { id: "employee", label: "Employee", sub: "Near work", icon: Briefcase, grad: "from-orange-500 to-orange-600" },
+                    { id: "tenant", label: "Tenant", sub: "Find a home", icon: Users, grad: "from-amber-500 to-orange-600" },
                     { id: "landlord", label: "Landlord", sub: "List units", icon: Building2, grad: "from-rose-500 to-rose-600" },
                   ].map((item) => {
                     const selected = formData.role === item.id;
@@ -403,7 +416,20 @@ export function Signup() {
                         type="button"
                         whileHover={{ y: -3, scale: 1.02 }}
                         whileTap={{ scale: 0.97 }}
-                        onClick={() => set("role", item.id)}
+                        onClick={() => setFormData((previous) => ({
+                          ...previous,
+                          role: item.id as UserRole,
+                          tenantType: item.id === "tenant" ? previous.tenantType : "",
+                          school: item.id === "tenant" ? previous.school : "",
+                          guardian: item.id === "tenant" ? previous.guardian : "",
+                          guardianAddress: item.id === "tenant" ? previous.guardianAddress : "",
+                          guardianContact: item.id === "tenant" ? previous.guardianContact : "",
+                          company: item.id === "tenant" ? previous.company : "",
+                          workAddress: item.id === "tenant" ? previous.workAddress : "",
+                          otherOccupation: item.id === "tenant" ? previous.otherOccupation : "",
+                          otherOrganization: item.id === "tenant" ? previous.otherOrganization : "",
+                          otherWorkplace: item.id === "tenant" ? previous.otherWorkplace : "",
+                        }))}
                         className={`relative flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all duration-200 ${
                           selected
                             ? "border-amber-500 bg-amber-50 shadow-lg shadow-amber-100"
@@ -428,6 +454,39 @@ export function Signup() {
                     );
                   })}
                 </div>
+                <AnimatePresence initial={false}>
+                  {formData.role === "tenant" && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                      <div className="mt-3 rounded-2xl border-2 border-amber-100 bg-amber-50/30 p-3">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Tenant specification</p>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                          {[
+                            { id: "student", label: "Student", icon: GraduationCap },
+                            { id: "employee", label: "Employee", icon: Briefcase },
+                            { id: "other", label: "Other", icon: User },
+                          ].map(({ id, label, icon: Icon }) => {
+                            const selected = formData.tenantType === id;
+                            return <button key={id} type="button" onClick={() => setFormData((previous) => ({
+                              ...previous,
+                              tenantType: id as TenantType,
+                              school: id === "student" ? previous.school : "",
+                              guardian: id === "student" ? previous.guardian : "",
+                              guardianAddress: id === "student" ? previous.guardianAddress : "",
+                              guardianContact: id === "student" ? previous.guardianContact : "",
+                              company: id === "employee" ? previous.company : "",
+                              workAddress: id === "employee" ? previous.workAddress : "",
+                              otherOccupation: id === "other" ? previous.otherOccupation : "",
+                              otherOrganization: id === "other" ? previous.otherOrganization : "",
+                              otherWorkplace: id === "other" ? previous.otherWorkplace : "",
+                            }))} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-sm font-bold transition ${selected ? "border-amber-500 bg-white text-amber-700 shadow-sm" : "border-slate-200 bg-white text-slate-600 hover:border-amber-200"}`}>
+                              <Icon className="h-4 w-4" />{label}{selected && <Check className="h-3.5 w-3.5" />}
+                            </button>;
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* ── Accordion: Personal Info ─────────────────────── */}
@@ -465,15 +524,15 @@ export function Signup() {
                 <div className="flex justify-end">
                   <button type="button" onClick={() => toggle("role-details")}
                     className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors">
-                    Next: {formData.role === "student" ? "Student" : formData.role === "employee" ? "Employment" : "Verification"} Details <ChevronRight className="h-3.5 w-3.5" />
+                    Next: {formData.tenantType === "student" ? "Student" : formData.tenantType === "employee" ? "Employment" : formData.tenantType === "other" ? "Tenant" : "Verification"} Details <ChevronRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </AccordionSection>
 
               {/* ── Accordion: Role-specific ─────────────────────── */}
               <AccordionSection
-                title={formData.role === "student" ? "Student Details" : formData.role === "employee" ? "Employment Details" : formData.role === "landlord" ? "Landlord Verification" : "Role Details"}
-                icon={formData.role === "student" ? <GraduationCap className="h-4 w-4" /> : formData.role === "employee" ? <Briefcase className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
+                title={formData.tenantType === "student" ? "Student Details" : formData.tenantType === "employee" ? "Employment Details" : formData.tenantType === "other" ? "Tenant Details" : formData.role === "landlord" ? "Landlord Verification" : "Role Details"}
+                icon={formData.tenantType === "student" ? <GraduationCap className="h-4 w-4" /> : formData.tenantType === "employee" ? <Briefcase className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
                 open={openSection === "role-details"}
                 onToggle={() => toggle("role-details")}
                 done={doneRole}
@@ -482,7 +541,7 @@ export function Signup() {
                   <p className="text-sm text-slate-400 italic py-2">Select a role above to see the relevant fields.</p>
                 )}
 
-                {formData.role === "student" && (
+                {formData.role === "tenant" && formData.tenantType === "student" && (
                   <div className="space-y-4">
                     <FloatInput id="school" label="School / University" value={formData.school} onChange={(v) => set("school", v)} required icon={<GraduationCap className="h-4 w-4" />} />
                     <div className="rounded-xl border-2 border-amber-100 bg-amber-50/40 p-4 space-y-4">
@@ -497,7 +556,7 @@ export function Signup() {
                   </div>
                 )}
 
-                {formData.role === "employee" && (
+                {formData.role === "tenant" && formData.tenantType === "employee" && (
                   <div className="space-y-4">
                     <div className="rounded-xl border-2 border-orange-100 bg-orange-50/40 p-4 space-y-4">
                       <div className="flex items-center gap-2 text-orange-700 mb-1">
@@ -507,6 +566,15 @@ export function Signup() {
                       <FloatInput id="company" label="Company / Organization" value={formData.company} onChange={(v) => set("company", v)} required icon={<Building2 className="h-4 w-4" />} />
                       <FloatInput id="workAddress" label="Work Address" value={formData.workAddress} onChange={(v) => set("workAddress", v)} required icon={<MapPin className="h-4 w-4" />} />
                     </div>
+                  </div>
+                )}
+
+                {formData.role === "tenant" && formData.tenantType === "other" && (
+                  <div className="space-y-4 rounded-xl border-2 border-orange-100 bg-orange-50/40 p-4">
+                    <div className="mb-1 flex items-center gap-2 text-orange-700"><User className="h-4 w-4" /><span className="text-xs font-bold uppercase tracking-widest">Tenant Information</span></div>
+                    <FloatInput id="otherOccupation" label="Occupation / Tenant Type" value={formData.otherOccupation} onChange={(value) => set("otherOccupation", value)} required placeholder="Freelancer, self-employed, job seeker, business owner, retiree" icon={<Briefcase className="h-4 w-4" />} />
+                    <FloatInput id="otherOrganization" label="Organization / Affiliation" value={formData.otherOrganization} onChange={(value) => set("otherOrganization", value)} placeholder="Business, organization, or group name" icon={<Building2 className="h-4 w-4" />} />
+                    <FloatInput id="otherWorkplace" label="Workplace / Main Activity Location" value={formData.otherWorkplace} onChange={(value) => set("otherWorkplace", value)} placeholder="Office, business location, or usual destination" icon={<MapPin className="h-4 w-4" />} />
                   </div>
                 )}
 

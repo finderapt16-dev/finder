@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { AdminDashboard } from "@/app/admin/pages/AdminDashboard";
 import { LandlordDashboard } from "@/app/landlord/pages/LandlordDashboard";
 import { StudentEmployeeDashboard } from "@/app/tenant/pages/StudentEmployeeDashboard";
+import { isTenantRole } from "@/app/shared/services/authService";
 
 export function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -29,7 +30,7 @@ export function Dashboard() {
     return <LandlordDashboard />;
   }
 
-  if (user?.role === "student" || user?.role === "employee") {
+  if (isTenantRole(user?.role)) {
     return <StudentEmployeeDashboard />;
   }
 

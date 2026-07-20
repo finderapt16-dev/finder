@@ -19,6 +19,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
+import { getTenantType, isTenantRole } from "@/app/shared/services/authService";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 
 type TenantNavSection =
@@ -42,8 +43,9 @@ export function TenantMobileNavigation({ active = "overview" }: TenantMobileNavi
   const { favorites } = useFavorites();
   const [open, setOpen] = useState(false);
 
-  const isTenant = user?.role === "student" || user?.role === "employee";
-  const portalLabel = user?.role === "student" ? "Student Portal" : "Employee Portal";
+  const isTenant = isTenantRole(user?.role);
+  const tenantType = getTenantType(user);
+  const portalLabel = tenantType === "student" ? "Student Portal" : tenantType === "employee" ? "Employee Portal" : "Tenant Portal";
   const displayName = user?.name?.trim();
 
   useEffect(() => {

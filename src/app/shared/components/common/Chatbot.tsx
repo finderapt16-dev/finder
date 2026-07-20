@@ -65,7 +65,7 @@ function restoreMessages(rawValue: string | null): Message[] {
 }
 
 interface ChatbotProps {
-  userRole?: "student" | "employee" | "landlord" | "admin" | null;
+  userRole?: "tenant" | "student" | "employee" | "landlord" | "admin" | null;
 }
 
 export function Chatbot({ userRole }: ChatbotProps) {

@@ -6,7 +6,7 @@ import {
 } from "./listingVisibility";
 import { hasValidApartmentCoordinates } from "./mapCoordinates";
 
-export type UserRole = "student" | "employee" | "landlord" | "admin" | null;
+export type UserRole = "tenant" | "student" | "employee" | "landlord" | "admin" | null;
 export type ChatbotCategory =
   | "project_answer"
   | "clarification"
@@ -80,6 +80,7 @@ const PROJECT_ONLY_MESSAGE =
   "I can only assist with this apartment-finder platform. Ask me about apartment listings, rooms, applications, verification, reports, inspections, notifications, maps, or account settings.";
 
 const ROLE_LABEL: Record<Exclude<UserRole, null>, string> = {
+  tenant: "Tenant",
   student: "Student",
   employee: "Employee",
   landlord: "Landlord",
@@ -87,20 +88,20 @@ const ROLE_LABEL: Record<Exclude<UserRole, null>, string> = {
 };
 
 export const QUICK_PROMPTS: QuickPrompt[] = [
-  { id: "available", label: "What's available?", message: "How many apartments are available right now?", roles: ["student", "employee"] },
-  { id: "cheapest", label: "Cheapest rooms", message: "What are the cheapest available rooms?", roles: ["student", "employee"] },
-  { id: "map", label: "Map help", message: "How does the apartment map work?", roles: ["student", "employee"] },
-  { id: "favorites", label: "Favorites", message: "How do I save and view favorites?", roles: ["student", "employee"] },
+  { id: "available", label: "What's available?", message: "How many apartments are available right now?", roles: ["tenant", "student", "employee"] },
+  { id: "cheapest", label: "Cheapest rooms", message: "What are the cheapest available rooms?", roles: ["tenant", "student", "employee"] },
+  { id: "map", label: "Map help", message: "How does the apartment map work?", roles: ["tenant", "student", "employee"] },
+  { id: "favorites", label: "Favorites", message: "How do I save and view favorites?", roles: ["tenant", "student", "employee"] },
   { id: "add-property", label: "Add property", message: "How do I add a property?", roles: ["landlord"] },
   { id: "manage-rooms", label: "Manage rooms", message: "How do I add or update rooms?", roles: ["landlord"] },
   { id: "verification", label: "Verification", message: "How does landlord verification work?", roles: ["landlord", "admin"] },
   { id: "publish", label: "Publishing", message: "How does apartment approval and publishing work?", roles: ["landlord", "admin"] },
-  { id: "reports", label: "Reports", message: "How are reports handled?", roles: ["student", "employee", "landlord", "admin"] },
+  { id: "reports", label: "Reports", message: "How are reports handled?", roles: ["tenant", "student", "employee", "landlord", "admin"] },
   { id: "admin-inspection", label: "Inspections", message: "How do admin inspections work?", roles: ["admin"] },
 ];
 
 export const TENANT_QUICK_PROMPTS = QUICK_PROMPTS.filter((prompt) =>
-  prompt.roles.some((role) => role === "student" || role === "employee"),
+  prompt.roles.some((role) => role === "tenant" || role === "student" || role === "employee"),
 );
 
 const PROJECT_TERMS = [
@@ -327,7 +328,7 @@ export function getChatbotWelcome(userName?: string, role: UserRole = null): str
 I can help only with this apartment-finder platform: listings, rooms, maps, verification, reports, inspections, notifications, settings, and role-specific workflows.`;
 }
 
-export const getTenantWelcome = (userName?: string): string => getChatbotWelcome(userName, "student");
+export const getTenantWelcome = (userName?: string): string => getChatbotWelcome(userName, "tenant");
 
 function tenantDataAnswer(intent: string, text: string, ctx: ChatbotContext): ChatbotReply | null {
   const listings = visibleListings(ctx.apartments);
@@ -855,7 +856,7 @@ export function generateChatbotReply(userMessage: string, ctx: ChatbotContext): 
   const landlordAnswer = landlordDataAnswer(intent, ctx);
   if (landlordAnswer) return landlordAnswer;
 
-  if (ctx.userRole === "student" || ctx.userRole === "employee") {
+  if (ctx.userRole === "tenant" || ctx.userRole === "student" || ctx.userRole === "employee") {
     const tenantAnswer = tenantDataAnswer(intent, text, ctx);
     if (tenantAnswer) return tenantAnswer;
   }

@@ -2360,7 +2360,7 @@ export function AdminDashboard() {
                     )}
                   </div>
                 )}
-                {/* Reports from students/employees */}
+                {/* Reports from tenants */}
                 {aptReports.length > 0 && (
                   <div>
                     <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -2536,7 +2536,7 @@ export function AdminDashboard() {
           <header className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-lg shadow-orange-200/60"><Flag className="h-5 w-5" /></span>
-              <div><h1 className="text-2xl font-black text-slate-950 md:text-3xl">Reports</h1><p className="text-sm font-medium text-slate-500">Review reports submitted by students and employees.</p></div>
+              <div><h1 className="text-2xl font-black text-slate-950 md:text-3xl">Reports</h1><p className="text-sm font-medium text-slate-500">Review reports submitted by tenants.</p></div>
             </div>
             <div className="flex items-center gap-2 self-start md:self-auto">
               <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-amber-300 hover:text-amber-600"><Bell className="h-4 w-4" />{unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}</button>
@@ -2574,7 +2574,7 @@ export function AdminDashboard() {
 
           <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             {reports.length === 0 ? (
-              <div className="flex min-h-[390px] flex-col items-center justify-center p-6 text-center"><span className="mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-orange-50 text-orange-500"><Flag className="h-10 w-10" /></span><h3 className="text-xl font-black text-slate-900">No reports submitted yet.</h3><p className="mt-1 max-w-sm text-sm font-medium text-slate-500">Reports submitted by students or employees will appear here for review.</p></div>
+              <div className="flex min-h-[390px] flex-col items-center justify-center p-6 text-center"><span className="mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-orange-50 text-orange-500"><Flag className="h-10 w-10" /></span><h3 className="text-xl font-black text-slate-900">No reports submitted yet.</h3><p className="mt-1 max-w-sm text-sm font-medium text-slate-500">Reports submitted by tenants will appear here for review.</p></div>
             ) : visibleReports.length === 0 ? (
               <OverviewEmpty icon={Search} text="No reports match the selected filters." />
             ) : (
@@ -2608,7 +2608,7 @@ export function AdminDashboard() {
           </div>
           <div>
             <h2 className="text-3xl font-black text-slate-900">Reports</h2>
-            <p className="text-slate-500 text-sm font-medium">Submitted by students and employees</p>
+            <p className="text-slate-500 text-sm font-medium">Submitted by tenants</p>
           </div>
         </div>
         <div className="hidden grid-cols-3 gap-3">

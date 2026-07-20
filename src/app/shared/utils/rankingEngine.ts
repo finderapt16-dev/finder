@@ -15,7 +15,7 @@ import type { Apartment } from "../data/apartments";
  * - Recent Activity (5%)
  */
 
-export type TenantType = 'student' | 'employee';
+export type TenantType = 'student' | 'employee' | 'other';
 
 export interface RankingScoreBreakdown {
   locationScore: number;           // 0-100 (30% weight)

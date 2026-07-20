@@ -10,6 +10,7 @@ import {
   apartmentFormValuesToInsertRow,
   apartmentRowToApartment,
 } from '../data/apartments';
+import { isTenantRole } from './authService';
 
 const CURRENT_USER_KEY = 'apartment_finder_current_user';
 const APARTMENT_SELECT =
@@ -1079,7 +1080,7 @@ export const recordApartmentView = async (
   apartmentId: string,
   viewer: SessionUser,
 ): Promise<boolean> => {
-  if (viewer.role !== 'student' && viewer.role !== 'employee') return false;
+  if (!isTenantRole(viewer.role)) return false;
   const viewerId = await resolveAppUserId(viewer);
   const now = new Date().toISOString();
   const dateParts = new Intl.DateTimeFormat('en-US', {
