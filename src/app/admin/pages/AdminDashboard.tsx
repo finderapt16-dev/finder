@@ -64,6 +64,7 @@ import {
   type DashboardViolationRow
 } from "@/app/shared/services/dashboardSupabaseService";
 import { getReportEvidence } from "@/app/shared/services/reportEvidenceService";
+import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
 import { formatAuditLogForDisplay, formatNotificationType, safeNotificationText } from "@/app/shared/utils/auditLogDisplay";
 import { supabase } from "@/lib/supabaseclient";
 import {
@@ -2012,7 +2013,7 @@ export function AdminDashboard() {
                     : apartment.status === "reserved" ? "bg-blue-600 text-white"
                       : apartment.status === "maintenance" ? "bg-amber-600 text-white"
                         : "bg-emerald-500 text-white";
-                const location = apartment.location || [apartment.address, apartment.city].filter(Boolean).join(", ");
+                const location = formatApartmentLocation(apartment);
                 const roomCount = apartment.rooms?.length || apartment.bedrooms || 0;
                 return (
                   <motion.article key={apartment.id} whileHover={{ y: -3 }} onClick={() => setSelectedApt(apartment)} className={`group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg ${aptViewMode === "list" ? "md:flex" : ""}`}>

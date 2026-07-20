@@ -33,6 +33,7 @@ import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
 import { listFavoriteApartments, type Apartment } from "@/app/shared/data/apartments";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
+import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
 import { getImageUrl } from "@/app/shared/utils/images";
 import { TenantMobileNavigation } from "@/app/tenant/components/TenantMobileNavigation";
 import {
@@ -196,7 +197,7 @@ export function Favorites() {
     const status = apartment.status ?? "available";
     const availableRooms = getAvailableRooms(apartment);
     const images = [apartment.image, ...(apartment.images ?? [])].filter(Boolean);
-    const location = [apartment.city, apartment.state].filter(Boolean).join(", ") || apartment.address;
+    const location = formatApartmentLocation(apartment);
 
     return (
       <article className={`overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)] ${viewMode === "list" ? "grid lg:grid-cols-[minmax(280px,0.9fr)_1fr]" : ""}`}>

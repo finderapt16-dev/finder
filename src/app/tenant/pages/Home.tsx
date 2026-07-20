@@ -62,6 +62,7 @@ import {
   type TenantPreferenceSettings,
   type TenantPreferenceSortOption,
 } from "@/app/shared/services/dashboardSupabaseService";
+import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
 import { getImageUrl } from "@/app/shared/utils/images";
 import {
   getAvailableRoomCount,
@@ -77,6 +78,11 @@ import { LandlordBrowse } from "@/app/landlord/pages/LandlordBrowse";
 import { TenantMobileNavigation } from "@/app/tenant/components/TenantMobileNavigation";
 
 type SortOption = TenantPreferenceSortOption;
+
+const DEFAULT_PRICE_RANGE: [number, number] = [1000, 6000];
+
+const hasMeaningfulBudgetPreference = (preferences: TenantPreferenceSettings) =>
+  preferences.saveBudgetPreferences === true && Number(preferences.maxBudget) !== DEFAULT_PRICE_RANGE[1];
 
 const STATUS_LABEL: Record<string, string> = {
   available: "Available",
@@ -164,8 +170,8 @@ function TenantBrowse() {
 
   const urlSearchQuery = searchParams.get("search")?.trim() || "";
   const initialPriceRange: [number, number] = [
-    1000,
-    defaultTenantPreferences.saveBudgetPreferences === false ? 6000 : Number(defaultTenantPreferences.maxBudget) || 6000,
+    DEFAULT_PRICE_RANGE[0],
+    defaultTenantPreferences.saveBudgetPreferences === false ? DEFAULT_PRICE_RANGE[1] : Number(defaultTenantPreferences.maxBudget) || DEFAULT_PRICE_RANGE[1],
   ];
   const initialBudgetFilterEnabled = defaultTenantPreferences.saveBudgetPreferences === true;
   const [searchQuery, setSearchQuery] = useState(urlSearchQuery || defaultTenantPreferences.preferredArea || "");
@@ -193,10 +199,11 @@ function TenantBrowse() {
   };
 
   const applyBrowsePreferences = (preferences: TenantPreferenceSettings, searchOverride = "") => {
+    const useBudgetPreference = hasMeaningfulBudgetPreference(preferences);
     setSearchQuery(searchOverride || preferences.preferredArea || "");
     applyPriceRange(
-      [1000, preferences.saveBudgetPreferences ? Number(preferences.maxBudget) || 6000 : 6000],
-      preferences.saveBudgetPreferences === true,
+      [DEFAULT_PRICE_RANGE[0], useBudgetPreference ? Number(preferences.maxBudget) || DEFAULT_PRICE_RANGE[1] : DEFAULT_PRICE_RANGE[1]],
+      useBudgetPreference,
     );
     setBedrooms(preferences.minBedrooms || "any");
     setPetFriendly(Boolean(preferences.petFriendly));
@@ -358,7 +365,8 @@ function TenantBrowse() {
   const safePage = Math.min(currentPage, totalPages);
   const pageStart = (safePage - 1) * itemsPerPage;
   const paginatedApartments = filteredApartments.slice(pageStart, pageStart + itemsPerPage);
-  const activeFilterCount = [petFriendly, parking, furnished, bedrooms !== "any", budgetFilterEnabled].filter(Boolean).length;
+  const activeBudgetFilter = budgetFilterEnabled && (priceRange[0] !== DEFAULT_PRICE_RANGE[0] || priceRange[1] !== DEFAULT_PRICE_RANGE[1]);
+  const activeFilterCount = [petFriendly, parking, furnished, bedrooms !== "any", activeBudgetFilter].filter(Boolean).length;
   const mappedApartmentCount = filteredApartments.filter((apartment) => hasValidApartmentCoordinates(apartment.lat, apartment.lng)).length;
   const realPriceValues = useMemo(
     () =>
@@ -397,7 +405,7 @@ function TenantBrowse() {
 
   const resetFilters = () => {
     setSearchQuery("");
-    applyPriceRange([1000, 6000], false);
+    applyPriceRange(DEFAULT_PRICE_RANGE, false);
     setBedrooms("any");
     setPetFriendly(false);
     setParking(false);
@@ -419,9 +427,10 @@ function TenantBrowse() {
     }
 
     setSearchQuery(preferences.preferredArea || "");
+    const useBudgetPreference = hasMeaningfulBudgetPreference(preferences);
     applyPriceRange(
-      [1000, preferences.saveBudgetPreferences ? Number(preferences.maxBudget) || 6000 : 6000],
-      preferences.saveBudgetPreferences === true,
+      [DEFAULT_PRICE_RANGE[0], useBudgetPreference ? Number(preferences.maxBudget) || DEFAULT_PRICE_RANGE[1] : DEFAULT_PRICE_RANGE[1]],
+      useBudgetPreference,
     );
     setBedrooms(preferences.minBedrooms || "any");
     setPetFriendly(Boolean(preferences.petFriendly));
@@ -456,7 +465,7 @@ function TenantBrowse() {
         parking,
         furnished,
         sortBy,
-        saveBudgetPreferences: true,
+        saveBudgetPreferences: activeBudgetFilter,
       });
       toast.success("Browse preferences saved.");
       setPreferencesOpen(false);
@@ -674,7 +683,7 @@ function TenantBrowse() {
   const ApartmentBrowseCard = ({ apartment }: { apartment: Apartment }) => {
     const status = apartment.status ?? "available";
     const availableRooms = getAvailableRooms(apartment);
-    const locationText = [apartment.city, apartment.state].filter(Boolean).join(", ") || apartment.address;
+    const locationText = formatApartmentLocation(apartment);
     const favorite = isFavorite(apartment.id);
     const favoriteUpdating = updatingFavoriteIds.includes(apartment.id);
     const imageUrl = apartment.image || apartment.images?.[0];
@@ -905,7 +914,7 @@ function TenantBrowse() {
                       bedrooms: apt.bedrooms,
                       bathrooms: apt.bathrooms,
                       image: apt.image ? getImageUrl(apt.image) : undefined,
-                      location: [apt.city, apt.state].filter(Boolean).join(", ") || apt.address,
+                      location: formatApartmentLocation(apt),
                       availableRooms: getAvailableRooms(apt),
                       status: apt.status ?? "available",
                       isVerified: isVerifiedListing(apt),

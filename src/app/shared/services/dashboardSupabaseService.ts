@@ -255,7 +255,7 @@ export const defaultTenantPreferences: TenantPreferenceSettings = {
   furnished: false,
   sortBy: "recommended",
   recommendationLocation: true,
-  saveBudgetPreferences: true,
+  saveBudgetPreferences: false,
   emailNotifications: true,
   inquiryAlerts: true,
   bookingAlerts: true,

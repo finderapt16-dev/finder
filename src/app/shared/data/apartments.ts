@@ -412,6 +412,14 @@ export const apartmentFormValuesToInsertRow = (
   const verification = Object.fromEntries(
     Object.entries(values.verification ?? {}).filter(([, value]) => value.trim().length > 0),
   );
+  const address = values.address.trim();
+  const lat = toNumber(values.lat, Number.NaN);
+  const lng = toNumber(values.lng, Number.NaN);
+  const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lng);
+
+  if (hasCoordinates && !address) {
+    throw new Error('Complete address is required when saving a map location.');
+  }
 
   return {
     title: values.title.trim(),
@@ -419,7 +427,7 @@ export const apartmentFormValuesToInsertRow = (
     bedrooms: toNumber(values.bedrooms),
     bathrooms: toNumber(values.bathrooms),
     sqft: toNumber(values.sqft),
-    address: values.address.trim(),
+    address,
     city: values.city.trim(),
     state: values.state.trim(),
     zip: values.zip.trim(),

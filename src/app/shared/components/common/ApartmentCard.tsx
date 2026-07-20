@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Apartment } from "../../data/apartments";
 import { useFavorites } from "../../hooks/useFavorites";
+import { formatApartmentLocation } from "../../utils/apartmentLocation";
 import { getImageUrl } from "../../utils/images";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -40,6 +41,7 @@ export function ApartmentCard({ apartment, detailState }: ApartmentCardProps) {
 
   const landlord = apartment.landlordId ? users.find((entry) => entry.id === apartment.landlordId) : undefined;
   const verifiedLandlord = apartment.landlordVerified ?? landlord?.isVerified === true;
+  const locationText = formatApartmentLocation(apartment);
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -87,9 +89,7 @@ export function ApartmentCard({ apartment, detailState }: ApartmentCardProps) {
               <h3 className="font-semibold text-lg mb-1 text-slate-900 group-hover:text-amber-600 transition-colors">{apartment.title}</h3>
               <div className="flex items-center text-slate-600 text-sm mb-3">
                 <MapPin className="h-4 w-4 mr-1 text-amber-500" />
-                <span>
-                  {apartment.city}, {apartment.state}
-                </span>
+                <span>{locationText}</span>
               </div>
             </div>
             <div className="text-right">

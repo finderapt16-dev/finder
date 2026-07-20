@@ -23,6 +23,7 @@ import {
   type TenantPreferenceSettings
 } from "@/app/shared/services/dashboardSupabaseService";
 import { uploadReportEvidence } from "@/app/shared/services/reportEvidenceService";
+import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
 import { getImageUrl } from "@/app/shared/utils/images";
 import { getAvailableRoomCount, isTenantVisibleApartment } from "@/app/shared/utils/listingVisibility";
 import { rankApartments, type TenantPreferences } from "@/app/shared/utils/rankingEngine";
@@ -123,7 +124,7 @@ export function StudentEmployeeDashboard() {
   const [prefParking, setPrefParking]         = useState(false);
   const [prefFurnished, setPrefFurnished]     = useState(false);
   const [recommendationLocation, setRecommendationLocation] = useState(true);
-  const [saveBudgetPreferences, setSaveBudgetPreferences] = useState(true);
+  const [saveBudgetPreferences, setSaveBudgetPreferences] = useState(false);
   const [dashboardFavoriteRows, setDashboardFavoriteRows] = useState<DashboardFavoriteRow[]>([]);
   const [dashboardViewRows, setDashboardViewRows] = useState<DashboardApartmentViewRow[]>([]);
 
@@ -684,7 +685,7 @@ export function StudentEmployeeDashboard() {
     };
     const availableRooms = getAvailableRooms(apartment);
     const images = [apartment.image, ...(apartment.images ?? [])].filter(Boolean);
-    const locationLabel = [apartment.city, apartment.state].filter(Boolean).join(", ") || apartment.address;
+    const locationLabel = formatApartmentLocation(apartment);
 
     return (
       <article className={`overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)] ${favoriteView === "list" ? "grid lg:grid-cols-[minmax(280px,0.9fr)_1fr]" : ""}`}>
