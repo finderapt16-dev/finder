@@ -168,6 +168,49 @@ export interface DashboardUserRow extends DashboardRow {
   preferences?: TenantPreferenceSettings | Record<string, unknown> | null;
 }
 
+export interface AdminAnalyticsApartmentRow {
+  id: string;
+  is_published: boolean;
+  approval_status: string | null;
+  is_archived: boolean;
+  deleted_at: string | null;
+  status: string | null;
+  created_at: string;
+  published_at: string | null;
+  apartment_rooms: Array<{
+    id: string;
+    status: string | null;
+    is_occupied: boolean;
+  }> | null;
+}
+
+export interface AdminAnalyticsUserRow {
+  id: string;
+  role: string;
+  is_verified: boolean;
+  status: string | null;
+  verification_status: string | null;
+  landlord_status: string | null;
+}
+
+export interface AdminAnalyticsViewRow {
+  apartment_id: string;
+  viewed_at: string;
+  view_count: number;
+}
+
+export interface AdminAnalyticsFavoriteRow {
+  apartment_id: string;
+  created_at: string;
+}
+
+export interface AdminAnalyticsData {
+  apartments: AdminAnalyticsApartmentRow[];
+  users: AdminAnalyticsUserRow[];
+  views: AdminAnalyticsViewRow[];
+  favorites: AdminAnalyticsFavoriteRow[];
+}
+
 export type TenantPreferenceSortOption = "recommended" | "price_low" | "price_high" | "newest" | "popular";
 
 export interface TenantPreferenceSettings {
@@ -1909,6 +1952,37 @@ export async function fetchApartments(): Promise<DashboardApartmentRow[]> {
 
   writeCachedValue("apartments", "[]");
   return [];
+}
+
+export async function fetchAdminAnalyticsData(): Promise<AdminAnalyticsData> {
+  const [apartmentsResult, usersResult, viewsResult, favoritesResult] = await Promise.all([
+    supabase
+      .from("apartments")
+      .select("id, is_published, approval_status, is_archived, deleted_at, status, created_at, published_at, apartment_rooms(id, status, is_occupied)"),
+    supabase
+      .from("app_users")
+      .select("id, role, is_verified, status, verification_status, landlord_status")
+      .eq("role", "landlord"),
+    supabase
+      .from("apartment_views")
+      .select("apartment_id, viewed_at, view_count"),
+    supabase
+      .from("favorites")
+      .select("apartment_id, created_at"),
+  ]);
+
+  const firstError = apartmentsResult.error ?? usersResult.error ?? viewsResult.error ?? favoritesResult.error;
+  if (firstError) {
+    console.error("Unable to load admin analytics:", firstError);
+    throw new Error("Analytics could not be refreshed. Please try again.");
+  }
+
+  return {
+    apartments: (apartmentsResult.data ?? []) as AdminAnalyticsApartmentRow[],
+    users: (usersResult.data ?? []) as AdminAnalyticsUserRow[],
+    views: (viewsResult.data ?? []) as AdminAnalyticsViewRow[],
+    favorites: (favoritesResult.data ?? []) as AdminAnalyticsFavoriteRow[],
+  };
 }
 
 export async function fetchFavorites(): Promise<DashboardFavoriteRow[]> {

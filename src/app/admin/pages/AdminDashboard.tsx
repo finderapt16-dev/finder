@@ -1,4 +1,5 @@
 import { EvidenceViewer, type EvidenceItem } from "@/app/shared/components/common/EvidenceViewer";
+import { AdminAnalyticsOverview } from "@/app/admin/components/AdminAnalyticsOverview";
 import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
 import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
 import {
@@ -1565,6 +1566,8 @@ export function AdminDashboard() {
             </motion.button>
           ))}
         </motion.section>
+
+        <AdminAnalyticsOverview />
 
         <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
           <motion.section variants={itemMotion} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
