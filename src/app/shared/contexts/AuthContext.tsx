@@ -271,7 +271,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   }, []);
 
   const canEditApartment = useCallback(
-    (apartmentId: string, landlordId?: string) => {
+    (_apartmentId: string, landlordId?: string) => {
       if (!currentUser || currentUser.role !== 'landlord' || !currentUser.isVerified) {
         return false;
       }
@@ -280,7 +280,9 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         return landlordId === currentUser.id;
       }
 
-      return Boolean(apartmentId);
+      // Ownership must be explicit. RLS remains the final enforcement layer, but
+      // the client must never expose editing controls when owner data is absent.
+      return false;
     },
     [currentUser],
   );

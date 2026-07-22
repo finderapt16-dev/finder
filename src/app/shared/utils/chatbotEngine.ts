@@ -1,4 +1,5 @@
 import type { Apartment } from "../data/apartments";
+import type { UserRole as AuthenticatedUserRole } from "../services/authService";
 import {
   getAvailableRoomCount,
   getLowestAvailableRoomPrice,
@@ -6,7 +7,7 @@ import {
 } from "./listingVisibility";
 import { hasValidApartmentCoordinates } from "./mapCoordinates";
 
-export type UserRole = "tenant" | "student" | "employee" | "landlord" | "admin" | null;
+export type UserRole = AuthenticatedUserRole | null;
 export type ChatbotCategory =
   | "project_answer"
   | "clarification"

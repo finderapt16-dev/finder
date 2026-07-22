@@ -2,8 +2,10 @@ import { Bot, MessageCircle, Send, Sparkles, User, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { supabase } from "../../../../lib/supabaseclient";
 import { useApartmentsContext } from "../../contexts/ApartmentsContext";
 import { useAuth } from "../../contexts/AuthContext";
+import type { UserRole } from "../../services/authService";
 import { useFavorites } from "../../hooks/useFavorites";
 import {
   fetchApartmentViews,
@@ -65,7 +67,7 @@ function restoreMessages(rawValue: string | null): Message[] {
 }
 
 interface ChatbotProps {
-  userRole?: "tenant" | "student" | "employee" | "landlord" | "admin" | null;
+  userRole?: UserRole | null;
 }
 
 export function Chatbot({ userRole }: ChatbotProps) {
@@ -87,6 +89,7 @@ export function Chatbot({ userRole }: ChatbotProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
+  const [hydratedStorageKey, setHydratedStorageKey] = useState<string | null>(null);
 
   const resolvedRole = userRole ?? null;
   const quickPrompts = useMemo(() => getQuickPromptsForRole(resolvedRole), [resolvedRole]);
@@ -168,6 +171,7 @@ export function Chatbot({ userRole }: ChatbotProps) {
 
   useEffect(() => {
     const key = chatStorageKey(user?.id, resolvedRole);
+    setHydratedStorageKey(null);
     setLastFailedQuestion(null);
     setInputValue("");
 
@@ -177,13 +181,14 @@ export function Chatbot({ userRole }: ChatbotProps) {
     }
 
     setMessages(restoreMessages(localStorage.getItem(key)));
+    setHydratedStorageKey(key);
   }, [resolvedRole, user?.id]);
 
   useEffect(() => {
     const key = chatStorageKey(user?.id, resolvedRole);
-    if (!key || messages.length === 0) return;
+    if (!key || hydratedStorageKey !== key || messages.length === 0) return;
     localStorage.setItem(key, JSON.stringify(serializeMessages(messages)));
-  }, [messages, resolvedRole, user?.id]);
+  }, [hydratedStorageKey, messages, resolvedRole, user?.id]);
 
   useEffect(() => {
     if (!isOpen || messages.length > 0) return;
@@ -209,33 +214,52 @@ export function Chatbot({ userRole }: ChatbotProps) {
     if (!isOpen || !user?.id || !resolvedRole) return;
 
     let active = true;
-    setRuntimeLoading(true);
-    setRuntimeError(null);
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const notificationRequest = fetchNotifications(user.id);
-    const sharedRequests: Promise<[DashboardApartmentViewRow[], DashboardFavoriteRow[]]> = Promise.all([
-      fetchApartmentViews(),
-      fetchDashboardFavorites(),
-    ]);
+    const loadRuntimeData = () => {
+      setRuntimeLoading(true);
+      setRuntimeError(null);
 
-    void Promise.all([notificationRequest, sharedRequests])
-      .then(([loadedNotifications, [loadedViews, loadedFavorites]]) => {
-        if (!active) return;
-        setNotifications(loadedNotifications);
-        setViewRows(loadedViews);
-        setFavoriteRows(loadedFavorites);
-      })
-      .catch((loadError) => {
-        if (!active) return;
-        console.warn("Failed to load chatbot runtime data:", loadError);
-        setRuntimeError("Some assistant data could not be loaded.");
-      })
-      .finally(() => {
-        if (active) setRuntimeLoading(false);
-      });
+      const notificationRequest = fetchNotifications(user.id);
+      const sharedRequests: Promise<[DashboardApartmentViewRow[], DashboardFavoriteRow[]]> = Promise.all([
+        fetchApartmentViews(),
+        fetchDashboardFavorites(),
+      ]);
+
+      void Promise.all([notificationRequest, sharedRequests])
+        .then(([loadedNotifications, [loadedViews, loadedFavorites]]) => {
+          if (!active) return;
+          setNotifications(loadedNotifications);
+          setViewRows(loadedViews);
+          setFavoriteRows(loadedFavorites);
+        })
+        .catch((loadError) => {
+          if (!active) return;
+          console.warn("Failed to load chatbot runtime data:", loadError);
+          setRuntimeError("Some assistant data could not be loaded.");
+        })
+        .finally(() => {
+          if (active) setRuntimeLoading(false);
+        });
+    };
+
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(loadRuntimeData, 100);
+    };
+
+    loadRuntimeData();
+    const channel = supabase
+      .channel(`chatbot-runtime-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "apartment_views" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "favorites" }, scheduleRefresh)
+      .subscribe();
 
     return () => {
       active = false;
+      if (refreshTimer) clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
     };
   }, [isOpen, resolvedRole, user?.id]);
 
