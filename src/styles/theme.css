@@ -139,6 +139,23 @@
 
   body {
     @apply bg-background text-foreground;
+    min-width: 0;
+    overflow-x: hidden;
+    text-rendering: optimizeLegibility;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    max-width: 100%;
   }
 
   /**
@@ -190,6 +207,28 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+
+  @media (max-width: 639px) {
+    :root {
+      --font-size: 15px;
+    }
+
+    h1 {
+      font-size: clamp(1.65rem, 8vw, 2.25rem);
+      line-height: 1.15;
+    }
+
+    h2 {
+      font-size: clamp(1.35rem, 6vw, 1.75rem);
+      line-height: 1.2;
+    }
+
+    [role="dialog"] {
+      max-height: calc(100dvh - 1rem);
+      max-width: calc(100vw - 1rem);
+      overflow-y: auto;
+    }
   }
 
   /* Custom Animations */

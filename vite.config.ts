@@ -37,4 +37,7 @@ export default defineConfig({
   server: {
     open: false,
   },
+  build: {
+    manifest: true,
+  },
 })

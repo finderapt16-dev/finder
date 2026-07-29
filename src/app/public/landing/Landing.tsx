@@ -288,35 +288,35 @@ export function Landing() {
         </div>
 
         {/* Carousel controls */}
-        <button onClick={() => setHeroIndex((i) => (i - 1 + heroImages.length) % heroImages.length)}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white/10 backdrop-blur hover:bg-white/20 flex items-center justify-center transition-colors">
+        <button aria-label="Previous hero image" onClick={() => setHeroIndex((i) => (i - 1 + heroImages.length) % heroImages.length)}
+          className="absolute left-2 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 backdrop-blur transition-colors hover:bg-white/20 sm:flex sm:left-4">
           <ChevronLeft className="h-5 w-5 text-white" />
         </button>
-        <button onClick={() => setHeroIndex((i) => (i + 1) % heroImages.length)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white/10 backdrop-blur hover:bg-white/20 flex items-center justify-center transition-colors">
+        <button aria-label="Next hero image" onClick={() => setHeroIndex((i) => (i + 1) % heroImages.length)}
+          className="absolute right-2 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 backdrop-blur transition-colors hover:bg-white/20 sm:flex sm:right-4">
           <ChevronRight className="h-5 w-5 text-white" />
         </button>
 
         {/* Carousel dots */}
         <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-20 flex gap-2">
           {heroImages.map((_, i) => (
-            <button key={i} onClick={() => setHeroIndex(i)}
+            <button key={i} aria-label={`Show hero image ${i + 1}`} onClick={() => setHeroIndex(i)}
               className={`h-1.5 rounded-full transition-all ${i === heroIndex ? "w-8 bg-amber-400" : "w-2 bg-white/40"}`} />
           ))}
         </div>
 
         {/* Hero content */}
-        <div className="relative z-10 container mx-auto px-4 lg:px-8 pt-20 pb-28">
-          <motion.div className="max-w-4xl mx-auto text-center" initial="hidden" animate="show" variants={stagger}>
+        <div className="relative z-10 container mx-auto min-w-0 px-4 pt-20 pb-28 lg:px-8">
+          <motion.div className="mx-auto w-full min-w-0 max-w-4xl overflow-hidden text-center" initial="hidden" animate="show" variants={stagger}>
 
-            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-amber-500/20 backdrop-blur-md border border-amber-400/30 rounded-full">
+            <motion.div variants={fadeUp} className="mx-auto mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-amber-400/30 bg-amber-500/20 px-3 py-2 backdrop-blur-md sm:mb-6 sm:px-4">
               <motion.span animate={{ rotate: [0, 15, -10, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
                 <MapPin className="h-4 w-4 text-amber-400" />
               </motion.span>
-              <span className="text-sm font-bold text-amber-200">La Paz, Iloilo City · Verified Listings</span>
+              <span className="min-w-0 truncate text-xs font-bold text-amber-200 sm:text-sm">La Paz, Iloilo City · Verified Listings</span>
             </motion.div>
 
-            <motion.h1 variants={fadeUp} className="text-5xl md:text-6xl lg:text-7xl font-black mb-4 leading-[1.05] tracking-tight text-white">
+            <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 leading-[1.05] tracking-tight text-white">
               Find Your{" "}
               <span className="relative inline-block">
                 <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">Perfect Home</span>
@@ -328,26 +328,26 @@ export function Landing() {
               <br />in La Paz
             </motion.h1>
 
-            <motion.p variants={fadeUp} className="text-lg md:text-xl text-white/75 mb-10 max-w-2xl mx-auto leading-relaxed">
+            <motion.p variants={fadeUp} className="mx-auto mb-7 max-w-2xl text-base leading-relaxed text-white/75 sm:mb-10 sm:text-lg md:text-xl">
               Browse verified apartment listings, compare locations on a live map, and find your ideal rental — all in one platform.
             </motion.p>
 
             {/* ── Search panel ── */}
-            <motion.div variants={fadeUp} className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 overflow-hidden max-w-3xl mx-auto">
-              <form onSubmit={handleLandingSearch}>
+            <motion.div variants={fadeUp} className="mx-auto w-full min-w-0 max-w-3xl overflow-hidden rounded-2xl border border-white/50 bg-white/95 shadow-2xl backdrop-blur-xl">
+              <form className="min-w-0" onSubmit={handleLandingSearch}>
                 {/* Main search bar */}
-                <div className="flex items-center gap-3 p-3">
-                  <div className="relative flex-1">
+                <div className="flex flex-col items-stretch gap-2 p-3 sm:flex-row sm:items-center sm:gap-3">
+                  <div className="relative min-w-0 flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-amber-500" />
                     <input
                       value={landingSearch}
                       onChange={(e) => setLandingSearch(e.target.value)}
                       placeholder="Search by area, address, or apartment name..."
-                      className="w-full h-13 rounded-xl bg-amber-50/60 border border-amber-100 pl-12 pr-4 py-3.5 text-slate-800 font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-base"
+                      className="h-13 min-w-0 w-full rounded-xl border border-amber-100 bg-amber-50/60 py-3.5 pl-12 pr-4 text-base font-medium text-slate-800 placeholder:text-slate-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
                     />
                   </div>
                   <button type="button" onClick={() => setShowFilters(!showFilters)}
-                    className={`relative flex items-center gap-2 px-4 py-3.5 rounded-xl border font-semibold text-sm transition-all ${
+                    className={`relative flex w-full items-center justify-center gap-2 px-4 py-3.5 rounded-xl border font-semibold text-sm transition-all sm:w-auto ${
                       showFilters || activeFiltersCount > 0
                         ? "bg-amber-100 border-amber-300 text-amber-800"
                         : "bg-slate-50 border-slate-200 text-slate-600 hover:border-amber-300"
@@ -361,7 +361,7 @@ export function Landing() {
                     )}
                   </button>
                   <Button type="submit"
-                    className="px-6 py-3.5 h-auto bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl font-bold text-base shadow-lg whitespace-nowrap">
+                    className="h-auto w-full whitespace-nowrap rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-3.5 text-base font-bold text-white shadow-lg hover:from-amber-600 hover:to-orange-700 sm:w-auto">
                     Search
                   </Button>
                 </div>
@@ -376,7 +376,7 @@ export function Landing() {
                       transition={{ duration: 0.25 }}
                       className="overflow-hidden"
                     >
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-3 pb-3 border-t border-slate-100 pt-3">
+                      <div className="grid grid-cols-1 gap-3 border-t border-slate-100 px-3 pb-3 pt-3 sm:grid-cols-2 md:grid-cols-4">
                         <div>
                           <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">
                             <DollarSign className="inline h-3 w-3 mr-1" />Budget
@@ -434,7 +434,7 @@ export function Landing() {
               </form>
             </motion.div>
 
-            <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-3 mt-6 text-sm text-white/70">
+            <motion.div variants={fadeUp} className="mt-5 flex flex-wrap justify-center gap-2 px-6 text-xs text-white/70 sm:mt-6 sm:gap-3 sm:px-0 sm:text-sm">
               <span className="font-semibold text-white/50">Popular:</span>
               {["Divinagracia", "Sto. Rosario", "Near CPU", "Near schools"].map((s) => (
                 <button key={s} type="button"

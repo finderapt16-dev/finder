@@ -1,19 +1,21 @@
 import { useAuth } from "@/app/shared/contexts/AuthContext";
+import { lazy, Suspense } from "react";
 import { Navigate } from "react-router-dom";
-import { AdminDashboard } from "@/app/admin/pages/AdminDashboard";
-import { LandlordDashboard } from "@/app/landlord/pages/LandlordDashboard";
-import { StudentEmployeeDashboard } from "@/app/tenant/pages/StudentEmployeeDashboard";
 import { isTenantRole } from "@/app/shared/services/authService";
+
+const AdminDashboard = lazy(() => import("@/app/admin/pages/AdminDashboard").then((module) => ({ default: module.AdminDashboard })));
+const LandlordDashboard = lazy(() => import("@/app/landlord/pages/LandlordDashboard").then((module) => ({ default: module.LandlordDashboard })));
+const StudentEmployeeDashboard = lazy(() => import("@/app/tenant/pages/StudentEmployeeDashboard").then((module) => ({ default: module.StudentEmployeeDashboard })));
+
+function DashboardLoader() {
+  return <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 text-center text-sm font-semibold text-slate-600">Loading your dashboard...</div>;
+}
 
 export function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 text-center text-sm font-semibold text-slate-600">
-        Loading your dashboard...
-      </div>
-    );
+    return <DashboardLoader />;
   }
 
   // Redirect to login if not authenticated
@@ -23,15 +25,15 @@ export function Dashboard() {
 
   // Show appropriate dashboard based on role
   if (user?.role === "admin") {
-    return <AdminDashboard />;
+    return <Suspense fallback={<DashboardLoader />}><AdminDashboard /></Suspense>;
   }
 
   if (user?.role === "landlord") {
-    return <LandlordDashboard />;
+    return <Suspense fallback={<DashboardLoader />}><LandlordDashboard /></Suspense>;
   }
 
   if (isTenantRole(user?.role)) {
-    return <StudentEmployeeDashboard />;
+    return <Suspense fallback={<DashboardLoader />}><StudentEmployeeDashboard /></Suspense>;
   }
 
   return (

@@ -1,19 +1,33 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
 import { hasSupabaseConfig } from "@/lib/supabaseclient";
 import { AuthProvider } from "./shared/contexts/AuthContext";
 import { router } from "./routes";
 
 function App() {
+  const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+
   useEffect(() => {
     const registerServiceWorker = () => {
       navigator.serviceWorker
         .register("/sw.js")
         .then((registration) => {
-          console.log("SW registered: ", registration);
+          const captureWaitingWorker = () => {
+            if (registration.waiting && navigator.serviceWorker.controller) {
+              setWaitingWorker(registration.waiting);
+            }
+          };
+
+          captureWaitingWorker();
+          registration.addEventListener("updatefound", () => {
+            const installingWorker = registration.installing;
+            installingWorker?.addEventListener("statechange", () => {
+              if (installingWorker.state === "installed") captureWaitingWorker();
+            });
+          });
         })
         .catch((registrationError) => {
-          console.log("SW registration failed: ", registrationError);
+          console.error("Service worker registration failed.", registrationError);
         });
     };
 
@@ -37,24 +51,17 @@ function App() {
       }
     }
 
-    // Add manifest link
-    const manifestLink = document.createElement("link");
-    manifestLink.rel = "manifest";
-    manifestLink.href = "/manifest.json";
-    document.head.appendChild(manifestLink);
-
-    // Add theme color meta tag
-    const themeColorMeta = document.createElement("meta");
-    themeColorMeta.name = "theme-color";
-    themeColorMeta.content = "#0f172a";
-    document.head.appendChild(themeColorMeta);
-
     return () => {
       window.removeEventListener("load", registerServiceWorker);
-      document.head.removeChild(manifestLink);
-      document.head.removeChild(themeColorMeta);
     };
   }, []);
+
+  useEffect(() => {
+    if (!waitingWorker) return;
+    const handleControllerChange = () => window.location.reload();
+    navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange, { once: true });
+    return () => navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
+  }, [waitingWorker]);
 
   if (!hasSupabaseConfig) {
     return (
@@ -81,10 +88,28 @@ function App() {
     );
   }
 
-  return (
+  const app = (
     <AuthProvider>
       <RouterProvider router={router} />
     </AuthProvider>
+  );
+
+  return (
+    <>
+      {app}
+      {waitingWorker && (
+        <div className="fixed inset-x-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-[200] mx-auto flex max-w-md items-center gap-3 rounded-xl border border-orange-200 bg-white p-3 shadow-2xl" role="status">
+          <p className="min-w-0 flex-1 text-sm font-semibold text-slate-700">A new AptFindr version is ready.</p>
+          <button
+            type="button"
+            className="shrink-0 rounded-lg bg-orange-500 px-4 py-2 text-sm font-bold text-white hover:bg-orange-600"
+            onClick={() => waitingWorker.postMessage({ type: "SKIP_WAITING" })}
+          >
+            Update
+          </button>
+        </div>
+      )}
+    </>
   );
 }
 

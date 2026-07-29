@@ -126,6 +126,37 @@ main.app-shell-content {
 
 }
 
+@media (max-width: 639px) {
+  .app-shell-content,
+  main.app-shell-content {
+    padding-right: max(1rem, env(safe-area-inset-right)) !important;
+    padding-left: max(1rem, env(safe-area-inset-left)) !important;
+  }
+
+  .app-shell-content-mobile-nav {
+    padding-top: max(4.25rem, calc(3.75rem + env(safe-area-inset-top))) !important;
+    padding-bottom: max(5.5rem, calc(4.75rem + env(safe-area-inset-bottom))) !important;
+  }
+
+  .app-shell-content :where(section, article)[class*="p-6"],
+  .app-shell-content :where(section, article)[class*="p-7"],
+  .app-shell-content :where(section, article)[class*="p-8"] {
+    padding: 1rem !important;
+  }
+
+  .app-shell-content :where(h1, h2)[class*="text-4xl"],
+  .app-shell-content :where(h1, h2)[class*="text-5xl"],
+  .app-shell-content :where(h1, h2)[class*="text-6xl"] {
+    font-size: clamp(1.65rem, 8vw, 2.25rem) !important;
+    line-height: 1.15 !important;
+  }
+
+  .app-sidebar-drawer {
+    width: min(18rem, 88vw) !important;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 .app-sidebar {
   --sidebar-orange: #f97316;
   --sidebar-orange-deep: #ea580c;
