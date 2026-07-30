@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { Label } from "../ui/label";
+import { pruneStoragePrefix, readStoredValue, writeStoredValue } from "../../utils/browserStorage";
 
 // Fix for default marker icon in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -27,6 +28,13 @@ type GeocodedLocation = {
 
 const geocodeMemoryCache = new Map<string, GeocodedLocation>();
 const GEOCODE_CACHE_PREFIX = "rentiloilo:geocode:";
+const GEOCODE_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+function isGeocodedLocation(value: unknown): value is GeocodedLocation {
+  if (!value || typeof value !== "object") return false;
+  const location = value as Partial<GeocodedLocation>;
+  return Number.isFinite(location.lat) && Number.isFinite(location.lng) && typeof location.label === "string";
+}
 
 export function LocationPicker({
   lat,
@@ -123,12 +131,10 @@ export function LocationPicker({
     const cacheKey = query.toLocaleLowerCase();
     let cached = geocodeMemoryCache.get(cacheKey);
     if (!cached) {
-      try {
-        const stored = localStorage.getItem(`${GEOCODE_CACHE_PREFIX}${encodeURIComponent(cacheKey)}`);
-        if (stored) cached = JSON.parse(stored) as GeocodedLocation;
-      } catch {
-        // Storage may be unavailable; the in-memory cache still prevents duplicate lookups.
-      }
+      cached = readStoredValue(`${GEOCODE_CACHE_PREFIX}${encodeURIComponent(cacheKey)}`, {
+        version: 1,
+        validate: isGeocodedLocation,
+      }) ?? undefined;
     }
 
     if (cached && Number.isFinite(cached.lat) && Number.isFinite(cached.lng)) {
@@ -171,11 +177,12 @@ export function LocationPicker({
 
         const location = { lat: nextLat, lng: nextLng, label: first.display_name || query };
         geocodeMemoryCache.set(cacheKey, location);
-        try {
-          localStorage.setItem(`${GEOCODE_CACHE_PREFIX}${encodeURIComponent(cacheKey)}`, JSON.stringify(location));
-        } catch {
-          // A successful lookup should still update the map if storage is unavailable.
-        }
+        writeStoredValue(`${GEOCODE_CACHE_PREFIX}${encodeURIComponent(cacheKey)}`, location, {
+          version: 1,
+          ttlMs: GEOCODE_CACHE_TTL_MS,
+          maxBytes: 4_000,
+        });
+        pruneStoragePrefix(GEOCODE_CACHE_PREFIX, 100);
         updateGeocodeStatus("found");
         setMatchedAddress(location.label);
         onLocationChangeRef.current(location.lat, location.lng);

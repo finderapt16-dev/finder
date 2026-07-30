@@ -30,6 +30,7 @@ import {
   DEFAULT_LA_PAZ_MAP_CENTER,
   hasValidApartmentCoordinates,
 } from "@/app/shared/utils/mapCoordinates";
+import { readStoredValue, removeStoredValue, writeStoredValue } from "@/app/shared/utils/browserStorage";
 import { supabase } from "@/lib/supabaseclient";
 import {
   AlertCircle,
@@ -73,7 +74,7 @@ type Room = {
 };
 
 type PropertyDraft = {
-  version: 1;
+  version: 2;
   savedAt: string;
   currentStep: number;
   formData: Partial<Apartment>;
@@ -96,6 +97,13 @@ type PropertyDraft = {
 type DraftStatus = "idle" | "saving" | "saved" | "restored" | "error";
 
 const getDraftStorageKey = (userId: string) => `rentiloilo:add-property-draft:${userId}`;
+const DRAFT_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+
+function isPropertyDraft(value: unknown): value is PropertyDraft {
+  if (!value || typeof value !== "object") return false;
+  const draft = value as Partial<PropertyDraft>;
+  return draft.version === 2 && typeof draft.savedAt === "string" && Number.isFinite(draft.currentStep);
+}
 
 const makeRoom = (): Room => ({
   id: Date.now().toString() + Math.random(),
@@ -340,7 +348,7 @@ export function AddApartment() {
   };
 
   const discardDraft = (resetForm = true) => {
-    if (user?.id) localStorage.removeItem(getDraftStorageKey(user.id));
+    if (user?.id) removeStoredValue(getDraftStorageKey(user.id));
     setPendingDraft(null);
     setDraftReady(true);
     setDraftStatus("idle");
@@ -373,21 +381,15 @@ export function AddApartment() {
     setDraftReady(false);
     setPendingDraft(null);
     try {
-      const savedDraft = localStorage.getItem(getDraftStorageKey(user.id));
-      if (!savedDraft) {
-        setDraftReady(true);
-        return;
-      }
-      const parsed = JSON.parse(savedDraft) as PropertyDraft;
-      if (parsed.version !== 1 || !parsed.savedAt) {
-        localStorage.removeItem(getDraftStorageKey(user.id));
+      const parsed = readStoredValue(getDraftStorageKey(user.id), { version: 2, validate: isPropertyDraft });
+      if (!parsed) {
         setDraftReady(true);
         return;
       }
       setPendingDraft(parsed);
     } catch (error) {
       console.error("Unable to read the Add Property draft:", error);
-      localStorage.removeItem(getDraftStorageKey(user.id));
+      removeStoredValue(getDraftStorageKey(user.id));
       setDraftReady(true);
     }
   }, [user?.id]);
@@ -405,7 +407,7 @@ export function AddApartment() {
     const hasLocalRoomImages = rooms.some((room) => room.images.some((image) => !/^https?:\/\//i.test(image)));
     const { image: _image, images: _images, ...safeFormData } = formData;
     const draft: PropertyDraft = {
-      version: 1,
+      version: 2,
       savedAt: new Date().toISOString(),
       currentStep,
       formData: safeFormData,
@@ -414,14 +416,18 @@ export function AddApartment() {
       utilitiesInput,
       features,
       featureInput,
-      verificationData,
+      verificationData: INITIAL_VERIFICATION_DATA,
       uploadedImages: persistentImages,
       requiresImageReupload: hasLocalPropertyImages || hasLocalRoomImages || imageReuploadRequired,
     };
 
     try {
-      localStorage.setItem(getDraftStorageKey(user.id), JSON.stringify(draft));
-      if (updateStatus) setDraftStatus("saved");
+      const saved = writeStoredValue(getDraftStorageKey(user.id), draft, {
+        version: 2,
+        ttlMs: DRAFT_TTL_MS,
+        maxBytes: 750_000,
+      });
+      if (updateStatus) setDraftStatus(saved ? "saved" : "error");
     } catch (error) {
       console.error("Unable to save the Add Property draft:", error);
       if (updateStatus) setDraftStatus("error");
@@ -437,7 +443,7 @@ export function AddApartment() {
 
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     if (!hasDraftContent) {
-      localStorage.removeItem(getDraftStorageKey(user.id));
+      removeStoredValue(getDraftStorageKey(user.id));
       setDraftStatus("idle");
       return;
     }
@@ -785,7 +791,7 @@ export function AddApartment() {
       await refreshApartments();
       submissionCompleteRef.current = true;
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-      localStorage.removeItem(getDraftStorageKey(user.id));
+      removeStoredValue(getDraftStorageKey(user.id));
       setDraftStatus("idle");
       toast.success("Apartment added successfully!");
       navigate("/dashboard");

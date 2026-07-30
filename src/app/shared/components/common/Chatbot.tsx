@@ -7,6 +7,7 @@ import { useApartmentsContext } from "../../contexts/ApartmentsContext";
 import { useAuth } from "../../contexts/AuthContext";
 import type { UserRole } from "../../services/authService";
 import { useFavorites } from "../../hooks/useFavorites";
+import { readStoredValue, writeStoredValue } from "../../utils/browserStorage";
 import {
   fetchApartmentViews,
   fetchFavorites as fetchDashboardFavorites,
@@ -48,22 +49,28 @@ function serializeMessages(messages: Message[]) {
   }));
 }
 
-function restoreMessages(rawValue: string | null): Message[] {
-  if (!rawValue) return [];
+function isStoredMessageList(value: unknown): value is Array<Omit<Message, "timestamp"> & { timestamp: string }> {
+  return Array.isArray(value) && value.every((message) => {
+    if (!message || typeof message !== "object") return false;
+    const candidate = message as Record<string, unknown>;
+    return (
+      typeof candidate.id === "string" &&
+      typeof candidate.text === "string" &&
+      (candidate.sender === "user" || candidate.sender === "bot") &&
+      typeof candidate.timestamp === "string"
+    );
+  });
+}
 
-  try {
-    const parsed = JSON.parse(rawValue) as Array<Omit<Message, "timestamp"> & { timestamp: string }>;
-    if (!Array.isArray(parsed)) return [];
-    return parsed
+function restoreMessages(parsed: Array<Omit<Message, "timestamp"> & { timestamp: string }> | null): Message[] {
+  if (!parsed) return [];
+  return parsed
       .filter((message) => message.sender === "user" || message.sender === "bot")
       .slice(-CHAT_HISTORY_LIMIT)
       .map((message) => ({
         ...message,
         timestamp: Number.isNaN(Date.parse(message.timestamp)) ? new Date() : new Date(message.timestamp),
       }));
-  } catch {
-    return [];
-  }
 }
 
 interface ChatbotProps {
@@ -180,14 +187,14 @@ export function Chatbot({ userRole }: ChatbotProps) {
       return;
     }
 
-    setMessages(restoreMessages(localStorage.getItem(key)));
+    setMessages(restoreMessages(readStoredValue(key, { version: 1, validate: isStoredMessageList })));
     setHydratedStorageKey(key);
   }, [resolvedRole, user?.id]);
 
   useEffect(() => {
     const key = chatStorageKey(user?.id, resolvedRole);
     if (!key || hydratedStorageKey !== key || messages.length === 0) return;
-    localStorage.setItem(key, JSON.stringify(serializeMessages(messages)));
+    writeStoredValue(key, serializeMessages(messages), { version: 1, maxBytes: 150_000 });
   }, [hydratedStorageKey, messages, resolvedRole, user?.id]);
 
   useEffect(() => {

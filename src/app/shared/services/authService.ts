@@ -341,38 +341,13 @@ async function uploadLandlordSignupDocuments(userId: string, input: CreateUserIn
 }
 
 export function readCurrentUserFromStorage(): User | null {
-  const rawValue = localStorage.getItem(CURRENT_SESSION_KEY);
-  if (!rawValue) return null;
-
-  try {
-    const parsed = JSON.parse(rawValue) as unknown;
-    if (!isRecord(parsed)) return null;
-
-    return normalizeUser({
-      id: typeof parsed.id === 'string' ? parsed.id : '',
-      auth_id: typeof parsed.authId === 'string' ? parsed.authId : undefined,
-      name: typeof parsed.name === 'string' ? parsed.name : '',
-      email: typeof parsed.email === 'string' ? parsed.email : '',
-      middle_initial: typeof parsed.middleInitial === 'string' ? parsed.middleInitial : undefined,
-      address: typeof parsed.address === 'string' ? parsed.address : undefined,
-      role: typeof parsed.role === 'string' ? parsed.role : '',
-      status: typeof parsed.status === 'string' ? parsed.status : '',
-      created_at: typeof parsed.createdAt === 'string' ? parsed.createdAt : undefined,
-      updated_at: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : undefined,
-      is_verified: typeof parsed.isVerified === 'boolean' ? parsed.isVerified : undefined,
-    });
-  } catch {
-    return null;
-  }
+  return null;
 }
 
-export function persistCurrentUser(user: User | null): void {
-  if (user === null) {
-    localStorage.removeItem(CURRENT_SESSION_KEY);
-    return;
-  }
-
-  localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(user));
+export function persistCurrentUser(_user: User | null): void {
+  // Supabase Auth and the database profile are authoritative. Remove the
+  // historical profile cache so roles and permissions can never come from it.
+  if (typeof window !== 'undefined') localStorage.removeItem(CURRENT_SESSION_KEY);
 }
 
 export async function fetchAppUsers(): Promise<User[]> {

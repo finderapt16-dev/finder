@@ -325,12 +325,12 @@ function calculatePopularityScore(
   let score = 0;
 
   // View count (up to 50 views)
-  const views = context?.apartmentViewCounts?.get(apartment.id) ?? getApartmentViewCount(apartment.id);
+  const views = context?.apartmentViewCounts?.get(apartment.id) ?? 0;
   const normalizedViews = Math.min(views / 50, 1);
   score += normalizedViews * 40;
 
   // Favorite count (up to 20 favorites)
-  const favorites = context?.apartmentFavoriteCounts?.get(apartment.id) ?? getApartmentFavoriteCount(apartment.id);
+  const favorites = context?.apartmentFavoriteCounts?.get(apartment.id) ?? 0;
   const normalizedFavorites = Math.min(favorites / 20, 1);
   score += normalizedFavorites * 40;
 
@@ -387,56 +387,6 @@ function calculateActivityScore(apartment: Apartment): number {
 }
 
 // ============================================================================
-// DATA ACCESS HELPERS
-// ============================================================================
-
-/**
- * Get apartment view count from localStorage (or Supabase if available)
- */
-function getApartmentViewCount(apartmentId: string): number {
-  try {
-    const views = JSON.parse(localStorage.getItem('apartmentViews') || '[]');
-    return views.filter((v: any) => v.apartmentId === apartmentId || v.apartment_id === apartmentId).length;
-  } catch {
-    return 0;
-  }
-}
-
-/**
- * Get apartment favorite count from localStorage (or Supabase if available)
- */
-function getApartmentFavoriteCount(apartmentId: string): number {
-  try {
-    // Try new format first
-    const favs = JSON.parse(localStorage.getItem('favorites') || '[]');
-    return favs.filter((f: any) => f.apartmentId === apartmentId || f.apartment_id === apartmentId).length;
-  } catch {
-    return 0;
-  }
-}
-
-/**
- * Get landlord verification status from localStorage or context
- */
-function getLandlordVerificationMap(verificationMap?: Map<string, boolean>): Map<string, boolean> {
-  const map = new Map<string, boolean>(verificationMap);
-
-  // Try to populate from localStorage users
-  try {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    users.forEach((user: any) => {
-      if (user.id && (user.isVerified === true || user.is_verified === true)) {
-        map.set(user.id, true);
-      }
-    });
-  } catch {
-    // Silently continue
-  }
-
-  return map;
-}
-
-// ============================================================================
 // MAIN RANKING FUNCTIONS
 // ============================================================================
 
@@ -448,7 +398,7 @@ export function calculateRankingScoreBreakdown(
   preferences?: TenantPreferences,
   context?: RankingContext
 ): RankingScoreBreakdown {
-  const verificationMap = getLandlordVerificationMap(context?.landlordVerifications);
+  const verificationMap = new Map<string, boolean>(context?.landlordVerifications);
 
   const locationScore = calculateLocationScore(apartment, preferences);
   const budgetScore = calculateBudgetScore(apartment, preferences);

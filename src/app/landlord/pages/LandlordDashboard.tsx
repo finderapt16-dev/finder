@@ -17,6 +17,7 @@ import {
   type ApartmentStatus
 } from "@/app/shared/data/apartments";
 import { deleteUser as deleteUserAccount } from "@/app/shared/services/authService";
+import { generateBackupCodes } from "@/app/shared/services/securityService";
 import {
   createAppealWithEvidence,
   createAuditLog,
@@ -906,17 +907,6 @@ export function LandlordDashboard() {
   };
 
   const [alerts, setAlerts] = useState<LandlordAlerts>(() => {
-    if (user) {
-      const storageKey = `landlordAlerts_${user.id}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          return JSON.parse(saved) as LandlordAlerts;
-        } catch {
-          // Fall through to default
-        }
-      }
-    }
     return {
       reviewPush: true,
       reportPush: true,
@@ -993,17 +983,6 @@ export function LandlordDashboard() {
   };
 
   const [security, setSecurity] = useState<LandlordSecurity>(() => {
-    if (user) {
-      const storageKey = `landlordSecurity_${user.id}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          return { ...(JSON.parse(saved) as LandlordSecurity), activeDevices: [], passwordLastChanged: "" };
-        } catch {
-          // Fall through to default
-        }
-      }
-    }
     return {
       twoFactor: false,
       twoFactorMethod: "sms",
@@ -1029,10 +1008,11 @@ export function LandlordDashboard() {
     let active = true;
     const loadSettingsData = async () => {
       if (!user?.id) return;
-      const [userRow, landlordRow, preferenceSections] = await Promise.all([
+      const [userRow, landlordRow, preferenceSections, mfaFactors] = await Promise.all([
         fetchUserById(user.id),
         fetchLandlordProfile(user.id),
         fetchUserPreferenceSections(user.id),
+        supabase.auth.mfa.listFactors(),
       ]);
       if (!active) return;
       const fullName = (userRow?.name || user.name || "").trim().split(/\s+/).filter(Boolean);
@@ -1070,7 +1050,18 @@ export function LandlordDashboard() {
         setAlerts((current) => ({ ...current, ...preferenceSections.landlordAlerts as Partial<LandlordAlerts> }));
       }
       if (preferenceSections.landlordSecurity && typeof preferenceSections.landlordSecurity === "object" && !Array.isArray(preferenceSections.landlordSecurity)) {
-        setSecurity((current) => ({ ...current, ...preferenceSections.landlordSecurity as Partial<LandlordSecurity>, activeDevices: [] }));
+        setSecurity((current) => ({
+          ...current,
+          ...preferenceSections.landlordSecurity as Partial<LandlordSecurity>,
+          twoFactor: mfaFactors.data?.totp.some((factor) => factor.status === "verified") ?? false,
+          activeDevices: [],
+        }));
+      } else {
+        setSecurity((current) => ({
+          ...current,
+          twoFactor: mfaFactors.data?.totp.some((factor) => factor.status === "verified") ?? false,
+          activeDevices: [],
+        }));
       }
     };
     void loadSettingsData();
@@ -1078,25 +1069,12 @@ export function LandlordDashboard() {
   }, [user?.id]);
 
   const updateProfile = (updater: (prev: typeof profile) => typeof profile) => {
-    setProfile((p) => {
-      const updated = updater(p);
-      // Save to localStorage
-      if (user) {
-        const storageKey = `landlordProfile_${user.id}`;
-        localStorage.setItem(storageKey, JSON.stringify(updated));
-      }
-      return updated;
-    });
+    setProfile(updater);
   };
 
   const setA = (key: string, val: unknown) => {
     setAlerts((p) => {
       const updated = { ...p, [key]: val };
-      // Save to localStorage
-      if (user) {
-        const storageKey = `landlordAlerts_${user.id}`;
-        localStorage.setItem(storageKey, JSON.stringify(updated));
-      }
       return updated;
     });
   };
@@ -1104,11 +1082,6 @@ export function LandlordDashboard() {
   const setB = (key: string, val: unknown) => {
     setBusiness((p) => {
       const updated = { ...p, [key]: val };
-      // Save to localStorage
-      if (user) {
-        const storageKey = `landlordBusiness_${user.id}`;
-        localStorage.setItem(storageKey, JSON.stringify(updated));
-      }
       return updated;
     });
   };
@@ -1116,11 +1089,6 @@ export function LandlordDashboard() {
   const updateSecurity = (updater: (prev: typeof security) => typeof security) => {
     setSecurity((p) => {
       const updated = updater(p);
-      // Save to localStorage
-      if (user) {
-        const storageKey = `landlordSecurity_${user.id}`;
-        localStorage.setItem(storageKey, JSON.stringify(updated));
-      }
       return updated;
     });
   };
@@ -1196,8 +1164,6 @@ export function LandlordDashboard() {
           throw new Error("Unable to sync profile information.");
         }
 
-        const storageKey = `landlordProfile_${user.id}`;
-        localStorage.setItem(storageKey, JSON.stringify(profile));
         setSavedProfile(profile);
 
         addAuditLog("PROFILE_UPDATED", `Updated profile information`);
@@ -1251,8 +1217,6 @@ export function LandlordDashboard() {
 
     if (user) {
       try {
-        const storageKey = `landlordBusiness_${user.id}`;
-        localStorage.setItem(storageKey, JSON.stringify(business));
         await updateUser(user.id, {
           name: user.name,
           email: user.email,
@@ -1341,15 +1305,6 @@ export function LandlordDashboard() {
   };
 
   const handleLogout = () => {
-    // Clear all session data
-    if (user?.id) {
-      localStorage.removeItem(`landlordProfile_${user.id}`);
-      localStorage.removeItem(`landlordAlerts_${user.id}`);
-      localStorage.removeItem(`landlordBusiness_${user.id}`);
-      localStorage.removeItem(`landlordSecurity_${user.id}`);
-      localStorage.removeItem(`landlordSessions_${user.id}`);
-      localStorage.removeItem(`landlordAuditLog_${user.id}`);
-    }
     logout?.();
     navigate("/");
   };
@@ -1379,15 +1334,6 @@ export function LandlordDashboard() {
   };
 
   // ── 2FA Setup ────────────────────────────────────────────────────────────
-  const generate2FASecret = (): string => {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  };
-
-  const verify2FACode = (code: string): boolean => {
-    // In production, use proper TOTP verification
-    return code.length === 6 && /^\d+$/.test(code);
-  };
-
   // ── Email Validation ─────────────────────────────────────────────────────
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1519,6 +1465,7 @@ export function LandlordDashboard() {
   });
   const [twoFAState, setTwoFAState] = useState({
     setupMode: false,
+    factorId: "",
     secret: "",
     verificationCode: "",
     confirmed: false,
@@ -1576,16 +1523,25 @@ export function LandlordDashboard() {
   };
 
   // ── 2FA Setup Handler ────────────────────────────────────────────────────
-  const handleSetup2FA = () => {
-    const secret = generate2FASecret();
-    setTwoFAState((prev) => ({
-      ...prev,
-      setupMode: true,
-      secret: secret,
-      verificationCode: "",
-      confirmed: false,
-    }));
-    addAuditLog("2FA_SETUP_INITIATED", "User started 2FA setup process");
+  const handleSetup2FA = async () => {
+    try {
+      const { data, error } = await supabase.auth.mfa.enroll({
+        factorType: "totp",
+        friendlyName: "RentIloilo authenticator",
+      });
+      if (error) throw error;
+      setTwoFAState((prev) => ({
+        ...prev,
+        setupMode: true,
+        factorId: data.id,
+        secret: data.totp.secret,
+        verificationCode: "",
+        confirmed: false,
+      }));
+      addAuditLog("2FA_SETUP_INITIATED", "User started 2FA setup process");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to start 2FA setup.");
+    }
   };
 
   const handleVerify2FA = async () => {
@@ -1597,44 +1553,38 @@ export function LandlordDashboard() {
     setTwoFAState((prev) => ({ ...prev, isVerifying: true }));
 
     try {
-      const isValid = verify2FACode(twoFAState.verificationCode);
+      if (!twoFAState.factorId) throw new Error("The 2FA enrollment session has expired. Please start again.");
+      const { error: verificationError } = await supabase.auth.mfa.challengeAndVerify({
+        factorId: twoFAState.factorId,
+        code: twoFAState.verificationCode,
+      });
+      if (verificationError) throw verificationError;
 
-      if (!isValid) {
-        toast.error("Invalid verification code");
-        addAuditLog("2FA_VERIFICATION_FAILED", "Invalid code provided");
-        setTwoFAState((prev) => ({ ...prev, isVerifying: false }));
-        return;
-      }
-
-      // Enable 2FA in security settings
-      updateSecurity((p) => ({
-        ...p,
-        twoFactor: true,
-      }));
-
-      // Save backup codes
-      const backupCodes = Array.from({ length: 10 }, () =>
-        Math.random().toString(36).substring(2, 8).toUpperCase()
-      );
-      if (user?.id) {
-        localStorage.setItem(
-          `2fa_backup_codes_${user.id}`,
-          JSON.stringify(backupCodes)
-        );
-      }
+      if (!user?.id) throw new Error("Authenticated landlord profile not found.");
+      const backupCodes = await generateBackupCodes();
+      const nextSecurity = { ...security, twoFactor: true };
+      const { activeDevices: _activeDevices, ...persistentSecurity } = nextSecurity;
+      await saveUserPreferenceSection(user.id, "landlordSecurity", persistentSecurity);
+      setSecurity(nextSecurity);
 
       addAuditLog("2FA_ENABLED", "Two-factor authentication successfully enabled");
-      toast.success("2FA enabled successfully! Save your backup codes in a safe place.");
-
-      // Show backup codes
-      alert(
-        "Backup Codes (save these in a safe place):\n\n" +
-          backupCodes.join("\n") +
-          "\n\nYou can use these codes if you lose access to your 2FA device."
+      const codeText = backupCodes.join("\n");
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(codeText);
+        copied = true;
+      } catch {
+        // The one-time prompt below still allows an explicit manual copy.
+      }
+      window.prompt(
+        `Backup codes are shown only once${copied ? " and have been copied to your clipboard" : ""}. Save them securely, then close this dialog:`,
+        codeText,
       );
+      toast.success("2FA enabled. Your one-time backup codes are no longer retained by this page.");
 
       setTwoFAState({
         setupMode: false,
+        factorId: "",
         secret: "",
         verificationCode: "",
         confirmed: true,
@@ -1649,8 +1599,10 @@ export function LandlordDashboard() {
   };
 
   const handleCancel2FASetup = () => {
+    if (twoFAState.factorId) void supabase.auth.mfa.unenroll({ factorId: twoFAState.factorId });
     setTwoFAState({
       setupMode: false,
+      factorId: "",
       secret: "",
       verificationCode: "",
       confirmed: false,

@@ -296,7 +296,6 @@ export interface DashboardUserProfileDetails {
 type TableName = "app_users" | "apartments" | "apartment_views" | "favorites" | "reports" | "violations" | "notifications" | "audit_logs";
 
 const cacheKeyPrefix = "dashboard-supabase-cache";
-const tenantPreferencesStoragePrefix = "userPreferences_";
 
 export const defaultTenantPreferences: TenantPreferenceSettings = {
   preferredArea: "",
@@ -951,22 +950,6 @@ function normalizeTenantPreferences(
     bookingAlerts: getOptionalBooleanValue(source.bookingAlerts, fallback.bookingAlerts),
     updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : fallback.updatedAt,
   };
-}
-
-export function getTenantPreferencesStorageKey(userId: string): string {
-  return `${tenantPreferencesStoragePrefix}${userId}`;
-}
-
-export function getCachedTenantPreferences(userId?: string | null): TenantPreferenceSettings | null {
-  if (!userId || !hasWindow()) return null;
-  const cached = window.localStorage.getItem(getTenantPreferencesStorageKey(userId));
-  if (!cached) return null;
-  return normalizeTenantPreferences(safeJsonParse<Record<string, unknown> | null>(cached, null));
-}
-
-function cacheTenantPreferences(userId: string, preferences: TenantPreferenceSettings): void {
-  if (!hasWindow()) return;
-  window.localStorage.setItem(getTenantPreferencesStorageKey(userId), JSON.stringify(preferences));
 }
 
 function isMissingTenantPreferencesColumn(error: { code?: string; message?: string } | null): boolean {
@@ -1766,11 +1749,10 @@ export async function fetchPublicLandlordById(userId: string): Promise<Dashboard
 export async function fetchTenantPreferences(userId: string): Promise<TenantPreferenceSettings | null> {
   if (!userId) return null;
 
-  const cached = getCachedTenantPreferences(userId);
   const { data, error } = await supabase.from("app_users").select("preferences").eq("id", userId).maybeSingle();
 
   if (isMissingTenantPreferencesColumn(error)) {
-    return cached;
+    throw new Error("Tenant preferences are unavailable because the database schema is not up to date.");
   }
 
   if (error) {
@@ -1785,9 +1767,7 @@ export async function fetchTenantPreferences(userId: string): Promise<TenantPref
   const source = typeof stored === "object" && stored !== null && !Array.isArray(stored) && "tenant" in stored
     ? (stored as Record<string, unknown>).tenant
     : stored;
-  const preferences = normalizeTenantPreferences(source, cached ?? defaultTenantPreferences);
-  cacheTenantPreferences(userId, preferences);
-  return preferences;
+  return normalizeTenantPreferences(source, defaultTenantPreferences);
 }
 
 export async function saveTenantPreferences(
@@ -1798,7 +1778,7 @@ export async function saveTenantPreferences(
 
   const merged = normalizeTenantPreferences(
     {
-      ...(getCachedTenantPreferences(userId) ?? defaultTenantPreferences),
+      ...defaultTenantPreferences,
       ...preferences,
       updatedAt: new Date().toISOString(),
     },
@@ -1813,8 +1793,7 @@ export async function saveTenantPreferences(
 
   if (error) {
     if (isMissingTenantPreferencesColumn(error)) {
-      console.warn("Tenant preferences were cached locally because app_users.preferences is missing from the Supabase schema cache.");
-      return merged;
+      throw new Error("Tenant preferences cannot be saved because the database schema is not up to date.");
     }
 
     throw new Error(error.message || "Unable to save tenant preferences.");
@@ -1822,7 +1801,6 @@ export async function saveTenantPreferences(
 
   const savedRoot = typeof data === "object" && data !== null && !Array.isArray(data) ? data as Record<string, unknown> : {};
   const saved = normalizeTenantPreferences(savedRoot.tenant, merged);
-  cacheTenantPreferences(userId, saved);
   return saved;
 }
 

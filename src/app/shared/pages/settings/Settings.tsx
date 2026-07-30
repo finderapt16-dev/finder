@@ -138,17 +138,6 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
   const [profile, setProfile] = useState<UserSettingsProfile>(() => profileStateFromUser(user));
 
   const [alerts, setAlerts] = useState<UserAlerts>(() => {
-    if (user) {
-      const storageKey = `userAlerts_${user.id}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          return JSON.parse(saved) as UserAlerts;
-        } catch {
-          // Fall through to default app settings.
-        }
-      }
-    }
     return {
       newListings: true,
       priceDrop: true,
@@ -163,18 +152,6 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
   });
 
   const [security, setSecurity] = useState(() => {
-    if (user) {
-      const storageKey = `userSecurity_${user.id}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          return { passwordLastChanged: parsed.passwordLastChanged || "" };
-        } catch {
-          // Fall through to empty state.
-        }
-      }
-    }
     return { passwordLastChanged: "" };
   });
 
@@ -265,7 +242,6 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
   const setA = (key: keyof UserAlerts, val: unknown) => {
     setAlerts((p) => {
       const updated = { ...p, [key]: val };
-      if (user) localStorage.setItem(`userAlerts_${user.id}`, JSON.stringify(updated));
       return updated;
     });
   };
@@ -273,7 +249,6 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
   const updateSecurity = (updater: (prev: typeof security) => typeof security) => {
     setSecurity((p) => {
       const updated = updater(p);
-      if (user) localStorage.setItem(`userSecurity_${user.id}`, JSON.stringify(updated));
       return updated;
     });
   };

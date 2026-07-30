@@ -12,7 +12,6 @@ import {
 } from '../data/apartments';
 import { isTenantRole } from './authService';
 
-const CURRENT_USER_KEY = 'apartment_finder_current_user';
 const APARTMENT_SELECT =
   '*, apartment_images(url, is_primary, sort_order), apartment_rooms(id, name, room_type, sqft, max_occupants, rent, has_private_bath, bathroom_type, shared_bath_location, has_ac, is_occupied, status, description, images, created_at)';
 const APARTMENT_INSPECTION_SELECT = '*, apartment_images(*), apartment_rooms(*)';
@@ -157,43 +156,11 @@ const identityFromInput = (input?: UserIdentityInput): SessionUser | null => {
   };
 };
 
-const getStoredValue = (): SessionUser | null => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
+/** @deprecated Use AuthContext or resolveAppUserId(); authentication is asynchronous. */
+export const getCurrentSessionUser = (): SessionUser | null => null;
 
-  const rawValue = window.localStorage.getItem(CURRENT_USER_KEY);
-  if (!rawValue) {
-    return null;
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(rawValue);
-    if (isRecord(parsed) && typeof parsed.id === 'string') {
-      return {
-        id: parsed.id,
-        authId: toStringOrUndefined(parsed.authId) ?? toStringOrUndefined(parsed.auth_id),
-        email: toStringOrUndefined(parsed.email),
-        name: toStringOrUndefined(parsed.name),
-        role: toStringOrUndefined(parsed.role),
-      };
-    }
-
-    if (typeof parsed === 'string' && parsed.length > 0) {
-      return { id: parsed };
-    }
-  } catch {
-    if (rawValue.length > 0) {
-      return { id: rawValue };
-    }
-  }
-
-  return null;
-};
-
-export const getCurrentSessionUser = (): SessionUser | null => getStoredValue();
-
-export const getCurrentUserId = (): string | null => getStoredValue()?.id ?? null;
+/** @deprecated Use AuthContext or resolveAppUserId(); authentication is asynchronous. */
+export const getCurrentUserId = (): string | null => null;
 
 const normalizeApartmentRows = (rows: ApartmentRow[]): Apartment[] => rows.map((row) => apartmentRowToApartment(row));
 
@@ -245,12 +212,7 @@ const ensureUserIdentity = (userId?: string): UserIdentityInput => {
     return explicitUserId;
   }
 
-  const storedUser = getStoredValue();
-  if (!storedUser?.id) {
-    throw new Error('You must be signed in to continue.');
-  }
-
-  return storedUser;
+  return undefined;
 };
 
 const getAppUserByColumn = async (
@@ -351,10 +313,18 @@ const createMissingAppUserFromAuth = async (
 };
 
 export const resolveAppUserId = async (input?: UserIdentityInput): Promise<string> => {
-  const identity = identityFromInput(input) ?? getStoredValue();
-
-  if (!identity?.id) {
-    throw new Error('You must be signed in to continue.');
+  let identity = identityFromInput(input);
+  if (!identity) {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) throw new Error(unwrapErrorMessage(error, 'Unable to verify your signed-in account.'));
+    if (!data.user) throw new Error('You must be signed in to continue.');
+    identity = {
+      id: data.user.id,
+      authId: data.user.id,
+      email: data.user.email,
+      name: toStringOrUndefined(data.user.user_metadata?.name),
+      role: toStringOrUndefined(data.user.user_metadata?.role),
+    };
   }
 
   const byId = await getAppUserByColumn('id', identity.id);
