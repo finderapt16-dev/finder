@@ -123,7 +123,6 @@ export interface UpdateUserInput {
 }
 
 const APP_USERS_TABLE = 'app_users';
-const CURRENT_SESSION_KEY = 'apartment_finder_current_user';
 const VALID_ROLES = new Set<UserRole>(['tenant', 'student', 'employee', 'landlord', 'admin']);
 const VALID_TENANT_TYPES = new Set<TenantType>(['student', 'employee', 'other']);
 let latestAuthProfileRequestId = 0;
@@ -345,9 +344,7 @@ export function readCurrentUserFromStorage(): User | null {
 }
 
 export function persistCurrentUser(_user: User | null): void {
-  // Supabase Auth and the database profile are authoritative. Remove the
-  // historical profile cache so roles and permissions can never come from it.
-  if (typeof window !== 'undefined') localStorage.removeItem(CURRENT_SESSION_KEY);
+  // Compatibility no-op. Supabase Auth and the database profile are authoritative.
 }
 
 export async function fetchAppUsers(): Promise<User[]> {

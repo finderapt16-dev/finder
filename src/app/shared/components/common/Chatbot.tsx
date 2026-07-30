@@ -7,7 +7,6 @@ import { useApartmentsContext } from "../../contexts/ApartmentsContext";
 import { useAuth } from "../../contexts/AuthContext";
 import type { UserRole } from "../../services/authService";
 import { useFavorites } from "../../hooks/useFavorites";
-import { readStoredValue, writeStoredValue } from "../../utils/browserStorage";
 import {
   fetchApartmentViews,
   fetchFavorites as fetchDashboardFavorites,
@@ -36,43 +35,6 @@ interface Message {
   actions?: { label: string; path: string }[];
 }
 
-const CHAT_HISTORY_LIMIT = 30;
-
-function chatStorageKey(userId?: string, role?: string | null) {
-  return userId && role ? `rentiloilo_chat_history:${role}:${userId}` : null;
-}
-
-function serializeMessages(messages: Message[]) {
-  return messages.slice(-CHAT_HISTORY_LIMIT).map((message) => ({
-    ...message,
-    timestamp: message.timestamp.toISOString(),
-  }));
-}
-
-function isStoredMessageList(value: unknown): value is Array<Omit<Message, "timestamp"> & { timestamp: string }> {
-  return Array.isArray(value) && value.every((message) => {
-    if (!message || typeof message !== "object") return false;
-    const candidate = message as Record<string, unknown>;
-    return (
-      typeof candidate.id === "string" &&
-      typeof candidate.text === "string" &&
-      (candidate.sender === "user" || candidate.sender === "bot") &&
-      typeof candidate.timestamp === "string"
-    );
-  });
-}
-
-function restoreMessages(parsed: Array<Omit<Message, "timestamp"> & { timestamp: string }> | null): Message[] {
-  if (!parsed) return [];
-  return parsed
-      .filter((message) => message.sender === "user" || message.sender === "bot")
-      .slice(-CHAT_HISTORY_LIMIT)
-      .map((message) => ({
-        ...message,
-        timestamp: Number.isNaN(Date.parse(message.timestamp)) ? new Date() : new Date(message.timestamp),
-      }));
-}
-
 interface ChatbotProps {
   userRole?: UserRole | null;
 }
@@ -96,8 +58,6 @@ export function Chatbot({ userRole }: ChatbotProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
-  const [hydratedStorageKey, setHydratedStorageKey] = useState<string | null>(null);
-
   const resolvedRole = userRole ?? null;
   const quickPrompts = useMemo(() => getQuickPromptsForRole(resolvedRole), [resolvedRole]);
   const assistantTitle = resolvedRole === "admin"
@@ -177,25 +137,13 @@ export function Chatbot({ userRole }: ChatbotProps) {
   );
 
   useEffect(() => {
-    const key = chatStorageKey(user?.id, resolvedRole);
-    setHydratedStorageKey(null);
+    requestIdRef.current += 1;
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    setMessages([]);
     setLastFailedQuestion(null);
     setInputValue("");
-
-    if (!key) {
-      setMessages([]);
-      return;
-    }
-
-    setMessages(restoreMessages(readStoredValue(key, { version: 1, validate: isStoredMessageList })));
-    setHydratedStorageKey(key);
+    setIsTyping(false);
   }, [resolvedRole, user?.id]);
-
-  useEffect(() => {
-    const key = chatStorageKey(user?.id, resolvedRole);
-    if (!key || hydratedStorageKey !== key || messages.length === 0) return;
-    writeStoredValue(key, serializeMessages(messages), { version: 1, maxBytes: 150_000 });
-  }, [hydratedStorageKey, messages, resolvedRole, user?.id]);
 
   useEffect(() => {
     if (!isOpen || messages.length > 0) return;

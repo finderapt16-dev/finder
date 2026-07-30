@@ -27,10 +27,14 @@ import {
   type VerificationDocumentType,
 } from "@/app/shared/services/verificationDocumentsService";
 import {
+  deletePropertyDraft,
+  fetchPropertyDraft,
+  savePropertyDraft,
+} from "@/app/shared/services/propertyDraftService";
+import {
   DEFAULT_LA_PAZ_MAP_CENTER,
   hasValidApartmentCoordinates,
 } from "@/app/shared/utils/mapCoordinates";
-import { readStoredValue, removeStoredValue, writeStoredValue } from "@/app/shared/utils/browserStorage";
 import { supabase } from "@/lib/supabaseclient";
 import {
   AlertCircle,
@@ -95,9 +99,6 @@ type PropertyDraft = {
 };
 
 type DraftStatus = "idle" | "saving" | "saved" | "restored" | "error";
-
-const getDraftStorageKey = (userId: string) => `rentiloilo:add-property-draft:${userId}`;
-const DRAFT_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
 function isPropertyDraft(value: unknown): value is PropertyDraft {
   if (!value || typeof value !== "object") return false;
@@ -348,7 +349,11 @@ export function AddApartment() {
   };
 
   const discardDraft = (resetForm = true) => {
-    if (user?.id) removeStoredValue(getDraftStorageKey(user.id));
+    if (user?.id) {
+      void deletePropertyDraft(user.id).catch((error) => {
+        console.error("Unable to delete the property draft:", error);
+      });
+    }
     setPendingDraft(null);
     setDraftReady(true);
     setDraftStatus("idle");
@@ -378,23 +383,32 @@ export function AddApartment() {
 
   useEffect(() => {
     if (!user?.id) return;
+    let active = true;
     setDraftReady(false);
     setPendingDraft(null);
-    try {
-      const parsed = readStoredValue(getDraftStorageKey(user.id), { version: 2, validate: isPropertyDraft });
-      if (!parsed) {
-        setDraftReady(true);
-        return;
-      }
-      setPendingDraft(parsed);
-    } catch (error) {
-      console.error("Unable to read the Add Property draft:", error);
-      removeStoredValue(getDraftStorageKey(user.id));
-      setDraftReady(true);
-    }
+    void fetchPropertyDraft<unknown>(user.id)
+      .then((parsed) => {
+        if (!active) return;
+        if (parsed && isPropertyDraft(parsed)) {
+          setPendingDraft(parsed);
+        } else if (parsed) {
+          void deletePropertyDraft(user.id).catch((error) => {
+            console.error("Unable to remove an invalid property draft:", error);
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Unable to read the Add Property draft:", error);
+      })
+      .finally(() => {
+        if (active) setDraftReady(true);
+      });
+    return () => {
+      active = false;
+    };
   }, [user?.id]);
 
-  const persistDraft = useCallback((updateStatus = true) => {
+  const persistDraft = useCallback(async (updateStatus = true) => {
     if (!user?.id || !hasDraftContent || submissionCompleteRef.current) return;
     const persistentImages = uploadedImages
       .filter((image) => !image.file && /^https?:\/\//i.test(image.url))
@@ -422,12 +436,8 @@ export function AddApartment() {
     };
 
     try {
-      const saved = writeStoredValue(getDraftStorageKey(user.id), draft, {
-        version: 2,
-        ttlMs: DRAFT_TTL_MS,
-        maxBytes: 750_000,
-      });
-      if (updateStatus) setDraftStatus(saved ? "saved" : "error");
+      await savePropertyDraft(user.id, draft);
+      if (updateStatus) setDraftStatus("saved");
     } catch (error) {
       console.error("Unable to save the Add Property draft:", error);
       if (updateStatus) setDraftStatus("error");
@@ -443,13 +453,15 @@ export function AddApartment() {
 
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     if (!hasDraftContent) {
-      removeStoredValue(getDraftStorageKey(user.id));
+      void deletePropertyDraft(user.id).catch((error) => {
+        console.error("Unable to clear the empty property draft:", error);
+      });
       setDraftStatus("idle");
       return;
     }
 
     setDraftStatus("saving");
-    autoSaveTimerRef.current = setTimeout(() => persistDraft(), 700);
+    autoSaveTimerRef.current = setTimeout(() => void persistDraft(), 700);
 
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
@@ -791,7 +803,7 @@ export function AddApartment() {
       await refreshApartments();
       submissionCompleteRef.current = true;
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-      removeStoredValue(getDraftStorageKey(user.id));
+      await deletePropertyDraft(user.id);
       setDraftStatus("idle");
       toast.success("Apartment added successfully!");
       navigate("/dashboard");

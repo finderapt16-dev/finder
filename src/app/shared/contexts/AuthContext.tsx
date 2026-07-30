@@ -11,7 +11,7 @@ import {
 } from 'react';
 
 import { supabase } from '../../../lib/supabaseclient';
-import { clearUserStorage, migrateBrowserStorage } from '../utils/browserStorage';
+import { clearLegacyApplicationStorage } from '../utils/legacyStorageCleanup';
 import {
   deleteUser as deleteUserRecord,
   fetchAppUsers,
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     const initializeAuth = async (): Promise<void> => {
       const requestId = ++authRequestIdRef.current;
       try {
-        migrateBrowserStorage();
+        clearLegacyApplicationStorage();
         const [allUsers, pendingCount] = await Promise.all([fetchAppUsers(), getPendingLandlordCount()]);
 
         if (!isActive || requestId !== authRequestIdRef.current) {
@@ -117,7 +117,6 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         const authenticatedUser = await getCurrentAuthenticatedUser();
         if (!isActive || requestId !== authRequestIdRef.current) return;
 
-        if (authenticatedUser) migrateBrowserStorage(authenticatedUser.id);
         setCurrentUser(authenticatedUser);
       } catch (error) {
         if (!isActive || requestId !== authRequestIdRef.current) {
@@ -192,7 +191,6 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         return { success: false, error: 'A newer sign-in request is already in progress.' };
       }
       setCurrentUser(user);
-      migrateBrowserStorage(user.id);
       persistCurrentUser(user);
       void refreshUsers().catch((refreshError) => {
         console.warn('Failed to refresh users after login:', refreshError);
@@ -263,18 +261,16 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   }, [currentUser?.id]);
 
   const logout = useCallback(() => {
-    const account = currentUser;
     authRequestIdRef.current += 1;
     setIsLoading(true);
     setCurrentUser(null);
     void logoutUser().catch((logoutError) => {
       console.warn('Failed to sign out from Supabase Auth:', logoutError);
     }).finally(() => {
-      if (account) clearUserStorage(account.id, account.role);
       persistCurrentUser(null);
       setIsLoading(false);
     });
-  }, [currentUser]);
+  }, []);
 
   const canEditApartment = useCallback(
     (_apartmentId: string, landlordId?: string) => {

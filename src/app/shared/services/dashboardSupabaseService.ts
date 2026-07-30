@@ -295,7 +295,6 @@ export interface DashboardUserProfileDetails {
 
 type TableName = "app_users" | "apartments" | "apartment_views" | "favorites" | "reports" | "violations" | "notifications" | "audit_logs";
 
-const cacheKeyPrefix = "dashboard-supabase-cache";
 
 export const defaultTenantPreferences: TenantPreferenceSettings = {
   preferredArea: "",
@@ -311,10 +310,6 @@ export const defaultTenantPreferences: TenantPreferenceSettings = {
   inquiryAlerts: true,
   bookingAlerts: true,
 };
-
-function hasWindow(): boolean {
-  return typeof window !== "undefined";
-}
 
 function safeJsonParse<T>(value: string | null, fallback: T): T {
   if (!value) {
@@ -336,7 +331,6 @@ function readCachedValue(key: string): string | null {
 function writeCachedValue(key: string, value: string): void {
   void key;
   void value;
-  if (hasWindow()) window.localStorage.removeItem(cacheKeyPrefix);
 }
 
 function normalizeRecord<T extends DashboardRow>(record: DashboardRow): T {
