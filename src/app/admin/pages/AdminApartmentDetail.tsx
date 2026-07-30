@@ -1726,7 +1726,8 @@ export function AdminApartmentDetail() {
                       View Reported Apartment
                     </Button>
                     <Button
-                      onClick={() => navigate(`/admin/landlords/${apartment?.landlordId}`)}
+                      disabled={!apartment?.landlordId}
+                      onClick={() => navigate("/dashboard?section=landlords")}
                       className="flex-1 bg-slate-600 hover:bg-slate-700 text-white"
                     >
                       <Users className="h-4 w-4 mr-2" />

@@ -109,9 +109,11 @@ export function StudentEmployeeDashboard() {
     contact: user?.email || "",
   });
   const [reportEvidenceFiles, setReportEvidenceFiles] = useState<EvidenceFile[]>([]);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   // ── Help & support state ────────────────────────────────────────────────
   const [supportSubmitted, setSupportSubmitted] = useState(false);
+  const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
   const [supportForm, setSupportForm] = useState({
     topic: "",
     message: "",
@@ -314,6 +316,7 @@ export function StudentEmployeeDashboard() {
   };
 
   const handleReportSubmit = async () => {
+    if (isSubmittingReport) return;
     if (!reportForm.apartment) {
       toast.error("Please select the apartment you want to report.");
       return;
@@ -331,6 +334,7 @@ export function StudentEmployeeDashboard() {
 
     const apartment = allApartments.find((apt) => apt.id === reportForm.apartment);
 
+    setIsSubmittingReport(true);
     try {
       const createdReport = await createReport({
         reporter_id: user.id,
@@ -374,6 +378,8 @@ export function StudentEmployeeDashboard() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to submit report.";
       toast.error(message);
+    } finally {
+      setIsSubmittingReport(false);
     }
   };
 
@@ -384,12 +390,14 @@ export function StudentEmployeeDashboard() {
   };
 
   const handleSupportSubmit = async () => {
+    if (isSubmittingSupport) return;
     if (!supportForm.topic || !supportForm.message.trim()) {
       toast.error("Please choose a topic and describe your concern.");
       return;
     }
 
     if (!user?.id) return void toast.error("Please sign in to contact support.");
+    setIsSubmittingSupport(true);
     try {
       await createSupportTicket({
         userId: user.id,
@@ -402,6 +410,8 @@ export function StudentEmployeeDashboard() {
       toast.success("Support request sent!");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to send the support request.");
+    } finally {
+      setIsSubmittingSupport(false);
     }
   };
 
@@ -1128,9 +1138,9 @@ export function StudentEmployeeDashboard() {
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm"><LockKeyhole className="h-4 w-4" /></span>
                 <span><strong className="font-black text-slate-700">Your information is secure.</strong> We only use this information for this report.</span>
               </div>
-              <Button onClick={handleReportSubmit} disabled={!reportForm.apartment || !reportForm.details.trim()} className="h-12 rounded-lg bg-orange-500 font-black text-white shadow-lg shadow-orange-200 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50">
+              <Button onClick={() => void handleReportSubmit()} disabled={isSubmittingReport || !reportForm.apartment || !reportForm.details.trim()} className="h-12 rounded-lg bg-orange-500 font-black text-white shadow-lg shadow-orange-200 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50">
                 <Send className="mr-2 h-4 w-4" />
-                Submit Report
+                {isSubmittingReport ? "Submitting..." : "Submit Report"}
               </Button>
             </div>
           </CardContent>
@@ -1230,7 +1240,7 @@ export function StudentEmployeeDashboard() {
             <MessageCircle className="h-5 w-5 text-amber-600" />
             Contact Support
           </CardTitle>
-          <CardDescription>Submitted requests are saved locally for this prototype.</CardDescription>
+          <CardDescription>Submitted requests are securely sent to the support team.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {supportSubmitted ? (
@@ -1288,11 +1298,12 @@ export function StudentEmployeeDashboard() {
                 />
               </div>
               <Button
-                onClick={handleSupportSubmit}
+                onClick={() => void handleSupportSubmit()}
+                disabled={isSubmittingSupport}
                 className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold shadow-md"
               >
                 <Send className="h-4 w-4 mr-2" />
-                Send Support Request
+                {isSubmittingSupport ? "Sending..." : "Send Support Request"}
               </Button>
             </>
           )}

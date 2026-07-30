@@ -173,6 +173,7 @@ export function ManageRooms() {
   const [rooms, setRooms] = useState<ApartmentRoom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [processingRoomId, setProcessingRoomId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [openRoomMenuId, setOpenRoomMenuId] = useState<string | null>(null);
@@ -315,8 +316,9 @@ export function ManageRooms() {
   };
 
   const changeRoomStatus = async (room: ApartmentRoom, status: ApartmentStatus) => {
-    if (!id || !room.id) return;
+    if (!id || !room.id || processingRoomId) return;
     setOpenRoomMenuId(null);
+    setProcessingRoomId(room.id);
     try {
       await updateApartmentRoomStatus(id, room.id, status, user.id);
       setRooms((current) => current.map((item) => item.id === room.id
@@ -326,13 +328,16 @@ export function ManageRooms() {
       toast.success("Room status updated");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to update room status.");
+    } finally {
+      setProcessingRoomId(null);
     }
   };
 
   const removeRoom = async (room: ApartmentRoom) => {
-    if (!id || !room.id) return;
+    if (!id || !room.id || processingRoomId) return;
     const roomName = room.name || "this room";
     if (!window.confirm(`Are you sure you want to delete ${roomName}?\n\nThis removes only this room, not the property.`)) return;
+    setProcessingRoomId(room.id);
     try {
       await deleteApartmentRoom(id, room.id, user.id);
       setRooms((current) => current.filter((item) => item.id !== room.id));
@@ -340,6 +345,8 @@ export function ManageRooms() {
       toast.success("Room deleted");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to delete room.");
+    } finally {
+      setProcessingRoomId(null);
     }
   };
 
@@ -487,7 +494,7 @@ export function ManageRooms() {
                         <div className="min-w-0">
                           <div className="mb-5 flex items-start justify-between gap-3">
                             <div><h2 className="text-2xl font-bold">{room.name || "Room"}</h2><p className="mt-1 text-sm text-slate-500">{room.description || "No room description provided."}</p></div>
-                            <div className="relative flex items-center gap-2"><Badge className={`${statusOption.className} border px-3 py-1`}>{statusOption.label}</Badge><button aria-label={`Actions for ${room.name || "room"}`} onClick={() => setOpenRoomMenuId((current) => current === room.id ? null : room.id ?? null)} className="grid h-9 w-9 place-items-center rounded-md hover:bg-slate-100"><MoreVertical className="h-5 w-5" /></button>{openRoomMenuId === room.id && <div className="absolute right-0 top-11 z-20 w-52 rounded-lg border bg-white p-1.5 shadow-xl">{status !== "maintenance" && <button onClick={() => void changeRoomStatus(room, "maintenance")} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-violet-700 hover:bg-violet-50"><Wrench className="h-4 w-4" />Mark as Maintenance</button>}<button onClick={() => { openEditForm(room); setOpenRoomMenuId(null); }} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold hover:bg-slate-50"><Edit3 className="h-4 w-4" />Edit Room</button><button onClick={() => void removeRoom(room)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4" />Delete Room</button></div>}</div>
+                            <div className="relative flex items-center gap-2"><Badge className={`${statusOption.className} border px-3 py-1`}>{statusOption.label}</Badge><button aria-label={`Actions for ${room.name || "room"}`} disabled={processingRoomId === room.id} onClick={() => setOpenRoomMenuId((current) => current === room.id ? null : room.id ?? null)} className="grid h-9 w-9 place-items-center rounded-md hover:bg-slate-100 disabled:cursor-wait disabled:opacity-50"><MoreVertical className="h-5 w-5" /></button>{openRoomMenuId === room.id && <div className="absolute right-0 top-11 z-20 w-52 rounded-lg border bg-white p-1.5 shadow-xl">{status !== "maintenance" && <button disabled={processingRoomId !== null} onClick={() => void changeRoomStatus(room, "maintenance")} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-violet-700 hover:bg-violet-50 disabled:opacity-50"><Wrench className="h-4 w-4" />Mark as Maintenance</button>}<button disabled={processingRoomId !== null} onClick={() => { openEditForm(room); setOpenRoomMenuId(null); }} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"><Edit3 className="h-4 w-4" />Edit Room</button><button disabled={processingRoomId !== null} onClick={() => void removeRoom(room)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"><Trash2 className="h-4 w-4" />Delete Room</button></div>}</div>
                           </div>
                           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                             <div className="rounded-lg bg-orange-50 p-3"><p className="text-xs font-semibold text-slate-500">Monthly Rent</p><p className="mt-1 font-bold">₱{(room.price ?? 0).toLocaleString("en-PH")}</p></div>
@@ -500,9 +507,9 @@ export function ManageRooms() {
                       </div>
 
                       <div className="mt-6 grid gap-3 border-t pt-5 sm:grid-cols-3">
-                        <Button variant="outline" onClick={() => void changeRoomStatus(room, status === "available" ? "occupied" : "available")} className={status === "available" ? "border-emerald-300 font-bold text-emerald-700 hover:bg-emerald-50" : "border-emerald-300 font-bold text-emerald-700 hover:bg-emerald-50"}>{status === "available" ? <><Users className="mr-2 h-4 w-4" />Mark as Occupied</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Mark as Available</>}</Button>
-                        <Button variant="outline" onClick={() => openEditForm(room)} className="border-orange-300 font-bold text-orange-700 hover:bg-orange-50"><Edit3 className="mr-2 h-4 w-4" />Edit Room</Button>
-                        <Button variant="outline" onClick={() => void removeRoom(room)} className="border-rose-300 font-bold text-rose-600 hover:bg-rose-50"><Trash2 className="mr-2 h-4 w-4" />Delete Room</Button>
+                        <Button variant="outline" disabled={processingRoomId !== null} onClick={() => void changeRoomStatus(room, status === "available" ? "occupied" : "available")} className="border-emerald-300 font-bold text-emerald-700 hover:bg-emerald-50">{processingRoomId === room.id ? "Updating..." : status === "available" ? <><Users className="mr-2 h-4 w-4" />Mark as Occupied</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Mark as Available</>}</Button>
+                        <Button variant="outline" disabled={processingRoomId !== null} onClick={() => openEditForm(room)} className="border-orange-300 font-bold text-orange-700 hover:bg-orange-50"><Edit3 className="mr-2 h-4 w-4" />Edit Room</Button>
+                        <Button variant="outline" disabled={processingRoomId !== null} onClick={() => void removeRoom(room)} className="border-rose-300 font-bold text-rose-600 hover:bg-rose-50"><Trash2 className="mr-2 h-4 w-4" />Delete Room</Button>
                       </div>
                     </div>
                     <div className="grid gap-px border-t bg-slate-200 sm:grid-cols-2 xl:grid-cols-4">
