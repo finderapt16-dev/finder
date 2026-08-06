@@ -269,8 +269,15 @@ export function StudentEmployeeDashboard() {
 
   // Recent apartments sorted by availability date
   const recentApartments = useMemo(() => {
+    const now = Date.now();
+    const recentCutoff = now - 30 * 24 * 60 * 60 * 1000;
     return [...publishedApartments]
-      .sort((a, b) => new Date(b.availableDate).getTime() - new Date(a.availableDate).getTime())
+      .filter((apartment) => {
+        if (!apartment.createdAt) return false;
+        const createdAt = new Date(apartment.createdAt).getTime();
+        return !Number.isNaN(createdAt) && createdAt >= recentCutoff && createdAt <= now;
+      })
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
       .slice(0, 6);
   }, [publishedApartments]);
 
