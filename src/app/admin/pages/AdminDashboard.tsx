@@ -1273,7 +1273,12 @@ export function AdminDashboard() {
     });
 
   const verifiedCount      = landlords.filter((l) => l.isVerified ?? l.is_verified).length;
-  const pendingCount       = landlords.filter((l) => !(l.isVerified ?? l.is_verified)).length;
+  const pendingCount       = landlords.filter((landlord) => {
+    if (landlord.isVerified ?? landlord.is_verified) return false;
+    const statuses = [landlord.landlord_status, landlord.verification_status, landlord.status]
+      .map((value) => String(value ?? "").trim().toLowerCase());
+    return !statuses.includes("rejected");
+  }).length;
   const pendingReports     = reports.filter((r) => r.status === "pending").length;
   const activeAppealsCount = appeals.filter((appeal) => appeal.status === "pending" || appeal.status === "under_review" || appeal.status === "needs_information").length;
   const unreadNotifsCount  = adminNotifs.filter((n) => {
@@ -1437,7 +1442,7 @@ export function AdminDashboard() {
       apartment.isPublished === true || apartment.is_published === true
     ).length;
     const pendingReviewCount = allApartments.filter((apartment) =>
-      String(apartment.status) === "pending" || apartment.verification_status === "pending"
+      String(apartment.approval_status ?? "").toLowerCase() === "pending"
     ).length;
     const pendingLandlords = landlords.filter((landlord) => !(landlord.isVerified ?? landlord.is_verified));
     const tasks = [

@@ -9,7 +9,8 @@ import {
 } from "@/app/shared/services/dashboardSupabaseService";
 import { supabase } from "@/lib/supabaseclient";
 
-type PeriodDays = 7 | 30 | 90;
+type PeriodDays = 1 | 7 | 30 | 90;
+type PeriodSelection = PeriodDays | "custom";
 type Bucket = { key: string; label: string; start: number; end: number };
 
 const MANILA_TIME_ZONE = "Asia/Manila";
@@ -30,15 +31,20 @@ function dateKeyToUtc(key: string): number {
   return Date.parse(`${key}T00:00:00.000Z`);
 }
 
-function makeBuckets(period: PeriodDays): Bucket[] {
+function makeBuckets(period: PeriodDays, customStart?: string, customEnd?: string): Bucket[] {
   const today = dateKeyToUtc(manilaDateKey(new Date()));
-  const bucketSize = period === 7 ? 1 : period === 30 ? 3 : 7;
-  const start = today - (period - 1) * 86_400_000;
+  const requestedStart = customStart ? dateKeyToUtc(customStart) : Number.NaN;
+  const requestedEnd = customEnd ? dateKeyToUtc(customEnd) : Number.NaN;
+  const hasCustomRange = Number.isFinite(requestedStart) && Number.isFinite(requestedEnd) && requestedStart <= requestedEnd;
+  const startDay = hasCustomRange ? requestedStart : today - (period - 1) * 86_400_000;
+  const endDay = hasCustomRange ? Math.min(requestedEnd, today) : today;
+  const effectiveDays = Math.max(1, Math.round((endDay - startDay) / 86_400_000) + 1);
+  const bucketSize = effectiveDays <= 7 ? 1 : effectiveDays <= 30 ? 3 : 7;
   const buckets: Bucket[] = [];
 
-  for (let offset = 0; offset < period; offset += bucketSize) {
-    const bucketStart = start + offset * 86_400_000;
-    const bucketEnd = Math.min(today + 86_399_999, bucketStart + bucketSize * 86_400_000 - 1);
+  for (let offset = 0; offset < effectiveDays; offset += bucketSize) {
+    const bucketStart = startDay + offset * 86_400_000;
+    const bucketEnd = Math.min(endDay + 86_399_999, bucketStart + bucketSize * 86_400_000 - 1);
     buckets.push({
       key: new Date(bucketStart).toISOString(),
       label: new Intl.DateTimeFormat("en-PH", {
@@ -136,15 +142,21 @@ function CardState({ loading, error, empty, children }: { loading: boolean; erro
 
 export function AdminAnalyticsOverview() {
   const [data, setData] = useState<AdminAnalyticsData | null>(null);
-  const [period, setPeriod] = useState<PeriodDays>(30);
+  const [period, setPeriod] = useState<PeriodSelection>(30);
+  const [customStart, setCustomStart] = useState(manilaDateKey(Date.now() - 29 * 86_400_000));
+  const [customEnd, setCustomEnd] = useState(manilaDateKey(new Date()));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const activeRequestRef = useRef(false);
+  const queuedRequestRef = useRef(false);
   const mountedRef = useRef(true);
   const prefersReducedMotion = useReducedMotion();
 
   const load = useCallback(async () => {
-    if (activeRequestRef.current) return;
+    if (activeRequestRef.current) {
+      queuedRequestRef.current = true;
+      return;
+    }
     activeRequestRef.current = true;
     setLoading(true);
     setError(null);
@@ -156,6 +168,10 @@ export function AdminAnalyticsOverview() {
     } finally {
       activeRequestRef.current = false;
       if (mountedRef.current) setLoading(false);
+      if (queuedRequestRef.current && mountedRef.current) {
+        queuedRequestRef.current = false;
+        void load();
+      }
     }
   }, []);
 
@@ -186,7 +202,9 @@ export function AdminAnalyticsOverview() {
   }, [load]);
 
   const analytics = useMemo(() => {
-    const buckets = makeBuckets(period);
+    const buckets = period === "custom"
+      ? makeBuckets(30, customStart, customEnd)
+      : makeBuckets(period);
     const activeApartments = (data?.apartments ?? []).filter((apartment) => !apartment.deleted_at && !apartment.is_archived);
     const activeIds = new Set(activeApartments.map((apartment) => apartment.id));
     const submitted = buckets.map((bucket) => activeApartments.filter((apartment) => timestampInBucket(apartment.created_at, bucket)).length);
@@ -224,7 +242,7 @@ export function AdminAnalyticsOverview() {
       totalViews: periodViews.reduce((sum, view) => sum + Math.max(0, Number(view.view_count) || 0), 0),
       totalFavorites: periodFavorites.length, roomCounts, rooms, verificationCounts, landlords,
     };
-  }, [data, period]);
+  }, [customEnd, customStart, data, period]);
 
   const statusLabels = ["Published", "Pending verification", "Unpublished", "Rejected", "Unknown status"];
   const roomLabels = ["Available", "Occupied", "Reserved", "Maintenance"];
@@ -246,9 +264,10 @@ export function AdminAnalyticsOverview() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="sr-only" htmlFor="analytics-period">Analytics period</label>
-          <select id="analytics-period" value={period} onChange={(event) => setPeriod(Number(event.target.value) as PeriodDays)} className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100">
-            <option value={7}>Last 7 days</option><option value={30}>Last 30 days</option><option value={90}>Last 90 days</option>
+          <select id="analytics-period" value={period} onChange={(event) => setPeriod(event.target.value === "custom" ? "custom" : Number(event.target.value) as PeriodDays)} className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100">
+            <option value={1}>Today</option><option value={7}>Last 7 days</option><option value={30}>Last 30 days</option><option value={90}>Last 90 days</option><option value="custom">Custom range</option>
           </select>
+          {period === "custom" && <><label className="sr-only" htmlFor="analytics-start">Start date</label><input id="analytics-start" type="date" value={customStart} max={customEnd} onChange={(event) => setCustomStart(event.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-600" /><label className="sr-only" htmlFor="analytics-end">End date</label><input id="analytics-end" type="date" value={customEnd} min={customStart} max={manilaDateKey(new Date())} onChange={(event) => setCustomEnd(event.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-600" /></>}
           <Button type="button" variant="outline" size="sm" disabled={loading} onClick={() => void load()} className="h-9 rounded-lg border-slate-200 text-xs font-bold">
             <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />{loading ? "Refreshing" : "Refresh"}
           </Button>
