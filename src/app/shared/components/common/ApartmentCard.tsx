@@ -1,4 +1,5 @@
 import { Bath, Bed, Heart, MapPin, Square } from "lucide-react";
+import type { ApartmentRatingStats } from "../../services/apartmentRatingsService";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Apartment } from "../../data/apartments";
@@ -9,9 +10,12 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { VerifiedBadge } from "./VerifiedBadge";
+import { ApartmentRatingSummary } from "./ApartmentRatingSummary";
 
 interface ApartmentCardProps {
   apartment: Apartment;
+  ratingStats?: ApartmentRatingStats;
+  ratingsLoading?: boolean;
   detailState?: {
     returnTo?: string;
     backLabel?: string;
@@ -32,7 +36,7 @@ const STATUS_LABEL: Record<string, string> = {
   maintenance: "Under Maintenance",
 };
 
-export function ApartmentCard({ apartment, detailState }: ApartmentCardProps) {
+export function ApartmentCard({ apartment, detailState, ratingStats, ratingsLoading }: ApartmentCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { user, users } = useAuth();
   const favorite = isFavorite(apartment.id);
@@ -87,6 +91,7 @@ export function ApartmentCard({ apartment, detailState }: ApartmentCardProps) {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h3 className="font-semibold text-lg mb-1 text-slate-900 group-hover:text-amber-600 transition-colors">{apartment.title}</h3>
+              <ApartmentRatingSummary stats={ratingStats} isLoading={ratingsLoading} className="mb-2" />
               <div className="flex items-center text-slate-600 text-sm mb-3">
                 <MapPin className="h-4 w-4 mr-1 text-amber-500" />
                 <span>{locationText}</span>

@@ -183,6 +183,7 @@ export function AdminAnalyticsOverview() {
 
   useEffect(() => {
     let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    let hasConnected = false;
     const scheduleRefresh = () => {
       if (refreshTimer) clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => void load(), 150);
@@ -195,7 +196,12 @@ export function AdminAnalyticsOverview() {
       .on("postgres_changes", { event: "*", schema: "public", table: "favorites" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "apartment_ratings" }, scheduleRefresh)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "app_users" }, scheduleRefresh)
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          if (hasConnected) scheduleRefresh();
+          hasConnected = true;
+        }
+      });
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer);
       void supabase.removeChannel(channel);

@@ -32,7 +32,7 @@ import { fetchApartmentWithImages, getLandlordVerification, recordApartmentView,
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import { createReport, fetchPublicLandlordById, type DashboardUserRow } from "@/app/shared/services/dashboardSupabaseService";
 import { uploadReportEvidence } from "@/app/shared/services/reportEvidenceService";
-import { fetchApartmentRatings, removeApartmentRating, saveApartmentRating, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
+import { fetchApartmentRatings, removeApartmentRating, saveApartmentRating, subscribeToApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
 import { apartmentToFormValues } from "@/app/shared/utils/apartmentMappers";
 import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
 import { getImageUrl } from "@/app/shared/utils/images";
@@ -130,8 +130,8 @@ export function ApartmentDetail() {
     let active = true;
     const loadRatings = () => fetchApartmentRatings(id).then((rows) => { if (active) setRatings(rows); }).catch((error) => console.error("Unable to load apartment ratings:", error));
     void loadRatings();
-    const channel = supabase.channel(`apartment-ratings-${id}`).on("postgres_changes", { event: "*", schema: "public", table: "apartment_ratings", filter: `apartment_id=eq.${id}` }, loadRatings).subscribe();
-    return () => { active = false; void supabase.removeChannel(channel); };
+    const unsubscribe = subscribeToApartmentRatings(loadRatings, id);
+    return () => { active = false; unsubscribe(); };
   }, [id]);
 
   useEffect(() => {

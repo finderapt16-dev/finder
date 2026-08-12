@@ -1,6 +1,7 @@
 import { EditApartmentDialog } from "@/app/shared/components/common/EditApartmentDialog";
 import { EvidenceUploader, type EvidenceFile } from "@/app/shared/components/common/EvidenceUploader";
 import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
+import { ApartmentRatingSummary } from "@/app/shared/components/common/ApartmentRatingSummary";
 import { Badge } from "@/app/shared/components/ui/badge";
 import { Button } from "@/app/shared/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/shared/components/ui/card";
@@ -17,6 +18,7 @@ import {
   type ApartmentStatus
 } from "@/app/shared/data/apartments";
 import { deleteUser as deleteUserAccount } from "@/app/shared/services/authService";
+import { fetchApartmentRatings, subscribeToApartmentRatings, summarizeApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
 import { generateBackupCodes } from "@/app/shared/services/securityService";
 import {
   createAppealWithEvidence,
@@ -294,6 +296,8 @@ export function LandlordDashboard() {
   const [activityViewMode, setActivityViewMode] = useState<"list" | "grid">("list");
   const [favoriteRows, setFavoriteRows] = useState<DashboardFavoriteRow[]>([]);
   const [viewRows, setViewRows] = useState<DashboardApartmentViewRow[]>([]);
+  const [ratingRows, setRatingRows] = useState<ApartmentRatingRow[]>([]);
+  const [ratingsLoading, setRatingsLoading] = useState(true);
   const [favoriteUsers, setFavoriteUsers] = useState<DashboardUserRow[]>([]);
   const [notifications, setNotifications] = useState<DashboardNotificationRow[]>([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
@@ -524,6 +528,25 @@ export function LandlordDashboard() {
   };
 
   const [myApartments, setMyApartments] = useState<any[]>([]);
+  const ratingSummary = useMemo(() => summarizeApartmentRatings(ratingRows), [ratingRows]);
+
+  useEffect(() => {
+    let active = true;
+    const loadRatings = () => fetchApartmentRatings()
+      .then((rows) => {
+        if (!active) return;
+        setRatingRows(rows);
+        setRatingsLoading(false);
+      })
+      .catch((error) => {
+        // Keep the last valid aggregates during temporary network/realtime failures.
+        console.error("Failed to load landlord apartment ratings:", error);
+        if (active) setRatingsLoading(false);
+      });
+    void loadRatings();
+    const unsubscribe = subscribeToApartmentRatings(loadRatings);
+    return () => { active = false; unsubscribe(); };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -2473,7 +2496,7 @@ export function LandlordDashboard() {
                     <div className="absolute left-4 top-4 flex flex-wrap gap-2"><Badge className="rounded-md bg-orange-500 text-white shadow-sm">Your Property</Badge><Badge className={`rounded-md border ${statusOption.className}`}>{statusOption.label}</Badge>{!apartment.isPublished && <Badge className="rounded-md bg-slate-800 text-white">Unpublished</Badge>}</div>
                   </div>
                   <div className="flex min-w-0 flex-col p-5">
-                    <div className="flex items-start justify-between gap-4"><div className="min-w-0"><h2 className="truncate text-xl font-black text-slate-950">{apartment.title || "Untitled property"}</h2><p className="mt-1 flex items-center gap-1 truncate text-sm font-medium text-slate-500"><MapPin className="h-4 w-4 shrink-0 text-orange-500" />{location}</p></div><div className="shrink-0 text-right"><p className="text-sm font-black text-orange-600">Room pricing</p><p className="text-xs font-medium text-slate-500">Manage Rooms</p></div></div>
+                    <div className="flex items-start justify-between gap-4"><div className="min-w-0"><h2 className="truncate text-xl font-black text-slate-950">{apartment.title || "Untitled property"}</h2><ApartmentRatingSummary stats={ratingSummary.byApartment.get(apartment.id)} isLoading={ratingsLoading} className="mt-1" /><p className="mt-1 flex items-center gap-1 truncate text-sm font-medium text-slate-500"><MapPin className="h-4 w-4 shrink-0 text-orange-500" />{location}</p></div><div className="shrink-0 text-right"><p className="text-sm font-black text-orange-600">Room pricing</p><p className="text-xs font-medium text-slate-500">Manage Rooms</p></div></div>
                     <div className="mt-4 grid grid-cols-3 gap-2">{[{ label: roomCount > 0 ? "Rooms" : "Beds", value: roomOrBedCount, icon: BedDouble }, { label: "Bathrooms", value: Number(apartment.bathrooms ?? 0), icon: Bath }, { label: "Floor Area", value: Number(apartment.sqft ?? 0) > 0 ? `${Number(apartment.sqft).toLocaleString("en-PH")} sqft` : "Unavailable", icon: Ruler }].map(({ label, value, icon: Icon }) => <div key={label} className="rounded-lg border border-slate-100 bg-slate-50 p-3"><Icon className="mb-2 h-4 w-4 text-orange-500" /><strong className="block truncate text-sm text-slate-900">{value}</strong><span className="text-[10px] font-semibold text-slate-500">{label}</span></div>)}</div>
                     <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2"><Badge className="rounded-md bg-emerald-100 text-emerald-700">{statusOption.label}</Badge><span className="text-xs font-bold text-slate-600">{availableRooms} available / {roomCount} total rooms</span></div>
                     <div className="mt-4 grid grid-cols-2 gap-2"><Link to={`/apartment/${apartment.id}`} state={{ returnTo: "/dashboard?section=properties", backLabel: "Back to My Properties" }}><Button variant="outline" className="h-10 w-full rounded-md border-orange-200 font-bold text-orange-700 hover:bg-orange-50"><Eye className="mr-2 h-4 w-4" />View Property</Button></Link><Link to={`/landlord/properties/${apartment.id}/rooms`}><Button className="h-10 w-full rounded-md bg-orange-500 font-bold text-white hover:bg-orange-600">Manage Rooms</Button></Link></div>

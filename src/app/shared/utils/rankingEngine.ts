@@ -11,8 +11,9 @@ import type { Apartment } from "../data/apartments";
  * - Room Availability (15%)
  * - Amenities Match (10%)
  * - Property Verification (10%)
- * - Popularity & Engagement (5%)
- * - Recent Activity (5%)
+ * - Tenant Rating (5%)
+ * - Popularity & Engagement (3%)
+ * - Recent Activity (2%)
  */
 
 export type TenantType = 'student' | 'employee' | 'other';
@@ -23,8 +24,12 @@ export interface RankingScoreBreakdown {
   availabilityScore: number;       // 0-100 (15% weight)
   amenitiesScore: number;          // 0-100 (10% weight)
   verificationScore: number;       // 0-100 (10% weight)
-  popularityScore: number;         // 0-100 (5% weight)
-  activityScore: number;           // 0-100 (5% weight)
+  ratingScore: number;             // 0-100 (5% weight, confidence adjusted)
+  ratingAverage: number | null;    // Raw tenant average (1-5)
+  ratingCount: number;
+  adjustedRating: number | null;   // Bayesian average (1-5)
+  popularityScore: number;         // 0-100 (3% weight)
+  activityScore: number;           // 0-100 (2% weight)
   finalScore: number;              // 0-100 (weighted total)
 }
 
@@ -51,6 +56,30 @@ export interface RankingContext {
   apartmentApplications?: Map<string, number>;
   apartmentViewCounts?: Map<string, number>;
   apartmentFavoriteCounts?: Map<string, number>;
+  apartmentRatingStats?: Map<string, { average: number; count: number }>;
+  platformAverageRating?: number;
+}
+
+export const RATING_PRIOR_COUNT = 5;
+
+export function calculateRatingScore(
+  apartmentId: string,
+  context?: Pick<RankingContext, "apartmentRatingStats" | "platformAverageRating">,
+): Pick<RankingScoreBreakdown, "ratingScore" | "ratingAverage" | "ratingCount" | "adjustedRating"> {
+  const stats = context?.apartmentRatingStats?.get(apartmentId);
+  if (!stats || stats.count <= 0) {
+    return { ratingScore: 50, ratingAverage: null, ratingCount: 0, adjustedRating: null };
+  }
+
+  const priorAverage = Math.min(5, Math.max(1, context?.platformAverageRating ?? 3));
+  const average = Math.min(5, Math.max(1, stats.average));
+  const adjustedRating = ((stats.count * average) + (RATING_PRIOR_COUNT * priorAverage)) / (stats.count + RATING_PRIOR_COUNT);
+  return {
+    ratingScore: Math.round(((adjustedRating - 1) / 4) * 100),
+    ratingAverage: average,
+    ratingCount: stats.count,
+    adjustedRating,
+  };
 }
 
 // ============================================================================
@@ -312,7 +341,7 @@ function calculateVerificationScore(
 }
 
 // ============================================================================
-// POPULARITY & ENGAGEMENT SCORING (5% weight)
+// POPULARITY & ENGAGEMENT SCORING (3% weight)
 // ============================================================================
 
 /**
@@ -345,7 +374,7 @@ function calculatePopularityScore(
 }
 
 // ============================================================================
-// RECENT ACTIVITY SCORING (5% weight)
+// RECENT ACTIVITY SCORING (2% weight)
 // ============================================================================
 
 /**
@@ -405,18 +434,20 @@ export function calculateRankingScoreBreakdown(
   const availabilityScore = calculateAvailabilityScore(apartment);
   const amenitiesScore = calculateAmenitiesScore(apartment, preferences);
   const verificationScore = calculateVerificationScore(apartment, verificationMap);
+  const rating = calculateRatingScore(apartment.id, context);
   const popularityScore = calculatePopularityScore(apartment, context);
   const activityScore = calculateActivityScore(apartment);
 
-  // Apply weights: 30%, 25%, 15%, 10%, 10%, 5%, 5%
+  // Apply weights: 30%, 25%, 15%, 10%, 10%, 5%, 3%, 2%
   const finalScore = Math.round(
     (locationScore * 0.30) +
     (budgetScore * 0.25) +
     (availabilityScore * 0.15) +
     (amenitiesScore * 0.10) +
     (verificationScore * 0.10) +
-    (popularityScore * 0.05) +
-    (activityScore * 0.05)
+    (rating.ratingScore * 0.05) +
+    (popularityScore * 0.03) +
+    (activityScore * 0.02)
   );
 
   return {
@@ -425,6 +456,7 @@ export function calculateRankingScoreBreakdown(
     availabilityScore,
     amenitiesScore,
     verificationScore,
+    ...rating,
     popularityScore,
     activityScore,
     finalScore,
@@ -447,6 +479,8 @@ export function rankApartments(
     apartmentApplications: context?.apartmentApplications,
     apartmentViewCounts: context?.apartmentViewCounts,
     apartmentFavoriteCounts: context?.apartmentFavoriteCounts,
+    apartmentRatingStats: context?.apartmentRatingStats,
+    platformAverageRating: context?.platformAverageRating,
   };
 
   return apartments
@@ -529,8 +563,9 @@ export function getRecommendationExplanation(breakdown: RankingScoreBreakdown): 
     { label: 'Availability', score: breakdown.availabilityScore, weight: 0.15 },
     { label: 'Amenities', score: breakdown.amenitiesScore, weight: 0.10 },
     { label: 'Verification', score: breakdown.verificationScore, weight: 0.10 },
-    { label: 'Popularity', score: breakdown.popularityScore, weight: 0.05 },
-    { label: 'Recent activity', score: breakdown.activityScore, weight: 0.05 },
+    { label: breakdown.ratingCount > 0 ? `Tenant rating (${breakdown.ratingAverage?.toFixed(1)}/5)` : 'Tenant rating', score: breakdown.ratingScore, weight: 0.05 },
+    { label: 'Popularity', score: breakdown.popularityScore, weight: 0.03 },
+    { label: 'Recent activity', score: breakdown.activityScore, weight: 0.02 },
   ]
     .filter(f => f.score > 0)
     .sort((a, b) => b.weight - a.weight)
@@ -557,8 +592,9 @@ export function debugApartmentRanking(
   ║ Availability Score:   ${breakdown.availabilityScore.toString().padStart(3)} / 100 (15%)
   ║ Amenities Score:      ${breakdown.amenitiesScore.toString().padStart(3)} / 100 (10%)
   ║ Verification Score:   ${breakdown.verificationScore.toString().padStart(3)} / 100 (10%)
-  ║ Popularity Score:     ${breakdown.popularityScore.toString().padStart(3)} / 100 (5%)
-  ║ Activity Score:       ${breakdown.activityScore.toString().padStart(3)} / 100 (5%)
+  ║ Tenant Rating:        ${breakdown.ratingScore.toString().padStart(3)} / 100 (5%; ${breakdown.ratingCount} ratings)
+  ║ Popularity Score:     ${breakdown.popularityScore.toString().padStart(3)} / 100 (3%)
+  ║ Activity Score:       ${breakdown.activityScore.toString().padStart(3)} / 100 (2%)
   ╠════════════════════════════════════════════════════════════╣
   ║ FINAL SCORE:          ${breakdown.finalScore.toString().padStart(3)} / 100
   ╚════════════════════════════════════════════════════════════╝

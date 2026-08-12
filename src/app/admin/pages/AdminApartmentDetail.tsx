@@ -34,7 +34,7 @@ import {
   type VerificationDocumentRecord,
 } from "@/app/shared/services/verificationDocumentsService";
 import { formatAuditLogForDisplay } from "@/app/shared/utils/auditLogDisplay";
-import { fetchApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
+import { fetchApartmentRatings, subscribeToApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
 import { supabase } from "@/lib/supabaseclient";
 import {
   AlertTriangle,
@@ -309,6 +309,18 @@ export function AdminApartmentDetail() {
     return () => {
       active = false;
     };
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    const refreshRatings = () => {
+      void fetchApartmentRatings(id)
+        .then((rows) => { if (active) setRatings(rows); })
+        .catch((error) => console.error("Unable to refresh apartment ratings:", error));
+    };
+    const unsubscribe = subscribeToApartmentRatings(refreshRatings, id);
+    return () => { active = false; unsubscribe(); };
   }, [id]);
 
   useEffect(() => {

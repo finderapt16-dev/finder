@@ -41,6 +41,7 @@ import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { VerifiedBadge } from "@/app/shared/components/common/VerifiedBadge";
+import { ApartmentRatingSummary } from "@/app/shared/components/common/ApartmentRatingSummary";
 import { MapView } from "@/app/shared/components/features/map/MapView";
 import { Badge } from "@/app/shared/components/ui/badge";
 import { Button } from "@/app/shared/components/ui/button";
@@ -50,6 +51,7 @@ import { Switch } from "@/app/shared/components/ui/switch";
 import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
 import { getTenantType, isTenantRole } from "@/app/shared/services/authService";
+import { fetchApartmentRatings, subscribeToApartmentRatings, summarizeApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
 import type { Apartment } from "@/app/shared/data/apartments";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import {
@@ -190,6 +192,8 @@ function TenantBrowse() {
   const [itemsPerPage, setItemsPerPage] = useState(9);
   const [viewRows, setViewRows] = useState<DashboardApartmentViewRow[]>([]);
   const [favoriteRows, setFavoriteRows] = useState<DashboardFavoriteRow[]>([]);
+  const [ratingRows, setRatingRows] = useState<ApartmentRatingRow[]>([]);
+  const [ratingsLoading, setRatingsLoading] = useState(true);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   const applyPriceRange = (range: [number, number], enabled = true) => {
@@ -244,20 +248,27 @@ function TenantBrowse() {
   useEffect(() => {
     let mounted = true;
 
-    void Promise.all([fetchApartmentViews(), fetchDashboardFavorites()])
-      .then(([views, favorites]) => {
+    const loadRankingData = () => Promise.all([fetchApartmentViews(), fetchDashboardFavorites(), fetchApartmentRatings()])
+      .then(([views, favorites, ratings]) => {
         if (!mounted) return;
         setViewRows(views);
         setFavoriteRows(favorites);
+        setRatingRows(ratings);
+        setRatingsLoading(false);
       })
       .catch(() => {
         if (!mounted) return;
         setViewRows([]);
         setFavoriteRows([]);
+        setRatingRows([]);
+        setRatingsLoading(false);
       });
+    void loadRankingData();
+    const unsubscribe = subscribeToApartmentRatings(() => { void loadRankingData(); });
 
     return () => {
       mounted = false;
+      unsubscribe();
     };
   }, []);
 
@@ -275,6 +286,7 @@ function TenantBrowse() {
   const viewLabel = (count: number) => `${count.toLocaleString()} ${count === 1 ? "view" : "views"}`;
 
   const landlordById = useMemo(() => new globalThis.Map(users.filter((row) => row.id).map((row) => [row.id!, row])), [users]);
+  const ratingSummary = useMemo(() => summarizeApartmentRatings(ratingRows), [ratingRows]);
 
   const getLandlord = (apartment: Apartment) => apartment.landlordId ? landlordById.get(apartment.landlordId) : undefined;
 
@@ -342,7 +354,13 @@ function TenantBrowse() {
           const apartmentId = row.apartment_id ?? row.apartmentId ?? "";
           if (apartmentId) apartmentFavoriteCounts.set(apartmentId, (apartmentFavoriteCounts.get(apartmentId) ?? 0) + 1);
         });
-        return rankApartments(filtered, preferences, userFavorites, { apartmentViewCounts, apartmentFavoriteCounts });
+        const ratingSummary = summarizeApartmentRatings(ratingRows);
+        return rankApartments(filtered, preferences, userFavorites, {
+          apartmentViewCounts,
+          apartmentFavoriteCounts,
+          apartmentRatingStats: ratingSummary.byApartment,
+          platformAverageRating: ratingSummary.platformAverage,
+        });
       }
 
       return [...filtered].sort((a, b) => getApartmentPublishedTime(b) - getApartmentPublishedTime(a));
@@ -360,7 +378,7 @@ function TenantBrowse() {
       }
       return compareOptionalNumber(getAvailableApartmentPrice(a), getAvailableApartmentPrice(b), "asc");
     });
-  }, [allApartments, searchQuery, priceRange, budgetFilterEnabled, bedrooms, petFriendly, parking, furnished, sortBy, user?.role, user?.tenantType, landlordById, userFavorites, viewRows, favoriteRows]);
+  }, [allApartments, searchQuery, priceRange, budgetFilterEnabled, bedrooms, petFriendly, parking, furnished, sortBy, user?.role, user?.tenantType, landlordById, userFavorites, viewRows, favoriteRows, ratingRows]);
 
   const totalPages = Math.max(1, Math.ceil(filteredApartments.length / itemsPerPage));
   const safePage = Math.min(currentPage, totalPages);
@@ -720,6 +738,7 @@ function TenantBrowse() {
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <h2 className="truncate text-xl font-black text-slate-950">{apartment.title}</h2>
+              <ApartmentRatingSummary stats={ratingSummary.byApartment.get(apartment.id)} isLoading={ratingsLoading} className="mt-1.5" />
               <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-slate-500"><MapPin className="h-4 w-4 text-orange-500" />{locationText}</p>
             </div>
             <div className="shrink-0 text-right">

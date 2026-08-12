@@ -1,4 +1,5 @@
 import { ApartmentCard } from "@/app/shared/components/common/ApartmentCard";
+import { ApartmentRatingSummary } from "@/app/shared/components/common/ApartmentRatingSummary";
 import { EvidenceUploader, type EvidenceFile } from "@/app/shared/components/common/EvidenceUploader";
 import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
 import { VerifiedBadge } from "@/app/shared/components/common/VerifiedBadge";
@@ -10,6 +11,7 @@ import { Label } from "@/app/shared/components/ui/label";
 import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
 import { getTenantType, isTenantRole } from "@/app/shared/services/authService";
+import { fetchApartmentRatings, subscribeToApartmentRatings, summarizeApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import { Settings as AccountSettings } from "@/app/shared/pages/settings/Settings";
 import {
@@ -130,6 +132,8 @@ export function StudentEmployeeDashboard() {
   const [saveBudgetPreferences, setSaveBudgetPreferences] = useState(false);
   const [dashboardFavoriteRows, setDashboardFavoriteRows] = useState<DashboardFavoriteRow[]>([]);
   const [dashboardViewRows, setDashboardViewRows] = useState<DashboardApartmentViewRow[]>([]);
+  const [dashboardRatingRows, setDashboardRatingRows] = useState<ApartmentRatingRow[]>([]);
+  const [ratingsLoading, setRatingsLoading] = useState(true);
 
   const {
     apartments: allApartments,
@@ -158,20 +162,27 @@ export function StudentEmployeeDashboard() {
   useEffect(() => {
     let mounted = true;
 
-    void Promise.all([fetchDashboardFavorites(), fetchApartmentViews()])
-      .then(([favorites, views]) => {
+    const loadRankingData = () => Promise.all([fetchDashboardFavorites(), fetchApartmentViews(), fetchApartmentRatings()])
+      .then(([favorites, views, ratings]) => {
         if (!mounted) return;
         setDashboardFavoriteRows(favorites);
         setDashboardViewRows(views);
+        setDashboardRatingRows(ratings);
+        setRatingsLoading(false);
       })
       .catch(() => {
         if (!mounted) return;
         setDashboardFavoriteRows([]);
         setDashboardViewRows([]);
+        setDashboardRatingRows([]);
+        setRatingsLoading(false);
       });
+    void loadRankingData();
+    const unsubscribe = subscribeToApartmentRatings(() => { void loadRankingData(); });
 
     return () => {
       mounted = false;
+      unsubscribe();
     };
   }, []);
 
@@ -201,6 +212,7 @@ export function StudentEmployeeDashboard() {
   const publishedApartments = useMemo(() => {
     return allApartments.filter(isTenantVisibleApartment);
   }, [allApartments]);
+  const ratingSummary = useMemo(() => summarizeApartmentRatings(dashboardRatingRows), [dashboardRatingRows]);
 
   const isApartmentAvailable = isTenantVisibleApartment;
 
@@ -238,10 +250,16 @@ export function StudentEmployeeDashboard() {
         const apartmentId = row.apartment_id ?? row.apartmentId ?? "";
         if (apartmentId) apartmentFavoriteCounts.set(apartmentId, (apartmentFavoriteCounts.get(apartmentId) ?? 0) + 1);
       });
-      return rankApartments(publishedApartments, tenantRankingPreferences, favoriteIds, { apartmentViewCounts, apartmentFavoriteCounts }).slice(0, 6);
+      const ratingSummary = summarizeApartmentRatings(dashboardRatingRows);
+      return rankApartments(publishedApartments, tenantRankingPreferences, favoriteIds, {
+        apartmentViewCounts,
+        apartmentFavoriteCounts,
+        apartmentRatingStats: ratingSummary.byApartment,
+        platformAverageRating: ratingSummary.platformAverage,
+      }).slice(0, 6);
     }
     return publishedApartments.slice(0, 6);
-  }, [dashboardFavoriteRows, dashboardViewRows, favoriteIds, publishedApartments, tenantRankingPreferences, user?.role]);
+  }, [dashboardFavoriteRows, dashboardRatingRows, dashboardViewRows, favoriteIds, publishedApartments, tenantRankingPreferences, user?.role]);
 
   // Popular apartments (most viewed, most favorited, highest engagement)
   const popularApartments = useMemo(() => {
@@ -748,6 +766,7 @@ export function StudentEmployeeDashboard() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <h2 className="text-2xl font-black text-slate-950">{apartment.title}</h2>
+              <ApartmentRatingSummary stats={ratingSummary.byApartment.get(apartment.id)} isLoading={ratingsLoading} className="mt-1.5" />
               <div className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-500">
                 <MapPin className="h-4 w-4 text-rose-500" />
                 <span>{locationLabel}</span>
@@ -981,7 +1000,7 @@ export function StudentEmployeeDashboard() {
           {suggestedApartments.map((apartment) => (
             <div key={apartment.id} className="relative">
               <Badge className="absolute top-6 left-6 z-10 bg-orange-500 hover:bg-orange-600 shadow-lg text-white font-bold">Suggested</Badge>
-              <ApartmentCard apartment={apartment} detailState={{ returnTo: "/dashboard?section=suggested", backLabel: "Back to Suggested" }} />
+              <ApartmentCard apartment={apartment} ratingStats={ratingSummary.byApartment.get(apartment.id)} ratingsLoading={ratingsLoading} detailState={{ returnTo: "/dashboard?section=suggested", backLabel: "Back to Suggested" }} />
             </div>
           ))}
         </div>
@@ -1018,7 +1037,7 @@ export function StudentEmployeeDashboard() {
           {popularApartments.map((apartment) => (
             <div key={apartment.id} className="relative">
               <Badge className="absolute top-6 left-6 z-10 bg-indigo-600 hover:bg-indigo-700 shadow-lg text-white font-bold">Popular</Badge>
-              <ApartmentCard apartment={apartment} detailState={{ returnTo: "/dashboard?section=popular", backLabel: "Back to Popular" }} />
+              <ApartmentCard apartment={apartment} ratingStats={ratingSummary.byApartment.get(apartment.id)} ratingsLoading={ratingsLoading} detailState={{ returnTo: "/dashboard?section=popular", backLabel: "Back to Popular" }} />
             </div>
           ))}
         </div>
@@ -1050,7 +1069,7 @@ export function StudentEmployeeDashboard() {
           {recentApartments.map((apartment) => (
             <div key={apartment.id} className="relative">
               <Badge className="absolute top-6 left-6 z-10 bg-emerald-600 hover:bg-emerald-700 shadow-lg text-white font-bold">New</Badge>
-              <ApartmentCard apartment={apartment} detailState={{ returnTo: "/dashboard?section=recent", backLabel: "Back to Recently Added" }} />
+              <ApartmentCard apartment={apartment} ratingStats={ratingSummary.byApartment.get(apartment.id)} ratingsLoading={ratingsLoading} detailState={{ returnTo: "/dashboard?section=recent", backLabel: "Back to Recently Added" }} />
             </div>
           ))}
         </div>
