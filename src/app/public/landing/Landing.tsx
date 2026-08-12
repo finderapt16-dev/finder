@@ -73,12 +73,12 @@ const heroImages = [
 
 /* ─── Barangay data ─────────────────────────────────────── */
 const barangays = [
-  { name: "Divinagracia", count: "12+ units", emoji: "🏘️" },
-  { name: "Benedicto", count: "8+ units", emoji: "🏢" },
-  { name: "Sto. Rosario", count: "15+ units", emoji: "🏠" },
-  { name: "Rizal", count: "10+ units", emoji: "🏗️" },
-  { name: "Baldoza", count: "6+ units", emoji: "🏡" },
-  { name: "Pale Benedicto", count: "9+ units", emoji: "🏬" },
+  { name: "Divinagracia", count: "Browse listings", emoji: "🏘️" },
+  { name: "Benedicto", count: "Browse listings", emoji: "🏢" },
+  { name: "Sto. Rosario", count: "Browse listings", emoji: "🏠" },
+  { name: "Rizal", count: "Browse listings", emoji: "🏗️" },
+  { name: "Baldoza", count: "Browse listings", emoji: "🏡" },
+  { name: "Pale Benedicto", count: "Browse listings", emoji: "🏬" },
 ];
 
 /* ─── Categories ────────────────────────────────────────── */
@@ -95,8 +95,8 @@ const communityCards = [
   {
     role: "Student",
     icon: GraduationCap,
-    name: "College student near CPU",
-    quote: "Found a verified, affordable boarding house within walking distance from my university without having to do multiple walk-ins.",
+    name: "Housing near school",
+    quote: "Compare prices, available rooms, amenities, and locations before arranging a visit.",
     color: "border-amber-200",
     iconBg: "bg-amber-100",
     iconColor: "text-amber-700",
@@ -104,8 +104,8 @@ const communityCards = [
   {
     role: "Working Professional",
     icon: Briefcase,
-    name: "Office worker in La Paz",
-    quote: "I needed something close to work with a verified permit. The map view made it easy to compare apartments near my office.",
+    name: "Housing near work",
+    quote: "Use search filters and the map view to review apartments within a preferred area and budget.",
     color: "border-orange-200",
     iconBg: "bg-orange-100",
     iconColor: "text-orange-700",
@@ -113,8 +113,8 @@ const communityCards = [
   {
     role: "Family",
     icon: Users,
-    name: "Young family relocating",
-    quote: "The ranking feature helped us filter by number of rooms and budget. We found a safe, family-friendly unit faster than expected.",
+    name: "Housing for a household",
+    quote: "Review room details, rental prices, amenities, and landlord verification information in one place.",
     color: "border-rose-200",
     iconBg: "bg-rose-100",
     iconColor: "text-rose-700",
@@ -313,13 +313,13 @@ export function Landing() {
               <motion.span animate={{ rotate: [0, 15, -10, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
                 <MapPin className="h-4 w-4 text-amber-400" />
               </motion.span>
-              <span className="min-w-0 truncate text-xs font-bold text-amber-200 sm:text-sm">La Paz, Iloilo City · Verified Listings</span>
+              <span className="min-w-0 truncate text-xs font-bold text-amber-200 sm:text-sm">Apartment listings in La Paz, Iloilo City</span>
             </motion.div>
 
             <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 leading-[1.05] tracking-tight text-white">
-              Find Your{" "}
+              Find Apartments{" "}
               <span className="relative inline-block">
-                <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">Perfect Home</span>
+                <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">That Fit Your Needs</span>
                 <motion.div
                   className="absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full"
                   initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.8, duration: 0.7 }}
@@ -329,7 +329,7 @@ export function Landing() {
             </motion.h1>
 
             <motion.p variants={fadeUp} className="mx-auto mb-7 max-w-2xl text-base leading-relaxed text-white/75 sm:mb-10 sm:text-lg md:text-xl">
-              Browse verified apartment listings, compare locations on a live map, and find your ideal rental — all in one platform.
+              Browse apartments, compare rental options, view locations, and review room, amenity, and verification information.
             </motion.p>
 
             {/* ── Search panel ── */}
@@ -453,10 +453,10 @@ export function Landing() {
         <div className="container mx-auto px-4 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
             {[
-              { label: "Available Apartments", value: "50+", icon: Building2 },
-              { label: "Available Rooms", value: "120+", icon: BedDouble },
-              { label: "Verified Landlords", value: "30+", icon: BadgeCheck },
-              { label: "Active Listings", value: "80+", icon: TrendingUp },
+              { label: "Search & Filters", value: "Browse", icon: Building2 },
+              { label: "Room Availability", value: "Check", icon: BedDouble },
+              { label: "Verification Status", value: "Review", icon: BadgeCheck },
+              { label: "Map Locations", value: "Compare", icon: TrendingUp },
             ].map(({ label, value, icon: Icon }, i) => (
               <AnimatedSection key={label} delay={i * 0.06}>
                 <div className="flex items-center gap-3 text-white">
@@ -480,7 +480,7 @@ export function Landing() {
           <AnimatedSection className="text-center mb-12">
             <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Browse by Type</p>
             <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Apartment Categories</h2>
-            <p className="text-slate-500 max-w-lg mx-auto">Find the right type of rental that fits your lifestyle and needs</p>
+            <p className="text-slate-500 max-w-lg mx-auto">Explore listings by housing type and room features.</p>
           </AnimatedSection>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-5xl mx-auto">
@@ -508,9 +508,9 @@ export function Landing() {
       <div className="bg-white">
         <div className="container mx-auto px-4 lg:px-8 pt-4 pb-2">
           <AnimatedSection className="text-center mb-2">
-            <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Live from the platform</p>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Featured Listings</h2>
-            <p className="text-slate-500 max-w-lg mx-auto">Recently posted, verified apartments in La Paz</p>
+            <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Current listings</p>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Apartments to Explore</h2>
+            <p className="text-slate-500 max-w-lg mx-auto">Review recently published apartments in La Paz.</p>
           </AnimatedSection>
         </div>
         <LandingListingsSection onBrowseClick={handleProtectedAction} />
@@ -551,17 +551,17 @@ export function Landing() {
       <section className="py-20 bg-slate-900">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-12">
-            <p className="text-amber-400 font-bold text-sm uppercase tracking-widest mb-2">Built for everyone</p>
+            <p className="text-amber-400 font-bold text-sm uppercase tracking-widest mb-2">Platform users</p>
             <h2 className="text-3xl md:text-4xl font-black text-white mb-3">Who Uses AptFindr</h2>
-            <p className="text-slate-400 max-w-xl mx-auto">Designed around the distinct needs of renters, landlords, and administrators</p>
+            <p className="text-slate-400 max-w-xl mx-auto">Tools for renters, landlords, and platform administrators.</p>
           </AnimatedSection>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
             {[
-              { icon: GraduationCap, role: "Students", desc: "Find affordable, accessible housing near schools with verified information — no more random walk-ins.", gradient: "from-amber-500 to-amber-600" },
-              { icon: Briefcase, role: "Employees", desc: "Search within budget and commute range. Check verified details before scheduling a visit.", gradient: "from-orange-500 to-orange-600" },
-              { icon: Building2, role: "Landlords", desc: "Submit permits for review, get verified, and reach tenants through a centralized listing platform.", gradient: "from-rose-500 to-rose-600" },
-              { icon: UserCog, role: "Administrators", desc: "Review permits, manage verified listings, monitor compliance, and oversee platform activity.", gradient: "from-pink-500 to-pink-600" },
+              { icon: GraduationCap, role: "Students", desc: "Search by location and budget, compare rooms, save favorites, and review listing information.", gradient: "from-amber-500 to-amber-600" },
+              { icon: Briefcase, role: "Employees", desc: "Compare rental prices, amenities, availability, and locations near work.", gradient: "from-orange-500 to-orange-600" },
+              { icon: Building2, role: "Landlords", desc: "Create listings, manage rooms and availability, upload images, and monitor recorded engagement.", gradient: "from-rose-500 to-rose-600" },
+              { icon: UserCog, role: "Administrators", desc: "Review verification information, manage listings and reports, and monitor platform activity.", gradient: "from-pink-500 to-pink-600" },
             ].map(({ icon: Icon, role, desc, gradient }, i) => (
               <AnimatedSection key={role} delay={i * 0.08}>
                 <motion.div
@@ -584,19 +584,19 @@ export function Landing() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-12">
-            <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Platform advantages</p>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Why Choose Our Platform</h2>
-            <p className="text-slate-500 max-w-xl mx-auto">Features designed for safer, more informed rental decisions</p>
+            <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Platform features</p>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Useful Information in One Place</h2>
+            <p className="text-slate-500 max-w-xl mx-auto">Review listings and manage properties using recorded platform information.</p>
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl mx-auto">
             {[
-              { icon: BadgeCheck, title: "Verified Landlords", desc: "Landlords are reviewed and approved before listings go live. Look for the verified badge.", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
-              { icon: ShieldCheck, title: "Permit-Checked Listings", desc: "Listings with valid business permits are marked and monitored by platform administrators.", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
-              { icon: Flag, title: "Community Reporting", desc: "Users can report suspicious or inaccurate listings. Admins review and act on reports promptly.", color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-100" },
-              { icon: Map, title: "GIS Map View", desc: "See all apartments on a live map. Compare locations and find what's closest to your destination.", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
-              { icon: Bot, title: "AI Assistance", desc: "A built-in assistant helps you navigate the platform and understand rental options quickly.", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
-              { icon: TrendingUp, title: "Listing Activity", desc: "Landlords see views and saves on their listings. Renters get ranked suggestions based on verified availability.", color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-100" },
+              { icon: BadgeCheck, title: "Landlord Verification Status", desc: "Review the verification status shown for landlords before exploring a listing.", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
+              { icon: ShieldCheck, title: "Verification Information", desc: "Landlords submit required information for administrative review through the platform.", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
+              { icon: Flag, title: "Listing Reports", desc: "Users can report inaccurate or concerning listing information for administrator review.", color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-100" },
+              { icon: Map, title: "GIS Map View", desc: "Compare apartment locations in La Paz and review nearby listing options.", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
+              { icon: Bot, title: "Platform Guide", desc: "The built-in assistant explains platform features and helps users navigate available options.", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
+              { icon: TrendingUp, title: "Listing Activity", desc: "Landlords can monitor recorded views and favorites, while renters receive suggestions based on their preferences.", color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-100" },
             ].map(({ icon: Icon, title, desc, color, bg, border }, i) => (
               <AnimatedSection key={title} delay={i * 0.07}>
                 <motion.div
@@ -621,7 +621,7 @@ export function Landing() {
           <AnimatedSection className="text-center mb-14">
             <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Simple process</p>
             <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">How AptFindr Works</h2>
-            <p className="text-slate-500 max-w-xl mx-auto">From account creation to informed rental decision in three steps</p>
+            <p className="text-slate-500 max-w-xl mx-auto">Create an account, review listings, and compare suitable options.</p>
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto relative">
@@ -629,9 +629,9 @@ export function Landing() {
             <div className="hidden md:block absolute top-[52px] left-1/4 right-1/4 h-px bg-gradient-to-r from-amber-300 to-orange-300" />
 
             {[
-              { icon: UserCheck, title: "Create your account", desc: "Sign up as a renter or landlord. Landlords submit permit details for admin review before their listings go live." },
-              { icon: Search, title: "Browse & compare", desc: "Filter listings by budget, type, and location. Use the GIS map to compare apartments and view them side by side." },
-              { icon: CheckCircle2, title: "Decide with confidence", desc: "Use verified listings, ranked suggestions, and map-based comparisons to make informed housing decisions." },
+              { icon: UserCheck, title: "Create your account", desc: "Register as a renter or landlord. Landlords can then submit verification information for review." },
+              { icon: Search, title: "Browse and compare", desc: "Filter apartments, review rooms and amenities, save favorites, and compare locations on the map." },
+              { icon: CheckCircle2, title: "Review your options", desc: "Use listing details, availability, verification status, and personalized suggestions to compare rentals." },
             ].map(({ icon: Icon, title, desc }, i) => (
               <AnimatedSection key={title} delay={i * 0.12}>
                 <motion.div whileHover={{ y: -6 }} className="relative bg-white border-2 border-amber-100 rounded-3xl p-8 text-center shadow-sm">
@@ -654,9 +654,9 @@ export function Landing() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-12">
-            <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Our community</p>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Built for La Paz Renters</h2>
-            <p className="text-slate-500 max-w-lg mx-auto">AptFindr supports the needs of students, families, and working professionals across La Paz</p>
+            <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Renter needs</p>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Ways to Compare Apartments</h2>
+            <p className="text-slate-500 max-w-lg mx-auto">Use listing information to review options for school, work, or household needs.</p>
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -689,19 +689,19 @@ export function Landing() {
           <AnimatedSection>
             <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-white/20 backdrop-blur rounded-full border border-white/30">
               <Zap className="h-4 w-4 text-white" />
-              <span className="text-sm font-bold text-white">Ready to find your next home?</span>
+              <span className="text-sm font-bold text-white">Ready to review available apartments?</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-white mb-5 leading-tight">
-              Start browsing verified<br />apartments today
+              Explore apartment<br />listings in La Paz
             </h2>
             <p className="text-white/85 text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
-              Create a free account to access all listings, view the GIS map, get personalized recommendations, and connect with verified landlords in La Paz.
+              Create an account to browse listings, use the map view, save favorites, and receive suggestions based on your preferences.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/signup">
                 <Button size="lg" className="bg-white text-amber-700 hover:bg-amber-50 shadow-xl font-black text-base px-8 py-4 h-auto rounded-xl inline-flex items-center gap-2">
                   <UserCheck className="h-5 w-5" />
-                  Create Free Account
+                  Create Account
                 </Button>
               </Link>
               <Link to="/browse" onClick={handleProtectedAction}>
@@ -726,7 +726,7 @@ export function Landing() {
                 <span className="font-black text-white text-xl">AptFindr</span>
               </div>
               <p className="text-slate-400 leading-relaxed max-w-xs text-sm">
-                A Progressive Web Application for verified apartment listings and smart rental search in La Paz, Iloilo City. Academic thesis project.
+                A Progressive Web Application for apartment discovery and listing management in La Paz, Iloilo City. Academic thesis project.
               </p>
               <div className="flex gap-3 mt-5">
                 <a href="mailto:aptfindr@example.com" className="flex items-center gap-2 text-xs text-slate-500 hover:text-amber-400 transition-colors">

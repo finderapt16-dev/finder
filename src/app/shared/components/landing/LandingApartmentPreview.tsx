@@ -128,7 +128,7 @@ export function LandingApartmentPreview({ onBrowseClick }: LandingApartmentPrevi
       <section className="py-20 bg-gradient-to-b from-amber-50/50 to-white/50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-black mb-3 text-slate-900">Verified Listing Preview</h2>
+            <h2 className="text-4xl md:text-5xl font-black mb-3 text-slate-900">Available Apartment Listings</h2>
             <p className="text-lg text-slate-600 flex items-center justify-center gap-2">
               <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
               Loading apartment records...
@@ -219,7 +219,7 @@ export function LandingListingsPlaceholder({
     <section className="py-20 bg-gradient-to-b from-amber-50/50 to-white/50">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-black mb-3 text-slate-900">Explore Verified Listings</h2>
+          <h2 className="text-4xl md:text-5xl font-black mb-3 text-slate-900">Explore Apartment Listings</h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             No published apartments yet. Landlords can submit apartment and permit information for admin review.
           </p>
@@ -250,7 +250,7 @@ export function LandingListingsPlaceholder({
               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
             />
             <div className="absolute bottom-0 left-0 right-0 p-8">
-              <h3 className="text-3xl font-black text-white mb-2">Verified rental data</h3>
+              <h3 className="text-3xl font-black text-white mb-2">Apartment information</h3>
               <p className="text-amber-100 mb-4">Photos, amenities, rent, availability, and landlord details</p>
               <span className="inline-flex items-center text-amber-300 font-bold group-hover:translate-x-2 transition-transform">
                 Browse listings <ArrowRight className="ml-2 h-5 w-5" />
