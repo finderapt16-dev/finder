@@ -175,6 +175,7 @@ export interface DashboardUserRow extends DashboardRow {
 
 export interface AdminAnalyticsApartmentRow {
   id: string;
+  title: string;
   is_published: boolean;
   approval_status: string | null;
   is_archived: boolean;
@@ -214,6 +215,7 @@ export interface AdminAnalyticsData {
   users: AdminAnalyticsUserRow[];
   views: AdminAnalyticsViewRow[];
   favorites: AdminAnalyticsFavoriteRow[];
+  ratings: Array<{ apartment_id: string; rating: number; created_at: string }>;
 }
 
 export type TenantPreferenceSortOption = "recommended" | "price_low" | "price_high" | "newest" | "popular";
@@ -1947,10 +1949,10 @@ export async function fetchApartments(): Promise<DashboardApartmentRow[]> {
 }
 
 export async function fetchAdminAnalyticsData(): Promise<AdminAnalyticsData> {
-  const [apartmentsResult, usersResult, viewsResult, favoritesResult] = await Promise.all([
+  const [apartmentsResult, usersResult, viewsResult, favoritesResult, ratingsResult] = await Promise.all([
     supabase
       .from("apartments")
-      .select("id, is_published, approval_status, is_archived, deleted_at, status, created_at, published_at, apartment_rooms(id, status, is_occupied)"),
+      .select("id, title, is_published, approval_status, is_archived, deleted_at, status, created_at, published_at, apartment_rooms(id, status, is_occupied)"),
     supabase
       .from("app_users")
       .select("id, role, is_verified, status, verification_status, landlord_status")
@@ -1961,9 +1963,10 @@ export async function fetchAdminAnalyticsData(): Promise<AdminAnalyticsData> {
     supabase
       .from("favorites")
       .select("apartment_id, created_at"),
+    supabase.from("apartment_ratings").select("apartment_id, rating, created_at"),
   ]);
 
-  const firstError = apartmentsResult.error ?? usersResult.error ?? viewsResult.error ?? favoritesResult.error;
+  const firstError = apartmentsResult.error ?? usersResult.error ?? viewsResult.error ?? favoritesResult.error ?? ratingsResult.error;
   if (firstError) {
     console.error("Unable to load admin analytics:", firstError);
     throw new Error("Analytics could not be refreshed. Please try again.");
@@ -1974,6 +1977,7 @@ export async function fetchAdminAnalyticsData(): Promise<AdminAnalyticsData> {
     users: (usersResult.data ?? []) as AdminAnalyticsUserRow[],
     views: (viewsResult.data ?? []) as AdminAnalyticsViewRow[],
     favorites: (favoritesResult.data ?? []) as AdminAnalyticsFavoriteRow[],
+    ratings: (ratingsResult.data ?? []) as Array<{ apartment_id: string; rating: number; created_at: string }>,
   };
 }
 

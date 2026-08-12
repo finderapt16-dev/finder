@@ -1,4 +1,4 @@
-import { BarChart3, Building2, Eye, Heart, RefreshCw, ShieldCheck } from "lucide-react";
+import { BarChart3, Building2, Eye, Heart, RefreshCw, ShieldCheck, Star } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -193,6 +193,7 @@ export function AdminAnalyticsOverview() {
       .on("postgres_changes", { event: "*", schema: "public", table: "apartment_rooms" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "apartment_views" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "favorites" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "apartment_ratings" }, scheduleRefresh)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "app_users" }, scheduleRefresh)
       .subscribe();
     return () => {
@@ -237,10 +238,19 @@ export function AdminAnalyticsOverview() {
       return 3;
     };
     const verificationCounts = [0, 1, 2, 3].map((category) => landlords.filter((landlord) => verificationCategory(landlord) === category).length);
+    const ratings = (data?.ratings ?? []).filter((rating) => activeIds.has(rating.apartment_id) && Number.isInteger(Number(rating.rating)) && Number(rating.rating) >= 1 && Number(rating.rating) <= 5);
+    const distribution = [5, 4, 3, 2, 1].map((star) => ratings.filter((rating) => Number(rating.rating) === star).length);
+    const apartmentRatings = activeApartments.map((apartment) => {
+      const rows = ratings.filter((rating) => rating.apartment_id === apartment.id);
+      return { id: apartment.id, title: apartment.title, count: rows.length, average: rows.length ? rows.reduce((sum, row) => sum + Number(row.rating), 0) / rows.length : 0 };
+    }).filter((item) => item.count > 0);
+    const topRated = [...apartmentRatings].sort((a, b) => b.average - a.average || b.count - a.count).slice(0, 5);
+    const mostRated = [...apartmentRatings].sort((a, b) => b.count - a.count || b.average - a.average).slice(0, 5);
+    const periodRatings = ratings.filter((rating) => buckets.some((bucket) => timestampInBucket(rating.created_at, bucket))).length;
     return {
       buckets, submitted, published, activeApartments, statusCounts, demandByBucket,
       totalViews: periodViews.reduce((sum, view) => sum + Math.max(0, Number(view.view_count) || 0), 0),
-      totalFavorites: periodFavorites.length, roomCounts, rooms, verificationCounts, landlords,
+      totalFavorites: periodFavorites.length, roomCounts, rooms, verificationCounts, landlords, ratings, distribution, topRated, mostRated, periodRatings,
     };
   }, [customEnd, customStart, data, period]);
 
@@ -277,6 +287,18 @@ export function AdminAnalyticsOverview() {
       {error && data && <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">{error} Existing analytics remain visible.</div>}
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+        <article className="rounded-xl border border-slate-200 p-4">
+          <div><h3 className="text-sm font-black text-slate-900">Platform Ratings</h3><p className="text-[11px] font-medium text-slate-500">Current tenant-submitted apartment ratings.</p></div>
+          <CardState loading={loading && !data} error={!data ? error : null} empty={analytics.ratings.length === 0}>
+            <div className="mt-4 flex items-center gap-3"><Star className="h-7 w-7 fill-amber-400 text-amber-400" /><div><strong className="text-2xl font-black text-slate-950">{(analytics.ratings.reduce((sum, row) => sum + Number(row.rating), 0) / analytics.ratings.length).toFixed(1)}</strong><p className="text-[10px] font-bold text-slate-500">Based on {analytics.ratings.length} tenant rating{analytics.ratings.length === 1 ? "" : "s"}</p></div></div>
+            <div className="mt-4 space-y-2">{analytics.distribution.map((count, index) => <div key={5-index} className="flex items-center gap-2 text-[10px]"><span className="w-10 font-bold text-slate-600">{5-index} star</span><span className="h-2 flex-1 overflow-hidden rounded bg-slate-100"><i className="block h-full bg-amber-400" style={{width:`${percentage(count, analytics.ratings.length)}%`}} /></span><strong>{count}</strong></div>)}</div>
+            <p className="mt-3 text-[10px] font-semibold text-slate-500">{analytics.periodRatings} submitted during the selected period</p>
+          </CardState>
+        </article>
+        <article className="rounded-xl border border-slate-200 p-4 lg:col-span-2">
+          <div><h3 className="text-sm font-black text-slate-900">Rated Apartments</h3><p className="text-[11px] font-medium text-slate-500">Highest rated and most rated are shown separately.</p></div>
+          <CardState loading={loading && !data} error={!data ? error : null} empty={analytics.ratings.length === 0}><div className="mt-4 grid gap-4 sm:grid-cols-2"><div><h4 className="mb-2 text-[10px] font-black uppercase text-slate-500">Highest Rated</h4>{analytics.topRated.map((item) => <p key={item.id} className="mb-2 flex justify-between gap-2 text-xs"><span className="truncate font-semibold">{item.title}</span><strong className="shrink-0 text-amber-600">★ {item.average.toFixed(1)} · {item.count}</strong></p>)}</div><div><h4 className="mb-2 text-[10px] font-black uppercase text-slate-500">Most Rated</h4>{analytics.mostRated.map((item) => <p key={item.id} className="mb-2 flex justify-between gap-2 text-xs"><span className="truncate font-semibold">{item.title}</span><strong className="shrink-0 text-amber-600">{item.count} · ★ {item.average.toFixed(1)}</strong></p>)}</div></div></CardState>
+        </article>
         <article className="min-w-0 rounded-xl border border-slate-200 p-4 lg:col-span-2 xl:col-span-2">
           <div className="mb-2"><h3 className="text-sm font-black text-slate-900">Apartment Activity Trend</h3><p className="text-[11px] font-medium text-slate-500">Submissions and publications grouped in Asia/Manila time.</p></div>
           <div className="mb-1 flex flex-wrap gap-4 text-[10px] font-bold text-slate-500"><span><i className="mr-1.5 inline-block h-2 w-2 rounded-full bg-orange-500" />Submitted</span><span><i className="mr-1.5 inline-block h-2 w-2 rounded-full bg-green-500" />Published</span></div>

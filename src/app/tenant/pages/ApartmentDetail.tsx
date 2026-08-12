@@ -5,7 +5,7 @@ import {
   Phone,
   Plus,
   Search, Settings, Share2, ShieldCheck,
-  Sparkles,
+  Sparkles, Star,
   Square,
   TrendingUp,
   User,
@@ -32,11 +32,13 @@ import { fetchApartmentWithImages, getLandlordVerification, recordApartmentView,
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import { createReport, fetchPublicLandlordById, type DashboardUserRow } from "@/app/shared/services/dashboardSupabaseService";
 import { uploadReportEvidence } from "@/app/shared/services/reportEvidenceService";
+import { fetchApartmentRatings, removeApartmentRating, saveApartmentRating, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
 import { apartmentToFormValues } from "@/app/shared/utils/apartmentMappers";
 import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
 import { getImageUrl } from "@/app/shared/utils/images";
 import { isTenantVisibleApartment } from "@/app/shared/utils/listingVisibility";
 import { hasValidApartmentCoordinates, isDefaultMapCenter } from "@/app/shared/utils/mapCoordinates";
+import { supabase } from "@/lib/supabaseclient";
 import { TenantMobileNavigation } from "@/app/tenant/components/TenantMobileNavigation";
 
 const STATUS_LABEL: Record<string, string> = { available: "Available", occupied: "Occupied", reserved: "Reserved", maintenance: "Maintenance" };
@@ -73,6 +75,8 @@ export function ApartmentDetail() {
   const [evidence, setEvidence] = useState<EvidenceFile[]>([]);
   const [submittingReport, setSubmittingReport] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<ApartmentRoom | null>(null);
+  const [ratings, setRatings] = useState<ApartmentRatingRow[]>([]);
+  const [ratingSaving, setRatingSaving] = useState(false);
   const listingUpdatedAt = id ? contextApartments.find((item) => item.id === id)?.updatedAt : undefined;
 
   const returnTo = (() => {
@@ -122,6 +126,15 @@ export function ApartmentDetail() {
   }, [id, listingUpdatedAt, routeLocation.key, user?.authId, user?.email, user?.id, user?.name, user?.role]);
 
   useEffect(() => {
+    if (!id) return;
+    let active = true;
+    const loadRatings = () => fetchApartmentRatings(id).then((rows) => { if (active) setRatings(rows); }).catch((error) => console.error("Unable to load apartment ratings:", error));
+    void loadRatings();
+    const channel = supabase.channel(`apartment-ratings-${id}`).on("postgres_changes", { event: "*", schema: "public", table: "apartment_ratings", filter: `apartment_id=eq.${id}` }, loadRatings).subscribe();
+    return () => { active = false; void supabase.removeChannel(channel); };
+  }, [id]);
+
+  useEffect(() => {
     if (!selectedRoom?.id || !apartment?.rooms) return;
     setSelectedRoom(apartment.rooms.find((room) => room.id === selectedRoom.id) ?? null);
   }, [apartment?.rooms, selectedRoom?.id]);
@@ -133,6 +146,10 @@ export function ApartmentDetail() {
   const canEdit = apartment ? canEditApartment(apartment.id, apartment.landlordId) : false;
   const ownListing = user?.role === "landlord" && (apartment?.landlordId === user.id || canEdit);
   const renter = isTenantRole(user?.role);
+  const currentRating = ratings.find((rating) => rating.tenant_id === user?.id)?.rating ?? 0;
+  const averageRating = ratings.length ? ratings.reduce((sum, rating) => sum + Number(rating.rating), 0) / ratings.length : 0;
+  const setTenantRating = async (rating: number) => { if (!apartment || !user?.id) return; setRatingSaving(true); try { await saveApartmentRating(apartment.id, user.id, rating); toast.success("Rating saved."); } catch (error) { toast.error(error instanceof Error ? error.message : "Unable to save rating."); } finally { setRatingSaving(false); } };
+  const clearTenantRating = async () => { if (!apartment || !user?.id) return; setRatingSaving(true); try { await removeApartmentRating(apartment.id, user.id); toast.success("Rating removed."); } catch (error) { toast.error(error instanceof Error ? error.message : "Unable to remove rating."); } finally { setRatingSaving(false); } };
 
   const handleBack = () => {
     if (returnTo) return navigate(returnTo);
@@ -336,6 +353,7 @@ export function ApartmentDetail() {
           <section className="min-w-0 rounded-lg border bg-white p-5 shadow-sm"><h2 className="text-lg font-black">Landlord Information</h2><div className="mt-4 flex min-w-0 items-center gap-3 rounded-lg bg-slate-50 p-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-orange-100 font-black text-orange-700">{landlordName === "Not provided" ? "L" : landlordName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2)}</span><div className="min-w-0"><strong className="block break-words">{landlordName}</strong>{verified && <VerifiedBadge label="Verified Landlord" className="mt-1" />}</div></div><div className="mt-4 space-y-2 text-sm text-slate-600"><p className="flex min-w-0 gap-2"><Mail className="h-4 w-4 shrink-0" /><span className="min-w-0 break-words">{landlord?.email || "Email not provided"}</span></p><p className="flex min-w-0 gap-2"><Phone className="h-4 w-4 shrink-0" /><span className="min-w-0 break-words">{landlord?.mobile || landlord?.mobileNumber || "Phone not provided"}</span></p></div></section>
           <section className="min-w-0 rounded-lg border bg-white p-5 shadow-sm"><h2 className="text-lg font-black">Property Details</h2><dl className="mt-4 space-y-3 text-sm">{[{ label: "Property Type", value: apartment.propertyType || "Not provided" }, { label: "Available Date", value: dateLabel(apartment.availableDate) }, { label: "Utilities", value: Array.isArray(apartment.utilities) && apartment.utilities.length ? apartment.utilities.join(", ") : "Not included" }, { label: "Status", value: STATUS_LABEL[status] }, { label: "ZIP Code", value: apartment.zip || "Not provided" }].map(({ label, value }) => <div key={label} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-4 border-b pb-2 last:border-0"><dt className="break-words text-slate-500">{label}</dt><dd className="break-words text-right font-bold">{value}</dd></div>)}</dl></section>
           <section className="min-w-0 rounded-lg border bg-white p-5 shadow-sm"><h2 className="text-lg font-black">Safety & Rules</h2>{rules.length ? <ul className="mt-4 space-y-2">{rules.map((rule) => <li key={rule} className="flex min-w-0 gap-2 text-sm text-slate-600"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /><span className="min-w-0 break-words">{rule}</span></li>)}</ul> : <p className="mt-3 text-sm text-slate-500">No safety rules provided.</p>}</section>
+          {renter && <section className="min-w-0 rounded-lg border border-amber-100 bg-amber-50 p-5 shadow-sm"><h2 className="font-black">Tenant Rating</h2><p className="mt-1 text-xs text-slate-600">{ratings.length ? `★ ${averageRating.toFixed(1)} based on ${ratings.length} rating${ratings.length === 1 ? "" : "s"}` : "No ratings yet"}</p><div className="mt-3 flex gap-1">{[1,2,3,4,5].map((value) => <button key={value} type="button" disabled={ratingSaving} aria-label={`Rate ${value} stars`} onClick={() => void setTenantRating(value)}><Star className={`h-7 w-7 ${value <= currentRating ? "fill-amber-400 text-amber-400" : "text-slate-300"}`} /></button>)}</div>{currentRating > 0 && <button type="button" disabled={ratingSaving} onClick={() => void clearTenantRating()} className="mt-3 text-xs font-bold text-slate-500 hover:text-rose-600">Remove my rating</button>}</section>}
           {renter && <section className="min-w-0 rounded-lg border border-orange-100 bg-orange-50 p-5 shadow-sm"><div className="flex min-w-0 gap-3"><AlertTriangle className="h-6 w-6 shrink-0 text-orange-600" /><div className="min-w-0"><h2 className="font-black">Report a Problem</h2><p className="mt-1 break-words text-xs leading-5 text-slate-600">Let us know about any issues you encountered with an apartment listing.</p></div></div><Button variant="outline" onClick={() => setReportOpen(true)} className="mt-4 w-full border-orange-300 text-orange-700 hover:bg-orange-100">Report a Problem</Button></section>}
         </aside></div>
       </div></main>

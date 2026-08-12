@@ -494,6 +494,10 @@ async function ensureProfileForAuthUser(authUser: {
   return profile;
 }
 
+function requiresPendingEmailVerification(authUser: { email_confirmed_at?: string | null; user_metadata?: Record<string, unknown> }): boolean {
+  return authUser.user_metadata?.requires_email_verification === true && !authUser.email_confirmed_at;
+}
+
 export async function getCurrentAuthenticatedUser(): Promise<User | null> {
   const { data, error } = await supabaseClient.auth.getSession();
 
@@ -503,6 +507,12 @@ export async function getCurrentAuthenticatedUser(): Promise<User | null> {
 
   const authUser = data.session?.user;
   if (!authUser) {
+    persistCurrentUser(null);
+    return null;
+  }
+
+  if (requiresPendingEmailVerification(authUser)) {
+    await supabaseClient.auth.signOut();
     persistCurrentUser(null);
     return null;
   }
@@ -518,6 +528,13 @@ export function onAuthStateChange(callback: (user: User | null) => void): () => 
     const authUser = session?.user;
 
     if (!authUser) {
+      persistCurrentUser(null);
+      callback(null);
+      return;
+    }
+
+    if (requiresPendingEmailVerification(authUser)) {
+      void supabaseClient.auth.signOut();
       persistCurrentUser(null);
       callback(null);
       return;
@@ -552,6 +569,7 @@ export async function signupUser(input: CreateUserInput): Promise<User> {
     email,
     password: input.password,
     options: {
+      emailRedirectTo: `${window.location.origin}/auth/callback`,
       data: {
         name: input.name,
         role,
@@ -569,6 +587,7 @@ export async function signupUser(input: CreateUserInput): Promise<User> {
         otherOccupation: input.otherOccupation,
         otherOrganization: input.otherOrganization,
         otherWorkplace: input.otherWorkplace,
+        requires_email_verification: true,
       },
     },
   });
@@ -687,10 +706,23 @@ export async function loginUser(credentials: AuthCredentials): Promise<User> {
     throw new Error('Invalid email or password.');
   }
 
+  if (requiresPendingEmailVerification(data.user)) {
+    await supabaseClient.auth.signOut();
+    throw new Error('Email verification required. Check your inbox and verify your email before signing in.');
+  }
+
   const profile = await ensureProfileForAuthUser(data.user);
   await recordLogin(profile, data.user.id, true, { email });
   persistCurrentUser(profile);
   return profile;
+}
+
+export async function resendSignupVerification(email: string): Promise<void> {
+  const { error } = await supabaseClient.auth.resend({
+    type: 'signup', email: email.trim(),
+    options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+  });
+  if (error) throw new Error(error.message);
 }
 
 export async function updateUser(userId: string, updates: UpdateUserInput): Promise<User> {

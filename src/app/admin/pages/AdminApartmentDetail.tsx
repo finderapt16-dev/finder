@@ -34,6 +34,7 @@ import {
   type VerificationDocumentRecord,
 } from "@/app/shared/services/verificationDocumentsService";
 import { formatAuditLogForDisplay } from "@/app/shared/utils/auditLogDisplay";
+import { fetchApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
 import { supabase } from "@/lib/supabaseclient";
 import {
   AlertTriangle,
@@ -216,6 +217,7 @@ export function AdminApartmentDetail() {
   const [landlordProfile, setLandlordProfile] = useState<DashboardLandlordProfileRow | null>(null);
   const [verifiedLandlord, setVerifiedLandlord] = useState<{ name?: string } | null>(null);
   const [reports, setReports] = useState<DashboardReportRow[]>([]);
+  const [ratings, setRatings] = useState<ApartmentRatingRow[]>([]);
   const [appeals, setAppeals] = useState<DashboardAppealRow[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedReport, setSelectedReport] = useState<DashboardReportRow | null>(null);
@@ -282,7 +284,8 @@ export function AdminApartmentDetail() {
           }
         }
 
-        const allReports = await fetchAdminReports();
+        const [allReports, ratingRows] = await Promise.all([fetchAdminReports(), fetchApartmentRatings(id)]);
+        if (active) setRatings(ratingRows);
         if (active && allReports) {
           const apartmentReports = allReports.filter((r) => r.apartment_id === id || r.apartmentId === id);
           setReports(apartmentReports);
@@ -825,6 +828,7 @@ export function AdminApartmentDetail() {
                     { label: "Listing Status", value: listingStatusLabel, helper: apartment.isPublished === false ? "Pending admin approval" : "Active and visible to tenants", icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-600" },
                     { label: "Submitted On", value: formattedDatePosted, helper: formattedDatePostedTime, icon: CalendarCheck, tone: "bg-blue-50 text-blue-600" },
                     { label: "Reports", value: `${reports.length} report(s)`, helper: reports.length > 0 ? "Requires review" : "No active reports", icon: Flag, tone: "bg-rose-50 text-rose-600" },
+                    { label: "Tenant Rating", value: ratings.length ? `★ ${(ratings.reduce((sum, row) => sum + Number(row.rating), 0) / ratings.length).toFixed(1)}` : "No ratings yet", helper: ratings.length ? `Based on ${ratings.length} rating${ratings.length === 1 ? "" : "s"}` : "No tenant ratings", icon: Eye, tone: "bg-amber-50 text-amber-600" },
                     { label: "Visibility", value: apartment.isPublished === false ? "Hidden" : "Public", helper: apartment.isPublished === false ? "Not visible to tenants" : "Visible to all tenants", icon: Eye, tone: "bg-orange-50 text-orange-600" },
                   ].map(({ label, value, helper, icon: Icon, tone }) => (
                     <div key={label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

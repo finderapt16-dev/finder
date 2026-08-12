@@ -191,7 +191,7 @@ export function Landing() {
               <AppLogo className="h-10 w-10 rounded-xl transition-all group-hover:scale-105" iconClassName="h-5 w-5" />
               <div>
                 <span className={`text-xl font-black bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent`}>
-                  AptFindr
+                  RentIloilo
                 </span>
                 <p className="text-[10px] text-amber-600/60 font-semibold -mt-0.5 leading-none">La Paz, Iloilo City</p>
               </div>
@@ -243,7 +243,7 @@ export function Landing() {
               </SheetTrigger>
               <SheetContent className="bg-white border-amber-100">
                 <SheetTitle className="text-amber-900">Menu</SheetTitle>
-                <SheetDescription className="text-amber-700/60">AptFindr — La Paz, Iloilo City</SheetDescription>
+                <SheetDescription className="text-amber-700/60">RentIloilo — La Paz, Iloilo City</SheetDescription>
                 <nav className="flex flex-col gap-2 mt-8">
                   {[
                     { to: "/browse", label: "Browse Apartments", protected: true },
@@ -552,7 +552,7 @@ export function Landing() {
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-12">
             <p className="text-amber-400 font-bold text-sm uppercase tracking-widest mb-2">Platform users</p>
-            <h2 className="text-3xl md:text-4xl font-black text-white mb-3">Who Uses AptFindr</h2>
+            <h2 className="text-3xl md:text-4xl font-black text-white mb-3">Who Uses RentIloilo</h2>
             <p className="text-slate-400 max-w-xl mx-auto">Tools for renters, landlords, and platform administrators.</p>
           </AnimatedSection>
 
@@ -620,7 +620,7 @@ export function Landing() {
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-14">
             <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Simple process</p>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">How AptFindr Works</h2>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">How RentIloilo Works</h2>
             <p className="text-slate-500 max-w-xl mx-auto">Create an account, review listings, and compare suitable options.</p>
           </AnimatedSection>
 
@@ -723,14 +723,14 @@ export function Landing() {
             <div className="lg:col-span-2">
               <div className="flex items-center gap-3 mb-4">
                 <AppLogo className="h-10 w-10 rounded-xl" iconClassName="h-5 w-5" />
-                <span className="font-black text-white text-xl">AptFindr</span>
+                <span className="font-black text-white text-xl">RentIloilo</span>
               </div>
               <p className="text-slate-400 leading-relaxed max-w-xs text-sm">
                 A Progressive Web Application for apartment discovery and listing management in La Paz, Iloilo City. Academic thesis project.
               </p>
               <div className="flex gap-3 mt-5">
-                <a href="mailto:aptfindr@example.com" className="flex items-center gap-2 text-xs text-slate-500 hover:text-amber-400 transition-colors">
-                  <Mail className="h-3.5 w-3.5" />aptfindr@example.com
+                <a href="mailto:rentiloilo@example.com" className="flex items-center gap-2 text-xs text-slate-500 hover:text-amber-400 transition-colors">
+                  <Mail className="h-3.5 w-3.5" />rentiloilo@example.com
                 </a>
               </div>
             </div>
@@ -778,7 +778,7 @@ export function Landing() {
           </div>
 
           <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-slate-600">© 2026 AptFindr PWA — La Paz, Iloilo City. Academic thesis project.</p>
+            <p className="text-xs text-slate-600">© 2026 RentIloilo PWA — La Paz, Iloilo City. Academic thesis project.</p>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-slate-800 px-3 py-1.5 rounded-full">
                 <Smartphone className="h-3 w-3" /> Progressive Web App

@@ -19,6 +19,7 @@ const Flowchart = lazy(() => import("./shared/pages/tools/Flowchart").then((modu
 const ApartmentDetail = lazy(() => import("./tenant/pages/ApartmentDetail").then((module) => ({ default: module.ApartmentDetail })));
 const Favorites = lazy(() => import("./tenant/pages/Favorites").then((module) => ({ default: module.Favorites })));
 const Home = lazy(() => import("./tenant/pages/Home").then((module) => ({ default: module.Home })));
+const AuthCallback = lazy(() => import("./public/auth-callback/AuthCallback").then((module) => ({ default: module.AuthCallback })));
 
 const APARTMENT_LOGIN_MESSAGE = "Please sign in or create an account to view apartment details.";
 
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
   { path: "/flowchart", element: <PageLoader><Flowchart /></PageLoader> },
   { path: "/design-guide", element: <PageLoader><DesignGuide /></PageLoader> },
   { path: "/", element: <PublicLandingRoute /> },
+  { path: "/auth/callback", element: <PageLoader><AuthCallback /></PageLoader> },
 
   // Main app wrapped in Root layout
   {

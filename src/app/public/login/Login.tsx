@@ -3,6 +3,7 @@ import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallba
 import { Alert, AlertDescription } from "@/app/shared/components/ui/alert";
 import { Button } from "@/app/shared/components/ui/button";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
+import { resendSignupVerification } from "@/app/shared/services/authService";
 import {
   AlertCircle,
   ArrowRight,
@@ -77,6 +78,9 @@ export function Login() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const requestedRedirect = new URLSearchParams(location.search).get("redirect");
   const redirectTo = requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")
     ? requestedRedirect
@@ -88,9 +92,29 @@ export function Login() {
   useEffect(() => {
     if (location.state?.message) {
       setSuccessMessage(location.state.message);
+      if (typeof location.state.verificationEmail === "string") setVerificationEmail(location.state.verificationEmail);
       window.history.replaceState({}, document.title);
     }
   }, [location]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setInterval(() => setResendCooldown((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
+
+  const resendVerification = async () => {
+    if (!verificationEmail || resending || resendCooldown > 0) return;
+    setResending(true); setError("");
+    try {
+      await resendSignupVerification(verificationEmail);
+      setSuccessMessage("Verification email requested. Check your inbox and spam folder.");
+      setResendCooldown(60);
+    } catch (resendError) {
+      console.error("Unable to resend verification email:", resendError);
+      setError("Unable to resend the verification email. Please try again later.");
+    } finally { setResending(false); }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,10 +125,10 @@ export function Login() {
       if (result.success) {
         navigate(redirectTo, { replace: true });
       } else {
-        setError(result.error || "Login failed");
+        setError(result.error || "Unable to sign in. Check your email and password and try again.");
       }
     } catch {
-      setError("Login failed. Check your connection and try again.");
+      setError("Unable to sign in. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -130,7 +154,7 @@ export function Login() {
           <Link to="/" className="flex items-center gap-3 group mb-auto">
             <AppLogo className="h-10 w-10 rounded-xl group-hover:scale-105 transition-transform" iconClassName="h-5 w-5" />
             <div>
-              <span className="text-lg font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">AptFindr</span>
+              <span className="text-lg font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">RentIloilo</span>
               <p className="text-[10px] text-white/40 font-semibold -mt-0.5 uppercase tracking-widest">La Paz, Iloilo City</p>
             </div>
           </Link>
@@ -144,16 +168,16 @@ export function Login() {
             >
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/20 border border-amber-400/30 rounded-full mb-5">
                 <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                <span className="text-xs font-bold text-amber-300 tracking-wide">Trusted Housing Platform</span>
+                <span className="text-xs font-bold text-amber-300 tracking-wide">Apartment Finder for La Paz</span>
               </div>
               <h2 className="text-3xl xl:text-4xl font-black text-white leading-tight mb-4">
-                Welcome back to<br />
+                Continue to<br />
                 <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-                  your home search
+                  RentIloilo
                 </span>
               </h2>
               <p className="text-white/60 text-sm leading-relaxed max-w-xs">
-                Sign back in to manage your listings, messages, and apartment search in La Paz, Iloilo City.
+                Sign in to browse apartments or manage your property listings.
               </p>
             </motion.div>
           </div>
@@ -166,10 +190,10 @@ export function Login() {
             transition={{ delay: 0.3, duration: 0.6 }}
           >
             {[
-              { icon: BadgeCheck, text: "Landlords verified with business permits" },
-              { icon: ShieldCheck, text: "Permit-checked, flagged listings" },
-              { icon: MapPin,     text: "GIS map of apartments in La Paz" },
-              { icon: Star,       text: "Smart ranking by your preferences" },
+              { icon: BadgeCheck, text: "Review landlord verification status" },
+              { icon: ShieldCheck, text: "Report inaccurate listing information" },
+              { icon: MapPin,     text: "Compare apartment locations on the map" },
+              { icon: Star,       text: "Receive suggestions based on your preferences" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
                 <div className="flex-shrink-0 h-7 w-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
@@ -188,10 +212,10 @@ export function Login() {
             transition={{ delay: 0.45, duration: 0.55 }}
           >
             {[
-              { value: "50+",  label: "Apartments" },
-              { value: "30+",  label: "Verified Landlords" },
-              { value: "120+", label: "Available Rooms" },
-              { value: "6+",   label: "Barangays" },
+              { value: "Browse", label: "Apartments" },
+              { value: "Save", label: "Favorites" },
+              { value: "Check", label: "Available Rooms" },
+              { value: "Compare", label: "Locations" },
             ].map(({ value, label }) => (
               <div key={label} className="bg-white/8 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 text-center">
                 <p className="text-xl font-black text-white">{value}</p>
@@ -202,7 +226,7 @@ export function Login() {
 
           {/* Trust badges */}
           <div className="flex flex-wrap gap-2 mt-5">
-            {["Secure Sign In", "Verified Platform", "Protected Data"].map((b) => (
+            {["Account Access", "Role-Based Dashboard", "Password Recovery"].map((b) => (
               <div key={b} className="flex items-center gap-1.5 px-2.5 py-1 bg-white/8 border border-white/10 rounded-full">
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 <span className="text-[10px] text-white/50 font-semibold">{b}</span>
@@ -219,7 +243,7 @@ export function Login() {
         <div className="lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3.5 bg-white/90 backdrop-blur border-b border-slate-100 shadow-sm">
           <Link to="/" className="flex items-center gap-2.5">
             <AppLogo className="h-8 w-8 rounded-lg" iconClassName="h-4 w-4" />
-            <span className="font-black text-amber-600 text-base">AptFindr</span>
+            <span className="font-black text-amber-600 text-base">RentIloilo</span>
           </Link>
           <Link to={signupPath} className="text-sm font-bold text-slate-500 hover:text-amber-600 transition-colors">
             Create account
@@ -233,7 +257,7 @@ export function Login() {
             <div className="mb-8">
               <h1 className="text-2xl lg:text-3xl font-black text-slate-900 leading-tight">Sign in to your account</h1>
               <p className="text-slate-500 text-sm mt-1.5">
-                New to AptFindr?{" "}
+                New to RentIloilo?{" "}
                 <Link to={signupPath} className="text-amber-600 font-bold hover:text-amber-700 transition-colors">
                   Create an account
                 </Link>
@@ -253,6 +277,7 @@ export function Login() {
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     <AlertDescription className="font-semibold text-emerald-700 text-sm">{successMessage}</AlertDescription>
                   </Alert>
+                  {verificationEmail && <button type="button" disabled={resending || resendCooldown > 0} onClick={() => void resendVerification()} className="mt-2 text-xs font-bold text-amber-700 disabled:text-slate-400">{resending ? "Sending..." : resendCooldown > 0 ? `Resend available in ${resendCooldown}s` : "Resend Verification Email"}</button>}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -333,7 +358,7 @@ export function Login() {
                       animate={{ rotate: 360 }}
                       transition={{ repeat: Infinity, duration: 0.7, ease: "linear" }}
                     />
-                    Verifying...
+                    Signing in...
                   </>
                 ) : (
                   <>
@@ -346,7 +371,7 @@ export function Login() {
 
               {/* Trust badges — same as Signup */}
               <div className="flex items-center justify-center gap-4 pt-1">
-                {["Secure", "Verified", "Protected"].map((b) => (
+                {["Email", "Password", "Account Access"].map((b) => (
                   <div key={b} className="flex items-center gap-1 text-xs text-slate-400 font-medium">
                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                     {b}

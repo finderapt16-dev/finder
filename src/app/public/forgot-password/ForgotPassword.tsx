@@ -84,7 +84,8 @@ export function ForgotPassword() {
     setLoading(false);
 
     if (resetError) {
-      setError(resetError.message);
+      console.error("Password recovery request failed:", resetError);
+      setError("Unable to send reset instructions. Please try again.");
       return;
     }
 
@@ -112,7 +113,7 @@ export function ForgotPassword() {
           <Link to="/" className="flex items-center gap-3 group mb-auto">
             <AppLogo className="h-10 w-10 rounded-xl group-hover:scale-105 transition-transform" iconClassName="h-5 w-5" />
             <div>
-              <span className="text-lg font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">AptFindr</span>
+              <span className="text-lg font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">RentIloilo</span>
               <p className="text-[10px] text-white/40 font-semibold -mt-0.5 uppercase tracking-widest">La Paz, Iloilo City</p>
             </div>
           </Link>
@@ -126,16 +127,16 @@ export function ForgotPassword() {
             >
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/20 border border-amber-400/30 rounded-full mb-5">
                 <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                <span className="text-xs font-bold text-amber-300 tracking-wide">Trusted Housing Platform</span>
+                <span className="text-xs font-bold text-amber-300 tracking-wide">RentIloilo Account Recovery</span>
               </div>
               <h2 className="text-3xl xl:text-4xl font-black text-white leading-tight mb-4">
-                Account recovery<br />
+                Reset your<br />
                 <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-                  made simple
+                  account password
                 </span>
               </h2>
               <p className="text-white/60 text-sm leading-relaxed max-w-xs">
-                Regain access to your AptFindr account securely. We'll send a reset link straight to your inbox.
+                Enter your account email to request password reset instructions.
               </p>
             </motion.div>
           </div>
@@ -148,10 +149,10 @@ export function ForgotPassword() {
             transition={{ delay: 0.3, duration: 0.6 }}
           >
             {[
-              { icon: ShieldCheck, text: "Secure, encrypted reset process" },
-              { icon: Lock,        text: "Reset link expires automatically" },
-              { icon: BadgeCheck,  text: "Verified account protection" },
-              { icon: Key,         text: "Single-use recovery link" },
+              { icon: ShieldCheck, text: "Request instructions using your account email" },
+              { icon: Lock,        text: "Open the link provided in the email" },
+              { icon: BadgeCheck,  text: "Choose a new account password" },
+              { icon: Key,         text: "Return to Sign In when finished" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
                 <div className="flex-shrink-0 h-7 w-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
@@ -170,10 +171,10 @@ export function ForgotPassword() {
             transition={{ delay: 0.45, duration: 0.55 }}
           >
             {[
-              { value: "50+",  label: "Apartments" },
-              { value: "30+",  label: "Verified Landlords" },
-              { value: "120+", label: "Available Rooms" },
-              { value: "6+",   label: "Barangays" },
+              { value: "Enter", label: "Account Email" },
+              { value: "Open", label: "Reset Instructions" },
+              { value: "Choose", label: "New Password" },
+              { value: "Return", label: "To Sign In" },
             ].map(({ value, label }) => (
               <div key={label} className="bg-white/8 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 text-center">
                 <p className="text-xl font-black text-white">{value}</p>
@@ -184,7 +185,7 @@ export function ForgotPassword() {
 
           {/* Trust badges */}
           <div className="flex flex-wrap gap-2 mt-5">
-            {["Secure Recovery", "Verified Platform", "Protected Data"].map((b) => (
+            {["Account Email", "Reset Instructions", "New Password"].map((b) => (
               <div key={b} className="flex items-center gap-1.5 px-2.5 py-1 bg-white/8 border border-white/10 rounded-full">
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 <span className="text-[10px] text-white/50 font-semibold">{b}</span>
@@ -201,7 +202,7 @@ export function ForgotPassword() {
         <div className="lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3.5 bg-white/90 backdrop-blur border-b border-slate-100 shadow-sm">
           <Link to="/" className="flex items-center gap-2.5">
             <AppLogo className="h-8 w-8 rounded-lg" iconClassName="h-4 w-4" />
-            <span className="font-black text-amber-600 text-base">AptFindr</span>
+            <span className="font-black text-amber-600 text-base">RentIloilo</span>
           </Link>
           <Link to="/login" className="text-sm font-bold text-slate-500 hover:text-amber-600 transition-colors">
             Sign in
@@ -214,7 +215,7 @@ export function ForgotPassword() {
             {/* Page heading */}
             <div className="mb-8">
               <h1 className="text-2xl lg:text-3xl font-black text-slate-900 leading-tight">
-                {sent ? "Check your inbox" : "Reset your password"}
+                {sent ? "Check your email" : "Forgot your password?"}
               </h1>
               <p className="text-slate-500 text-sm mt-1.5">
                 Remember your password?{" "}
@@ -267,7 +268,7 @@ export function ForgotPassword() {
                           icon={<Mail className="h-4 w-4" />}
                         />
                         <p className="text-xs text-slate-400 font-medium px-1">
-                          Enter the email you registered with. If it exists in our system, we'll send a secure reset link.
+                          Enter the email associated with your account. If eligible, reset instructions will be sent to that address.
                         </p>
                       </div>
 
@@ -275,7 +276,7 @@ export function ForgotPassword() {
                       <div className="flex items-start gap-3 px-5 py-3.5 bg-amber-50/60 border-t border-amber-100">
                         <ShieldCheck className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
                         <p className="text-xs text-amber-700 font-medium leading-relaxed">
-                          The reset link is single-use and expires after 1 hour for your account's security.
+                          For your security, use the most recent recovery email and follow its instructions promptly.
                         </p>
                       </div>
                     </div>
@@ -306,7 +307,7 @@ export function ForgotPassword() {
 
                     {/* Trust badges */}
                     <div className="flex items-center justify-center gap-4 pt-1">
-                      {["Secure", "Encrypted", "Protected"].map((b) => (
+                      {["Account Email", "Reset Instructions", "Password Recovery"].map((b) => (
                         <div key={b} className="flex items-center gap-1 text-xs text-slate-400 font-medium">
                           <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                           {b}
@@ -357,9 +358,9 @@ export function ForgotPassword() {
                         <CheckCircle2 className="h-8 w-8 text-emerald-500" />
                       </motion.div>
                       <div>
-                        <p className="font-black text-slate-900 text-base">Reset link sent!</p>
+                        <p className="font-black text-slate-900 text-base">Check your email</p>
                         <p className="text-sm text-slate-500 font-medium mt-1">
-                          We sent a secure link to
+                          Password reset instructions were requested for
                         </p>
                         <p className="text-sm font-black text-amber-600 mt-0.5 break-all">{email}</p>
                       </div>
@@ -369,7 +370,7 @@ export function ForgotPassword() {
                     <div className="px-5 pb-5 space-y-2">
                       {[
                         { step: "1", text: "Open your email inbox" },
-                        { step: "2", text: "Click the secure reset link" },
+                        { step: "2", text: "Open the password reset link" },
                         { step: "3", text: "Choose a new password" },
                       ].map(({ step, text }) => (
                         <div key={step} className="flex items-center gap-3 py-2 px-3 rounded-xl bg-slate-50 border border-slate-100">
@@ -385,7 +386,7 @@ export function ForgotPassword() {
                     <div className="flex items-start gap-3 px-5 py-3.5 bg-amber-50/60 border-t border-amber-100">
                       <Mail className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-amber-700 font-medium leading-relaxed">
-                        Can't find it? Check your spam or junk folder. The link expires in 1 hour.
+                        Can't find it? Check your spam or junk folder, or request another email.
                       </p>
                     </div>
                   </div>
@@ -403,7 +404,7 @@ export function ForgotPassword() {
 
                   {/* Trust badges */}
                   <div className="flex items-center justify-center gap-4 pt-1">
-                    {["Secure", "Encrypted", "Protected"].map((b) => (
+                    {["Account Email", "Reset Link", "New Password"].map((b) => (
                       <div key={b} className="flex items-center gap-1 text-xs text-slate-400 font-medium">
                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                         {b}
