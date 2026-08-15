@@ -12,6 +12,7 @@ import { useAuth } from "@/app/shared/contexts/AuthContext";
 import {
   deleteApartment as deleteApartmentInDb,
   fetchApartmentsForLandlord,
+  persistApartmentImages,
   updateApartment,
   updateApartmentPublication,
   type Apartment,
@@ -869,11 +870,11 @@ export function LandlordDashboard() {
     }
   };
 
-  const handleSaveEditedApartment = async (updatedApartment: Apartment) => {
+  const handleSaveEditedApartment = async (updatedApartment: Apartment, images: import("@/app/shared/components/common/MultiImageUploader").UploadedImage[]) => {
     if (!editingApartment) return;
 
     try {
-      const saved = await updateApartment(
+      await updateApartment(
         editingApartment.id,
         apartmentToFormValues({
           ...updatedApartment,
@@ -882,6 +883,7 @@ export function LandlordDashboard() {
         }),
         user?.id,
       );
+      const saved = await persistApartmentImages(editingApartment.id, images, user?.id);
       setMyApartments((previous) =>
         previous.map((apartment) => apartment.id === editingApartment.id ? saved : apartment),
       );

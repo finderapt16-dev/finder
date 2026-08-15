@@ -1,0 +1,267 @@
+// nearbySearch.ts
+
+export interface NearbySearchIntent {
+  target: string;
+}
+
+export interface Coordinates {
+  lat: number;
+  lng: number;
+}
+
+export interface ApartmentCoordinates {
+  lat: number | string | null | undefined;
+  lng: number | string | null | undefined;
+}
+
+export type ApartmentWithDistance<T> = T & {
+  distanceMeters: number;
+};
+
+/**
+ * Only apartments inside this radius will appear
+ * in Nearby Search results.
+ */
+export const MAX_NEARBY_DISTANCE_METERS = 500;
+
+/**
+ * Detect nearby-search queries.
+ *
+ * Supported examples:
+ * - near ISAT U
+ * - nearest ISAT U
+ * - nearest to ISAT U
+ * - nearby ISAT U
+ * - closest to ISAT U
+ * - close to ISAT U
+ * - apartments near ISAT U
+ * - rooms near ISAT U
+ */
+export function parseNearbySearchIntent(
+  value: string
+): NearbySearchIntent | null {
+  const query = value.trim();
+
+  if (!query) {
+    return null;
+  }
+
+  const patterns = [
+    /^(?:apartments?|units?|rooms?)\s+(?:near|nearby|nearest(?:\s+to)?|closest(?:\s+to)?|close\s+to)\s+(.+)$/i,
+
+    /^(?:nearest(?:\s+to)?|nearby|closest(?:\s+to)?|close\s+to)\s+(.+)$/i,
+
+    /^near\s+(.+)$/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = query.match(pattern);
+
+    const target = match?.[1]?.trim();
+
+    if (
+      target &&
+      target.length >= 2 &&
+      !/^market apartment$/i.test(target)
+    ) {
+      return {
+        target,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Safely converts possible string coordinates
+ * coming from Supabase into numbers.
+ */
+export function normalizeCoordinates(
+  value: ApartmentCoordinates
+): Coordinates | null {
+  const lat =
+    typeof value.lat === "number"
+      ? value.lat
+      : Number(value.lat);
+
+  const lng =
+    typeof value.lng === "number"
+      ? value.lng
+      : Number(value.lng);
+
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng)
+  ) {
+    return null;
+  }
+
+  if (
+    lat < -90 ||
+    lat > 90 ||
+    lng < -180 ||
+    lng > 180
+  ) {
+    return null;
+  }
+
+  return {
+    lat,
+    lng,
+  };
+}
+
+/**
+ * Checks if the provided coordinates are valid.
+ */
+export function hasValidCoordinates(
+  value: ApartmentCoordinates
+): boolean {
+  return normalizeCoordinates(value) !== null;
+}
+
+/**
+ * Calculates straight-line geographic distance
+ * between two coordinates using Haversine.
+ *
+ * IMPORTANT:
+ * Return value is METERS.
+ */
+export function calculateDistanceMeters(
+  left: Coordinates,
+  right: Coordinates
+): number {
+  const EARTH_RADIUS_METERS = 6_371_000;
+
+  const toRadians = (degrees: number): number =>
+    (degrees * Math.PI) / 180;
+
+  const lat1 = toRadians(left.lat);
+  const lat2 = toRadians(right.lat);
+
+  const deltaLat = toRadians(
+    right.lat - left.lat
+  );
+
+  const deltaLng = toRadians(
+    right.lng - left.lng
+  );
+
+  const a =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(lat1) *
+      Math.cos(lat2) *
+      Math.sin(deltaLng / 2) ** 2;
+
+  /**
+   * Protect against floating-point values
+   * slightly above 1 or below 0.
+   */
+  const safeA = Math.min(
+    1,
+    Math.max(0, a)
+  );
+
+  const angularDistance =
+    2 *
+    Math.atan2(
+      Math.sqrt(safeA),
+      Math.sqrt(1 - safeA)
+    );
+
+  return (
+    EARTH_RADIUS_METERS *
+    angularDistance
+  );
+}
+
+/**
+ * Display distance using METERS only.
+ *
+ * Examples:
+ * 85.45 -> "85 m away"
+ * 499.8 -> "500 m away"
+ *
+ * NOTE:
+ * Anything above 500 meters should already
+ * have been removed from Nearby Search.
+ */
+export function formatDistance(
+  meters: number
+): string {
+  if (
+    !Number.isFinite(meters) ||
+    meters < 0
+  ) {
+    return "Distance unavailable";
+  }
+
+  return `${Math.round(meters)} m away`;
+}
+
+/**
+ * Finds apartments inside the 500-meter
+ * proximity radius and sorts them
+ * from nearest to farthest.
+ */
+export function findNearbyApartments<
+  T extends ApartmentCoordinates
+>(
+  apartments: T[],
+  searchedLocation: Coordinates,
+  maxDistanceMeters: number = MAX_NEARBY_DISTANCE_METERS
+): ApartmentWithDistance<T>[] {
+  const referenceCoordinates =
+    normalizeCoordinates(searchedLocation);
+
+  if (!referenceCoordinates) {
+    return [];
+  }
+
+  return apartments
+    .map((apartment) => {
+      const apartmentCoordinates =
+        normalizeCoordinates({
+          lat: apartment.lat,
+          lng: apartment.lng,
+        });
+
+      if (!apartmentCoordinates) {
+        return null;
+      }
+
+      const distanceMeters =
+        calculateDistanceMeters(
+          referenceCoordinates,
+          apartmentCoordinates
+        );
+
+      return {
+        ...apartment,
+        distanceMeters,
+      };
+    })
+
+    // Remove apartments without valid coordinates
+    .filter(
+      (
+        apartment
+      ): apartment is ApartmentWithDistance<T> =>
+        apartment !== null
+    )
+
+    // STRICT 500-METER PROXIMITY
+    .filter(
+      (apartment) =>
+        apartment.distanceMeters <=
+        maxDistanceMeters
+    )
+
+    // Nearest first
+    .sort(
+      (a, b) =>
+        a.distanceMeters -
+        b.distanceMeters
+    );
+}

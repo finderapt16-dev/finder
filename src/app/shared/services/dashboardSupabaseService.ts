@@ -227,6 +227,9 @@ export interface TenantPreferenceSettings {
   petFriendly: boolean;
   parking: boolean;
   furnished: boolean;
+  wifi: boolean;
+  ac: boolean;
+  laundryArea: boolean;
   sortBy: TenantPreferenceSortOption;
   recommendationLocation: boolean;
   saveBudgetPreferences: boolean;
@@ -300,11 +303,14 @@ type TableName = "app_users" | "apartments" | "apartment_views" | "favorites" | 
 
 export const defaultTenantPreferences: TenantPreferenceSettings = {
   preferredArea: "",
-  maxBudget: 6000,
+  maxBudget: 0,
   minBedrooms: "any",
   petFriendly: false,
   parking: false,
   furnished: false,
+  wifi: false,
+  ac: false,
+  laundryArea: false,
   sortBy: "recommended",
   recommendationLocation: true,
   saveBudgetPreferences: false,
@@ -916,7 +922,7 @@ function getOptionalBooleanValue(value: unknown, fallback: boolean): boolean {
 
 function getPositiveNumberValue(value: unknown, fallback: number): number {
   const parsed = getNumberValue(value);
-  return parsed > 0 ? parsed : fallback;
+  return parsed >= 0 ? parsed : fallback;
 }
 
 function isTenantPreferenceSortOption(value: unknown): value is TenantPreferenceSortOption {
@@ -928,7 +934,7 @@ function normalizeTenantPreferences(
   fallback: TenantPreferenceSettings = defaultTenantPreferences,
 ): TenantPreferenceSettings {
   const source = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
-  const minBedrooms = typeof source.minBedrooms === "string" && source.minBedrooms.length > 0 ? source.minBedrooms : fallback.minBedrooms;
+  const minBedrooms = source.minBedrooms === "1" || source.minBedrooms === "2" || source.minBedrooms === "3" ? source.minBedrooms : "any";
   const sortBy = isTenantPreferenceSortOption(source.sortBy) ? source.sortBy : fallback.sortBy;
 
   return {
@@ -938,6 +944,9 @@ function normalizeTenantPreferences(
     petFriendly: getOptionalBooleanValue(source.petFriendly, fallback.petFriendly),
     parking: getOptionalBooleanValue(source.parking, fallback.parking),
     furnished: getOptionalBooleanValue(source.furnished, fallback.furnished),
+    wifi: getOptionalBooleanValue(source.wifi, fallback.wifi),
+    ac: getOptionalBooleanValue(source.ac, fallback.ac),
+    laundryArea: getOptionalBooleanValue(source.laundryArea, fallback.laundryArea),
     sortBy,
     recommendationLocation: getOptionalBooleanValue(source.recommendationLocation, fallback.recommendationLocation),
     saveBudgetPreferences: getOptionalBooleanValue(source.saveBudgetPreferences, fallback.saveBudgetPreferences),
@@ -1772,9 +1781,10 @@ export async function saveTenantPreferences(
 ): Promise<TenantPreferenceSettings | null> {
   if (!userId) return null;
 
+  const current = await fetchTenantPreferences(userId) ?? defaultTenantPreferences;
   const merged = normalizeTenantPreferences(
     {
-      ...defaultTenantPreferences,
+      ...current,
       ...preferences,
       updatedAt: new Date().toISOString(),
     },

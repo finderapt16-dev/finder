@@ -1007,6 +1007,7 @@ export const uploadApartmentImage = async (
   }
 
   const { data } = supabase.storage.from('apartment-images').getPublicUrl(path);
+  if (!data.publicUrl || !/^https?:\/\//i.test(data.publicUrl)) throw new Error('No permanent apartment image URL was created.');
   return data.publicUrl;
 };
 
@@ -1025,7 +1026,26 @@ export const uploadApartmentRoomImage = async (
     contentType: file.type || 'image/jpeg',
   });
   if (error) throw new Error(unwrapErrorMessage(error, 'Unable to upload room image.'));
-  return supabase.storage.from('apartment-images').getPublicUrl(path).data.publicUrl;
+  const publicUrl = supabase.storage.from('apartment-images').getPublicUrl(path).data.publicUrl;
+  if (!publicUrl || !/^https?:\/\//i.test(publicUrl)) throw new Error('No permanent room image URL was created.');
+  return publicUrl;
+};
+
+export interface ApartmentImageSaveInput { url: string; file?: File | Blob; isPrimary?: boolean }
+
+export const persistApartmentImages = async (apartmentId: string, inputs: ApartmentImageSaveInput[], actorUserId?: string): Promise<Apartment> => {
+  const ordered = [...inputs].sort((a, b) => Number(b.isPrimary === true) - Number(a.isPrimary === true));
+  const urls: string[] = [];
+  for (let index = 0; index < ordered.length; index += 1) {
+    const image = ordered[index];
+    if (image.file) urls.push(await uploadApartmentImage(apartmentId, image.file, image.file instanceof File ? image.file.name : `apartment-${index}.jpg`));
+    else if (/^https?:\/\//i.test(image.url)) urls.push(image.url);
+    else throw new Error('A temporary image preview could not be saved. Please select it again.');
+  }
+  await replaceApartmentImages(apartmentId, urls, actorUserId);
+  const persisted = await fetchApartmentWithImages(apartmentId);
+  if (!persisted || persisted.images.length !== urls.length) throw new Error('Image changes could not be verified after saving.');
+  return persisted;
 };
 
 export const replaceApartmentImages = async (apartmentId: string, images: string[], actorUserId?: string): Promise<void> => {

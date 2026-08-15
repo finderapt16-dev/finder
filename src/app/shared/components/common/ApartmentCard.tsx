@@ -11,6 +11,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { VerifiedBadge } from "./VerifiedBadge";
 import { ApartmentRatingSummary } from "./ApartmentRatingSummary";
+import { ImageWithFallback } from "../figma/ImageWithFallback";
 
 interface ApartmentCardProps {
   apartment: Apartment;
@@ -46,6 +47,7 @@ export function ApartmentCard({ apartment, detailState, ratingStats, ratingsLoad
   const landlord = apartment.landlordId ? users.find((entry) => entry.id === apartment.landlordId) : undefined;
   const verifiedLandlord = apartment.landlordVerified ?? landlord?.isVerified === true;
   const locationText = formatApartmentLocation(apartment);
+  const imageUrl = getImageUrl(apartment.image || apartment.images?.[0] || "");
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -56,11 +58,7 @@ export function ApartmentCard({ apartment, detailState, ratingStats, ratingsLoad
     <Link to={`/apartment/${apartment.id}`} state={detailState}>
       <Card className="overflow-hidden transition-all duration-300 hover:shadow-2xl hover:transform hover:-translate-y-2 border-2 hover:border-amber-200 animate-fade-in">
         <div className="relative aspect-[4/3] overflow-hidden group">
-          <img
-            src={getImageUrl(apartment.image)}
-            alt={apartment.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
+          {imageUrl ? <ImageWithFallback src={imageUrl} alt={apartment.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" /> : <div className="flex h-full items-center justify-center bg-slate-100 text-sm font-semibold text-slate-500">Image unavailable</div>}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           {showFavoriteButton && (
             <Button

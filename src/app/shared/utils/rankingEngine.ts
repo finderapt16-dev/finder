@@ -1,4 +1,5 @@
 import type { Apartment } from "../data/apartments";
+import { getNormalizedApartmentAmenities } from "./apartmentAmenities";
 
 /**
  * WEIGHTED RANKING ALGORITHM FOR APARTMENT DISCOVERY
@@ -46,6 +47,7 @@ export interface TenantPreferences {
   studyArea?: boolean;
   laundryArea?: boolean;
   kitchenAccess?: boolean;
+  minBedrooms?: string;
 }
 
 export interface RankingContext {
@@ -185,7 +187,7 @@ function calculateBudgetScore(
 /**
  * Calculate availability score based on room status and availability date
  */
-function calculateAvailabilityScore(apartment: Apartment): number {
+function calculateAvailabilityScore(apartment: Apartment, preferences?: TenantPreferences): number {
   let score = 0;
 
   // Check apartment status
@@ -224,6 +226,8 @@ function calculateAvailabilityScore(apartment: Apartment): number {
     score += 5; // Available within a month
   }
 
+  const minimum = Number(preferences?.minBedrooms);
+  if (Number.isFinite(minimum) && minimum > 0 && apartment.bedrooms < minimum) score *= 0.65;
   return Math.min(score, 100);
 }
 
@@ -234,41 +238,6 @@ function calculateAvailabilityScore(apartment: Apartment): number {
 /**
  * Extract amenities from apartment (normalize from various formats)
  */
-function getApartmentAmenities(apartment: Apartment): Set<string> {
-  const amenities = new Set<string>();
-
-  // From amenities array
-  if (apartment.amenities && Array.isArray(apartment.amenities)) {
-    apartment.amenities.forEach(a => {
-      if (typeof a === 'string') {
-        amenities.add(a.toLowerCase().trim());
-      }
-    });
-  }
-
-  // From individual boolean properties
-  if (apartment.wifi) amenities.add('wifi');
-  if (apartment.parking) amenities.add('parking');
-  if (apartment.furnished) amenities.add('furnished');
-  if (apartment.petFriendly) amenities.add('pet friendly');
-
-  // From rooms (if available)
-  if (apartment.rooms?.some(r => r.hasAC)) amenities.add('air conditioning');
-
-  // From features object
-  if (apartment.features && typeof apartment.features === 'object' && !Array.isArray(apartment.features)) {
-    const featureKeys = Object.keys(apartment.features as Record<string, any>);
-    featureKeys.forEach(key => {
-      const value = (apartment.features as Record<string, any>)[key];
-      if (value) {
-        amenities.add(key.toLowerCase());
-      }
-    });
-  }
-
-  return amenities;
-}
-
 /**
  * Calculate amenities match score based on tenant preferences
  */
@@ -280,19 +249,19 @@ function calculateAmenitiesScore(
 
   // Collect preferences
   if (preferences?.wifi) preferredAmenities.push('wifi');
-  if (preferences?.ac) preferredAmenities.push('air conditioning');
+  if (preferences?.ac) preferredAmenities.push('air_conditioning');
   if (preferences?.studyArea) preferredAmenities.push('study area');
   if (preferences?.parking) preferredAmenities.push('parking');
   if (preferences?.laundryArea) preferredAmenities.push('laundry area');
   if (preferences?.kitchenAccess) preferredAmenities.push('kitchen access');
   if (preferences?.furnished) preferredAmenities.push('furnished');
-  if (preferences?.petFriendly) preferredAmenities.push('pet friendly');
+  if (preferences?.petFriendly) preferredAmenities.push('pet_friendly');
 
   if (preferredAmenities.length === 0) {
     return 50; // Neutral if no preferences
   }
 
-  const apartmentAmenities = getApartmentAmenities(apartment);
+  const apartmentAmenities = getNormalizedApartmentAmenities(apartment);
   let matchCount = 0;
 
   preferredAmenities.forEach(pref => {
@@ -431,7 +400,7 @@ export function calculateRankingScoreBreakdown(
 
   const locationScore = calculateLocationScore(apartment, preferences);
   const budgetScore = calculateBudgetScore(apartment, preferences);
-  const availabilityScore = calculateAvailabilityScore(apartment);
+  const availabilityScore = calculateAvailabilityScore(apartment, preferences);
   const amenitiesScore = calculateAmenitiesScore(apartment, preferences);
   const verificationScore = calculateVerificationScore(apartment, verificationMap);
   const rating = calculateRatingScore(apartment.id, context);
@@ -510,22 +479,7 @@ export function getStudentRecommendations(
   apartments: Apartment[],
   preferences?: TenantPreferences
 ): Array<Apartment & { rankingScore: number; scoreBreakdown: RankingScoreBreakdown }> {
-  // Boost student-friendly features
-  const studentPrefs: TenantPreferences = {
-    ...preferences,
-    maxBudget: preferences?.maxBudget || 4500, // Student budget default
-    studyArea: true,
-    wifi: true,
-    furnished: true,
-  };
-
-  const ranked = rankApartments(apartments, studentPrefs);
-
-  // Bonus for affordable options
-  return ranked.map(apt => ({
-    ...apt,
-    rankingScore: apt.price <= 3500 ? Math.min(100, apt.rankingScore + 10) : apt.rankingScore,
-  })).sort((a, b) => b.rankingScore - a.rankingScore);
+  return rankApartments(apartments, preferences);
 }
 
 /**
@@ -535,22 +489,7 @@ export function getEmployeeRecommendations(
   apartments: Apartment[],
   preferences?: TenantPreferences
 ): Array<Apartment & { rankingScore: number; scoreBreakdown: RankingScoreBreakdown }> {
-  // Boost employee-friendly features
-  const employeePrefs: TenantPreferences = {
-    ...preferences,
-    maxBudget: preferences?.maxBudget || 6500, // Employee budget default
-    parking: true,
-    ac: true,
-    kitchenAccess: true,
-  };
-
-  const ranked = rankApartments(apartments, employeePrefs);
-
-  // Bonus for high-quality, verified properties
-  return ranked.map(apt => ({
-    ...apt,
-    rankingScore: apt.isPublished && apt.landlordId ? Math.min(100, apt.rankingScore + 8) : apt.rankingScore,
-  })).sort((a, b) => b.rankingScore - a.rankingScore);
+  return rankApartments(apartments, preferences);
 }
 
 /**

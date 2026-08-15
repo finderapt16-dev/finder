@@ -593,6 +593,13 @@ export async function signupUser(input: CreateUserInput): Promise<User> {
   });
 
   if (authError) {
+    if (/already registered|already exists|user.*exists/i.test(authError.message)) {
+      const { error: resendError } = await supabaseClient.auth.resend({ type: 'signup', email, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } });
+      if (!resendError) {
+        return { id: '', name: input.name, email, role, tenantType, status, isVerified: role !== 'landlord', mobile: input.mobile ?? input.mobileNumber, mobileNumber: input.mobile ?? input.mobileNumber };
+      }
+      throw new Error('This email already has an account. Check its verification email, sign in, or reset its password.');
+    }
     throw new Error(authError.message);
   }
 

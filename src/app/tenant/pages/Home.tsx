@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
 import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { VerifiedBadge } from "@/app/shared/components/common/VerifiedBadge";
@@ -75,11 +75,14 @@ import {
   hasValidApartmentCoordinates,
 } from "@/app/shared/utils/mapCoordinates";
 import { rankApartments, type TenantPreferences } from "@/app/shared/utils/rankingEngine";
+import { geocodeLocationWithinLaPaz, GeocodingError, type GeocodedLocation } from "@/app/shared/services/geocodingService";
+import { findNearbyApartments, formatDistance, parseNearbySearchIntent } from "@/app/shared/utils/geospatialSearch";
 import { toast } from "sonner";
 import { LandlordBrowse } from "@/app/landlord/pages/LandlordBrowse";
 import { TenantMobileNavigation } from "@/app/tenant/components/TenantMobileNavigation";
 
 type SortOption = TenantPreferenceSortOption;
+type BrowseApartment = Apartment & { distanceMeters?: number };
 
 const DEFAULT_PRICE_RANGE: [number, number] = [1000, 6000];
 
@@ -176,7 +179,7 @@ function TenantBrowse() {
     defaultTenantPreferences.saveBudgetPreferences === false ? DEFAULT_PRICE_RANGE[1] : Number(defaultTenantPreferences.maxBudget) || DEFAULT_PRICE_RANGE[1],
   ];
   const initialBudgetFilterEnabled = defaultTenantPreferences.saveBudgetPreferences === true;
-  const [searchQuery, setSearchQuery] = useState(urlSearchQuery || defaultTenantPreferences.preferredArea || "");
+  const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
   const [priceRange, setPriceRange] = useState<[number, number]>(initialPriceRange);
   const [budgetFilterEnabled, setBudgetFilterEnabled] = useState(initialBudgetFilterEnabled);
   const [minPriceInput, setMinPriceInput] = useState(String(initialPriceRange[0]));
@@ -194,6 +197,12 @@ function TenantBrowse() {
   const [ratingRows, setRatingRows] = useState<ApartmentRatingRow[]>([]);
   const [ratingsLoading, setRatingsLoading] = useState(true);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [savedPreferences, setSavedPreferences] = useState(defaultTenantPreferences);
+  const [activeNearbySearch, setActiveNearbySearch] = useState<{ target: string; location: GeocodedLocation } | null>(null);
+  const [nearbySearchLoading, setNearbySearchLoading] = useState(false);
+  const [nearbySearchError, setNearbySearchError] = useState("");
+  const geocodeRequest = useRef(0);
+  const geocodeController = useRef<AbortController | null>(null);
 
   const applyPriceRange = (range: [number, number], enabled = true) => {
     setPriceRange(range);
@@ -202,24 +211,8 @@ function TenantBrowse() {
     setBudgetFilterEnabled(enabled);
   };
 
-  const applyBrowsePreferences = (preferences: TenantPreferenceSettings, searchOverride = "") => {
-    const useBudgetPreference = hasMeaningfulBudgetPreference(preferences);
-    setSearchQuery(searchOverride || preferences.preferredArea || "");
-    applyPriceRange(
-      [DEFAULT_PRICE_RANGE[0], useBudgetPreference ? Number(preferences.maxBudget) || DEFAULT_PRICE_RANGE[1] : DEFAULT_PRICE_RANGE[1]],
-      useBudgetPreference,
-    );
-    setBedrooms(preferences.minBedrooms || "any");
-    setPetFriendly(Boolean(preferences.petFriendly));
-    setParking(Boolean(preferences.parking));
-    setFurnished(Boolean(preferences.furnished));
-    setSortBy(preferences.sortBy || "recommended");
-  };
-
   useEffect(() => {
     let mounted = true;
-
-    applyBrowsePreferences(defaultTenantPreferences, urlSearchQuery);
 
     if (!user?.id) return;
 
@@ -228,7 +221,13 @@ function TenantBrowse() {
     void fetchTenantPreferences(tenantId)
       .then((preferences) => {
         if (!mounted || !preferences) return;
-        applyBrowsePreferences(preferences, urlSearchQuery);
+        setSavedPreferences(preferences);
+        setPriceRange([DEFAULT_PRICE_RANGE[0], preferences.maxBudget || DEFAULT_PRICE_RANGE[1]]);
+        setMaxPriceInput(String(preferences.maxBudget || DEFAULT_PRICE_RANGE[1]));
+        setBedrooms(preferences.minBedrooms);
+        setPetFriendly(preferences.petFriendly);
+        setParking(preferences.parking);
+        setFurnished(preferences.furnished);
       })
       .catch(() => {
         if (!mounted) return;
@@ -239,6 +238,8 @@ function TenantBrowse() {
       mounted = false;
     };
   }, [user?.id, urlSearchQuery]);
+
+  useEffect(() => () => geocodeController.current?.abort(), []);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -299,12 +300,32 @@ function TenantBrowse() {
     return isVerifiedListing(apartment) ? "verified" : "pending";
   };
 
-  const filteredApartments = useMemo(() => {
+  const nearbyIntent = useMemo(() => parseNearbySearchIntent(searchQuery), [searchQuery]);
+  const updateSearchQuery = (value: string) => {
+    geocodeController.current?.abort(); geocodeRequest.current += 1;
+    setSearchQuery(value); setActiveNearbySearch(null); setNearbySearchError(""); setNearbySearchLoading(false);
+  };
+  const submitSearch = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const intent = parseNearbySearchIntent(searchQuery);
+    if (!intent) { setActiveNearbySearch(null); setNearbySearchError(""); return; }
+    geocodeController.current?.abort(); const controller = new AbortController(); geocodeController.current = controller;
+    const request = ++geocodeRequest.current; setNearbySearchLoading(true); setNearbySearchError(""); setActiveNearbySearch(null);
+    try {
+      const location = await geocodeLocationWithinLaPaz(intent.target, controller.signal);
+      if (request === geocodeRequest.current) setActiveNearbySearch({ target: intent.target, location });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      if (request === geocodeRequest.current) setNearbySearchError(error instanceof GeocodingError ? error.message : "Unable to search that location.");
+    } finally { if (request === geocodeRequest.current) setNearbySearchLoading(false); }
+  };
+
+  const filteredApartments = useMemo<BrowseApartment[]>(() => {
     const filtered = allApartments.filter((apt) => {
       if (apt.isPublished === false) return false;
       if (!isApartmentAvailable(apt)) return false;
 
-      if (searchQuery) {
+      if (searchQuery && !nearbyIntent) {
         const query = searchQuery.toLowerCase();
         const matchesSearch =
           apt.title.toLowerCase().includes(query) ||
@@ -315,31 +336,26 @@ function TenantBrowse() {
         if (!matchesSearch) return false;
       }
 
-      const roomPrice = getAvailableApartmentPrice(apt);
-      if (budgetFilterEnabled && roomPrice !== null && (roomPrice < priceRange[0] || roomPrice > priceRange[1])) return false;
-
-      if (bedrooms !== "any") {
-        const minBeds = parseInt(bedrooms);
-        if (Number.isFinite(minBeds) && apt.bedrooms < minBeds) return false;
-      }
-
-      if (petFriendly && !apt.petFriendly) return false;
-      if (parking && !apt.parking) return false;
-      if (furnished && !apt.furnished) return false;
-
       return true;
     });
+
+    if (nearbyIntent && nearbySearchError) return [];
+    if (activeNearbySearch) return findNearbyApartments(filtered, activeNearbySearch.location);
 
     if (sortBy === "recommended") {
       const isTenant = isTenantRole(user?.role);
 
       if (isTenant) {
         const preferences: TenantPreferences = {
-          maxBudget: budgetFilterEnabled ? priceRange[1] : undefined,
-          preferredArea: searchQuery || undefined,
-          petFriendly,
-          parking,
-          furnished,
+          maxBudget: savedPreferences.maxBudget || undefined,
+          preferredArea: savedPreferences.preferredArea || undefined,
+          minBedrooms: savedPreferences.minBedrooms,
+          petFriendly: savedPreferences.petFriendly,
+          parking: savedPreferences.parking,
+          furnished: savedPreferences.furnished,
+          wifi: savedPreferences.wifi,
+          ac: savedPreferences.ac,
+          laundryArea: savedPreferences.laundryArea,
           tenantType: getTenantType(user) ?? "other",
         };
 
@@ -377,7 +393,7 @@ function TenantBrowse() {
       }
       return compareOptionalNumber(getAvailableApartmentPrice(a), getAvailableApartmentPrice(b), "asc");
     });
-  }, [allApartments, searchQuery, priceRange, budgetFilterEnabled, bedrooms, petFriendly, parking, furnished, sortBy, user?.role, user?.tenantType, landlordById, userFavorites, viewRows, favoriteRows, ratingRows]);
+  }, [allApartments, searchQuery, nearbyIntent, nearbySearchError, activeNearbySearch, sortBy, user?.role, user?.tenantType, landlordById, userFavorites, viewRows, favoriteRows, ratingRows, savedPreferences]);
 
   const totalPages = Math.max(1, Math.ceil(filteredApartments.length / itemsPerPage));
   const safePage = Math.min(currentPage, totalPages);
@@ -432,6 +448,12 @@ function TenantBrowse() {
     setSortBy("recommended");
   };
 
+  const resetPreferences = () => {
+    setSavedPreferences(defaultTenantPreferences);
+    applyPriceRange(DEFAULT_PRICE_RANGE, false);
+    setBedrooms("any"); setPetFriendly(false); setParking(false); setFurnished(false); setSortBy("recommended");
+  };
+
   const restoreSavedPreferences = async () => {
     if (!user?.id) {
       toast.error("Please sign in to restore browse preferences.");
@@ -445,7 +467,6 @@ function TenantBrowse() {
       return;
     }
 
-    setSearchQuery(preferences.preferredArea || "");
     const useBudgetPreference = hasMeaningfulBudgetPreference(preferences);
     applyPriceRange(
       [DEFAULT_PRICE_RANGE[0], useBudgetPreference ? Number(preferences.maxBudget) || DEFAULT_PRICE_RANGE[1] : DEFAULT_PRICE_RANGE[1]],
@@ -456,7 +477,8 @@ function TenantBrowse() {
     setParking(Boolean(preferences.parking));
     setFurnished(Boolean(preferences.furnished));
     setSortBy(preferences.sortBy || "recommended");
-    toast.success("Saved browse preferences restored.");
+    setSavedPreferences(preferences);
+    toast.success("Saved recommendation preferences restored.");
   };
 
   const saveBrowsePreferences = async () => {
@@ -477,16 +499,20 @@ function TenantBrowse() {
 
     try {
       await saveTenantPreferences(user.id, {
-        preferredArea: searchQuery.trim(),
+        preferredArea: savedPreferences.preferredArea,
         maxBudget: priceRange[1],
         minBedrooms: bedrooms,
         petFriendly,
         parking,
         furnished,
+        wifi: savedPreferences.wifi,
+        ac: savedPreferences.ac,
+        laundryArea: savedPreferences.laundryArea,
         sortBy,
         saveBudgetPreferences: activeBudgetFilter,
       });
-      toast.success("Browse preferences saved.");
+      setSavedPreferences((current) => ({ ...current, maxBudget: priceRange[1], minBedrooms: bedrooms, petFriendly, parking, furnished }));
+      toast.success("Preferences saved for recommendations.");
       setPreferencesOpen(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to save browse preferences.";
@@ -549,7 +575,7 @@ function TenantBrowse() {
 
   const renderFilterTrigger = (floating = false) => (
     <DialogTrigger asChild>
-      <Button className={floating ? "h-14 w-14 rounded-full bg-orange-500 p-0 text-white shadow-xl hover:bg-orange-600" : "h-12 rounded-lg border border-slate-200 bg-white px-5 font-black text-slate-800 shadow-sm hover:bg-slate-50"} variant={floating ? "default" : "outline"}>
+      <Button type="button" className={floating ? "h-14 w-14 rounded-full bg-orange-500 p-0 text-white shadow-xl hover:bg-orange-600" : "h-12 rounded-lg border border-slate-200 bg-white px-5 font-black text-slate-800 shadow-sm hover:bg-slate-50"} variant={floating ? "default" : "outline"}>
         <SlidersHorizontal className={floating ? "h-5 w-5" : "mr-2 h-4 w-4"} />
         {!floating && `Preferences${activeFilterCount ? ` (${activeFilterCount})` : ""}`}
       </Button>
@@ -568,9 +594,9 @@ function TenantBrowse() {
                 <SlidersHorizontal className="h-8 w-8" />
               </div>
               <div>
-                <DialogTitle className="text-3xl font-black tracking-tight text-slate-950">Browse Preferences</DialogTitle>
+                <DialogTitle className="text-3xl font-black tracking-tight text-slate-950">Apartment Preferences</DialogTitle>
                 <DialogDescription className="mt-2 max-w-xl text-base font-semibold leading-7 text-slate-500">
-                  Filter listings and save this setup as your default Browse All preference.
+                  Personalize Suggested and Recommended apartments without hiding listings from Browse All.
                 </DialogDescription>
               </div>
             </div>
@@ -582,9 +608,9 @@ function TenantBrowse() {
                 <HomeIcon className="h-10 w-10" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-xl font-black text-slate-950">Make Browse All fit you</h3>
+                <h3 className="text-xl font-black text-slate-950">Improve your recommendations</h3>
                 <p className="mt-2 max-w-xl text-sm font-semibold leading-6 text-slate-500">
-                  Your saved preferences will be applied automatically whenever you open Browse All.
+                  Browse All stays complete. These signals only change recommendation relevance and ordering.
                 </p>
               </div>
               <div className="hidden h-24 w-44 shrink-0 items-end justify-center rounded-lg bg-white/65 sm:flex">
@@ -595,6 +621,11 @@ function TenantBrowse() {
                 </div>
               </div>
             </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <Label htmlFor="preferred-area" className="text-sm font-black text-slate-950">Preferred location</Label>
+            <input id="preferred-area" value={savedPreferences.preferredArea} onChange={(event) => setSavedPreferences((current) => ({ ...current, preferredArea: event.target.value }))} placeholder="Barangay, street, school, or workplace" className="mt-3 h-12 w-full rounded-lg border border-slate-200 px-4 outline-none focus:border-orange-300" />
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -666,22 +697,25 @@ function TenantBrowse() {
               <AmenityToggle icon={PawPrint} label="Pet Friendly" checked={petFriendly} onChange={setPetFriendly} tone="bg-violet-50 text-violet-600" />
               <AmenityToggle icon={Car} label="Parking" checked={parking} onChange={setParking} tone="bg-blue-50 text-blue-600" />
               <AmenityToggle icon={Sofa} label="Fully Furnished" checked={furnished} onChange={setFurnished} tone="bg-orange-50 text-orange-600" />
+              <AmenityToggle icon={Sofa} label="Wi-Fi" checked={savedPreferences.wifi} onChange={(wifi) => setSavedPreferences((current) => ({ ...current, wifi }))} tone="bg-cyan-50 text-cyan-600" />
+              <AmenityToggle icon={Sofa} label="Air Conditioning" checked={savedPreferences.ac} onChange={(ac) => setSavedPreferences((current) => ({ ...current, ac }))} tone="bg-sky-50 text-sky-600" />
+              <AmenityToggle icon={Sofa} label="Laundry Area" checked={savedPreferences.laundryArea} onChange={(laundryArea) => setSavedPreferences((current) => ({ ...current, laundryArea }))} tone="bg-indigo-50 text-indigo-600" />
             </div>
           </section>
 
           <div className="grid gap-3">
             <Button onClick={saveBrowsePreferences} className="h-14 rounded-lg bg-orange-500 text-base font-black text-white shadow-lg shadow-orange-200 hover:bg-orange-600">
               <Bookmark className="mr-2 h-5 w-5" />
-              Save as My Browse Preference
+              Save Recommendation Preferences
             </Button>
             <div className="grid gap-3 sm:grid-cols-2">
               <Button variant="outline" onClick={restoreSavedPreferences} className="h-12 rounded-lg border-slate-200 font-black text-slate-700 hover:bg-slate-50">
                 <Clock className="mr-2 h-5 w-5" />
                 Restore Saved Preferences
               </Button>
-              <Button variant="outline" onClick={resetFilters} className="h-12 rounded-lg border-orange-300 font-black text-orange-600 hover:bg-orange-50">
+              <Button variant="outline" onClick={resetPreferences} className="h-12 rounded-lg border-orange-300 font-black text-orange-600 hover:bg-orange-50">
                 <RotateCcw className="mr-2 h-5 w-5" />
-                Reset Filters
+                Reset Preferences
               </Button>
               <Button variant="outline" onClick={() => setPreferencesOpen(false)} className="h-12 rounded-lg border-slate-200 font-black text-slate-700 hover:bg-slate-50">
                 Cancel
@@ -699,7 +733,7 @@ function TenantBrowse() {
       </DialogContent>
   );
 
-  const ApartmentBrowseCard = ({ apartment }: { apartment: Apartment }) => {
+  const ApartmentBrowseCard = ({ apartment }: { apartment: BrowseApartment }) => {
     const status = apartment.status ?? "available";
     const availableRooms = getAvailableRooms(apartment);
     const locationText = formatApartmentLocation(apartment);
@@ -719,6 +753,7 @@ function TenantBrowse() {
             </div>
           )}
           <div className="absolute left-4 top-4 flex flex-col gap-2">
+            {activeNearbySearch && apartment.distanceMeters !== undefined && <Badge className="rounded-md bg-slate-950 text-white">{formatDistance(apartment.distanceMeters)}</Badge>}
             <Badge className={`rounded-md ${STATUS_CLASS[status] ?? STATUS_CLASS.available}`}>{STATUS_LABEL[status] ?? "Available"}</Badge>
             {isVerifiedListing(apartment) && <VerifiedBadge label="Verified Landlord" className="bg-white/95 shadow-lg backdrop-blur-sm" />}
             {apartment.petFriendly && <Badge className="rounded-md bg-violet-500 text-white">Pet Friendly</Badge>}
@@ -820,15 +855,17 @@ function TenantBrowse() {
 
         <main className="app-shell-main min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div className="app-shell-content app-shell-content-mobile-nav mx-auto max-w-[1500px] px-4 py-6 md:px-8 lg:px-10">
-            <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+            <form onSubmit={submitSearch} className="rounded-lg border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
               <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search apartments, buildings, or amenities..." className="h-12 w-full rounded-lg border border-slate-200 bg-white pl-12 pr-4 text-sm font-medium outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100" />
+                  <input value={searchQuery} onChange={(event) => updateSearchQuery(event.target.value)} placeholder="Search apartments or try near ISAT U" className="h-12 w-full rounded-lg border border-slate-200 bg-white pl-12 pr-4 text-sm font-medium outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100" />
                 </div>
                 {renderFilterTrigger()}
               </div>
-            </section>
+              {nearbySearchLoading && <p className="px-1 pt-2 text-xs font-bold text-orange-600">Finding nearby apartments…</p>}
+              {nearbySearchError && <p className="px-1 pt-2 text-xs font-bold text-red-600">{nearbySearchError}</p>}
+            </form>
 
             <section className="relative mt-8 overflow-hidden rounded-lg bg-gradient-to-r from-white via-orange-50 to-orange-100 p-7">
               <div className="relative z-10">
@@ -837,20 +874,20 @@ function TenantBrowse() {
                   Find Your Next Home
                 </div>
                 <h1 className="text-4xl font-black tracking-tight text-slate-950 md:text-6xl">Available <span className="text-orange-600">Apartments</span></h1>
-                <p className="mt-4 text-lg font-medium text-slate-600">{filteredApartments.length} {filteredApartments.length === 1 ? "apartment" : "apartments"} found in La Paz</p>
+                <p className="mt-4 text-lg font-medium text-slate-600">{activeNearbySearch ? `${filteredApartments.length} apartments within 500 m of ${activeNearbySearch.target} · nearest first` : `${filteredApartments.length} ${filteredApartments.length === 1 ? "apartment" : "apartments"} found in La Paz`}</p>
               </div>
               <div className="pointer-events-none absolute bottom-0 right-10 hidden h-32 w-72 rounded-t-lg bg-white/70 md:block" />
               <div className="pointer-events-none absolute bottom-10 right-24 hidden h-16 w-36 rounded-lg bg-orange-200 md:block" />
             </section>
 
             <section className="mt-6 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-[0_14px_35px_rgba(15,23,42,0.07)] xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex flex-wrap gap-2">
+              {!activeNearbySearch && <div className="flex flex-wrap gap-2">
                 <SortButton icon={Star} label="Recommended" active={sortBy === "recommended"} onClick={() => setSortBy("recommended")} />
                 <SortButton icon={DollarSign} label="Price (Low)" active={sortBy === "price_low"} onClick={() => setSortBy("price_low")} />
                 <SortButton icon={TrendingUp} label="Price (High)" active={sortBy === "price_high"} onClick={() => setSortBy("price_high")} />
                 <SortButton icon={CalendarDays} label="Newest" active={sortBy === "newest"} onClick={() => setSortBy("newest")} />
                 <SortButton icon={Flame} label="Popular" active={sortBy === "popular"} onClick={() => setSortBy("popular")} />
-              </div>
+              </div>}
               <div className="grid h-12 grid-cols-2 rounded-lg border border-slate-200 bg-white p-1">
                 <button onClick={() => setViewMode("grid")} className={`flex items-center justify-center gap-2 rounded-md px-5 text-sm font-black ${viewMode === "grid" ? "bg-orange-50 text-orange-600" : "text-slate-600 hover:bg-slate-50"}`}><Grid2X2 className="h-4 w-4" />Grid</button>
                 <button onClick={() => setViewMode("map")} className={`flex items-center justify-center gap-2 rounded-md px-5 text-sm font-black ${viewMode === "map" ? "bg-orange-50 text-orange-600" : "text-slate-600 hover:bg-slate-50"}`}><Map className="h-4 w-4" />Map</button>
@@ -936,16 +973,13 @@ function TenantBrowse() {
                       availabilityStatus: isApartmentAvailable(apt) ? "available" : "unavailable",
                       markerStatus: "available",
                     }))}
-                    emptyMessage="No apartments found on the map. Try adjusting your filters."
+                    emptyMessage="No apartments found on the map. Try another search."
                   />
                 </div>
               )}
             </section>
           </div>
         </main>
-      </div>
-      <div className="fixed bottom-6 right-6 z-50">
-        {renderFilterTrigger(true)}
       </div>
       </div>
       {renderFilterContent()}

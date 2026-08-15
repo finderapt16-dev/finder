@@ -19,10 +19,11 @@ export const imageMap: Record<string, string> = {
 };
 
 export function getImageUrl(key: string): string {
+  if (!key) return '';
   if (/^(https?:|data:image\/|blob:)/i.test(key)) {
     return key;
   }
 
-  return imageMap[key] || imageMap['modern-loft-apartment'];
+  return imageMap[key] || '';
 }
 

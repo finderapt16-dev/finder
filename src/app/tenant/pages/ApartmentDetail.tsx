@@ -28,7 +28,8 @@ import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
 import { getTenantType, isTenantRole } from "@/app/shared/services/authService";
 import type { Apartment, ApartmentRoom } from "@/app/shared/data/apartments";
-import { fetchApartmentWithImages, getLandlordVerification, recordApartmentView, updateApartment } from "@/app/shared/data/apartments";
+import { fetchApartmentWithImages, getLandlordVerification, persistApartmentImages, recordApartmentView, updateApartment } from "@/app/shared/data/apartments";
+import type { UploadedImage } from "@/app/shared/components/common/MultiImageUploader";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import { createReport, fetchPublicLandlordById, type DashboardUserRow } from "@/app/shared/services/dashboardSupabaseService";
 import { uploadReportEvidence } from "@/app/shared/services/reportEvidenceService";
@@ -139,7 +140,7 @@ export function ApartmentDetail() {
   }, [apartment?.rooms, selectedRoom?.id]);
 
   const images = useMemo(() => apartment
-    ? [...new Set([apartment.image, ...apartment.images].filter(Boolean).map(getImageUrl))]
+    ? [...new Set([apartment.image, ...apartment.images].filter(Boolean).map(getImageUrl).filter(Boolean))]
     : [], [apartment]);
   const favorite = apartment ? isFavorite(apartment.id) : false;
   const canEdit = apartment ? canEditApartment(apartment.id, apartment.landlordId) : false;
@@ -162,10 +163,11 @@ export function ApartmentDetail() {
       else { await navigator.clipboard.writeText(window.location.href); toast.success("Listing link copied."); }
     } catch (error) { if ((error as Error).name !== "AbortError") toast.error("Unable to share this listing."); }
   };
-  const saveApartment = async (updated: Apartment) => {
+  const saveApartment = async (updated: Apartment, images: UploadedImage[]) => {
     if (!apartment) return;
     try {
-      const saved = await updateApartment(apartment.id, apartmentToFormValues(updated), user?.id);
+      await updateApartment(apartment.id, apartmentToFormValues(updated), user?.id);
+      const saved = await persistApartmentImages(apartment.id, images, user?.id);
       setApartment(saved); await refreshApartments(); toast.success("Apartment updated successfully.");
     } catch (error) { toast.error(error instanceof Error ? error.message : "Unable to update apartment."); }
   };

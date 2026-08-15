@@ -12,6 +12,7 @@ import {
   apartmentFormValuesFromApartment,
   createApartment,
   createApartmentRoom,
+  fetchApartmentWithImages,
   resolveAppUserId,
   updateApartmentRoom,
   uploadApartmentImage,
@@ -762,7 +763,8 @@ export function AddApartment() {
           is_primary: img.is_primary,
           sort_order: img.sort_order,
         }));
-        await supabase.from("apartment_images").insert(insertPayload);
+        const { error: imageMetadataError } = await supabase.from("apartment_images").insert(insertPayload);
+        if (imageMetadataError) throw new Error(imageMetadataError.message || "Unable to save apartment images.");
       }
 
       for (const room of rooms) {
@@ -799,6 +801,11 @@ export function AddApartment() {
       }
 
       await uploadVerificationDocuments(created.id, resolvedLandlordId, verificationDocuments);
+
+      const persistedApartment = await fetchApartmentWithImages(created.id);
+      if (!persistedApartment || persistedApartment.images.length !== uploadedImageUrls.length) {
+        throw new Error("The apartment was created, but its permanent images could not be verified.");
+      }
 
       await refreshApartments();
       submissionCompleteRef.current = true;

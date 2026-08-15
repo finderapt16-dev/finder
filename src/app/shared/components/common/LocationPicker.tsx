@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { Label } from "../ui/label";
+import { geocodeLocationWithinLaPaz, GeocodingError } from "../../services/geocodingService";
 
 // Fix for default marker icon in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -18,15 +19,6 @@ interface LocationPickerProps {
   geocodeRequestKey?: number;
   onGeocodeStatusChange?: (status: "idle" | "loading" | "found" | "not-found" | "error") => void;
 }
-
-type GeocodedLocation = {
-  lat: number;
-  lng: number;
-  label: string;
-};
-
-const geocodeMemoryCache = new Map<string, GeocodedLocation>();
-const GEOCODE_MEMORY_CACHE_LIMIT = 100;
 
 export function LocationPicker({
   lat,
@@ -120,17 +112,6 @@ export function LocationPicker({
       return;
     }
 
-    const cacheKey = query.toLocaleLowerCase();
-    const cached = geocodeMemoryCache.get(cacheKey);
-
-    if (cached && Number.isFinite(cached.lat) && Number.isFinite(cached.lng)) {
-      geocodeMemoryCache.set(cacheKey, cached);
-      updateGeocodeStatus("found");
-      setMatchedAddress(cached.label);
-      onLocationChangeRef.current(cached.lat, cached.lng);
-      return;
-    }
-
     const controller = new AbortController();
     updateGeocodeStatus("loading");
     setMatchedAddress("");
@@ -138,42 +119,14 @@ export function LocationPicker({
     // Delay each user-triggered lookup so rapid focus changes never flood the public service.
     const timer = window.setTimeout(async () => {
       try {
-        const params = new URLSearchParams({
-          q: query,
-          format: "jsonv2",
-          limit: "1",
-          countrycodes: "ph",
-          viewbox: "122.50,10.78,122.63,10.64",
-          bounded: "1",
-        });
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-          signal: controller.signal,
-          headers: { "Accept-Language": "en" },
-        });
-        if (!response.ok) throw new Error(`Geocoding failed with status ${response.status}`);
-
-        const results = await response.json() as Array<{ lat?: string; lon?: string; display_name?: string }>;
-        const first = results[0];
-        const nextLat = Number(first?.lat);
-        const nextLng = Number(first?.lon);
-        if (!first || !Number.isFinite(nextLat) || !Number.isFinite(nextLng)) {
-          updateGeocodeStatus("not-found");
-          return;
-        }
-
-        const location = { lat: nextLat, lng: nextLng, label: first.display_name || query };
-        if (geocodeMemoryCache.size >= GEOCODE_MEMORY_CACHE_LIMIT) {
-          const oldestKey = geocodeMemoryCache.keys().next().value;
-          if (oldestKey) geocodeMemoryCache.delete(oldestKey);
-        }
-        geocodeMemoryCache.set(cacheKey, location);
+        const location = await geocodeLocationWithinLaPaz(query, controller.signal);
         updateGeocodeStatus("found");
         setMatchedAddress(location.label);
         onLocationChangeRef.current(location.lat, location.lng);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
         console.error("Unable to locate the entered address:", error);
-        updateGeocodeStatus("error");
+        updateGeocodeStatus(error instanceof GeocodingError && error.reason !== "network" ? "not-found" : "error");
       }
     }, 500);
 

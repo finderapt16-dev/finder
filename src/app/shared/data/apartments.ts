@@ -463,7 +463,8 @@ export const apartmentFormValuesToUpdateRow = (
 
 export {
   createApartment, createApartmentRoom, deleteApartment, deleteApartmentRoom, fetchApartmentInspectionDetails, fetchApartmentRooms, fetchApartmentWithImages, fetchApartments, fetchApartmentsForLandlord, getApartmentById, getCurrentSessionUser,
-  getCurrentUserId, getFavoriteApartmentIds, getLandlordVerification, insertApartmentImages, insertApartmentRooms, isApartmentFavorite, listFavoriteApartments, recordApartmentView, replaceApartmentImages, reportApartment, resolveAppUserId, toggleFavorite, updateApartment, updateApartmentPublication, updateApartmentRoom,
+  getCurrentUserId, getFavoriteApartmentIds, getLandlordVerification, insertApartmentImages, insertApartmentRooms, isApartmentFavorite, listFavoriteApartments, persistApartmentImages, recordApartmentView, replaceApartmentImages, reportApartment, resolveAppUserId, toggleFavorite, updateApartment, updateApartmentPublication, updateApartmentRoom,
   updateApartmentRoomStatus, updateApartmentStatus, uploadApartmentImage,
   uploadApartmentRoomImage
 } from '../services/apartmentsService';
+export type { ApartmentImageSaveInput } from '../services/apartmentsService';

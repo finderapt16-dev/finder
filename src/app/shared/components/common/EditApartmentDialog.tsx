@@ -16,7 +16,7 @@ interface EditApartmentDialogProps {
   apartment: Apartment;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (updatedApartment: Apartment) => void | Promise<void>;
+  onSave: (updatedApartment: Apartment, images: UploadedImage[]) => void | Promise<void>;
 }
 
 const getEditableFeatures = (apartment: Apartment): string[] => {
@@ -191,10 +191,8 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
     }));
 
     // Combine all images (existing + new)
-    const allImages = [
-      ...existingImages.map((img) => img.url),
-      ...newImages.map((img) => img.url),
-    ];
+    const imageRecords = [...existingImages, ...newImages];
+    const allImages = imageRecords.map((image) => image.url);
 
     // Find primary image
     const primaryImage =
@@ -227,7 +225,7 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
         price: normalizedRooms.length > 0
           ? Math.min(...normalizedRooms.map((room) => room.price).filter((price) => price > 0)) || formData.price
           : formData.price,
-      });
+      }, imageRecords);
       onOpenChange(false);
     } finally {
       setIsSaving(false);

@@ -119,12 +119,14 @@ export function StudentEmployeeDashboard() {
 
   // ── Settings state ───────────────────────────────────────────────────────
   const [preferredArea, setPreferredArea]     = useState("");
-  const [maxBudget, setMaxBudget]             = useState("6000");
+  const [maxBudget, setMaxBudget]             = useState("0");
   const [prefPetFriendly, setPrefPetFriendly] = useState(false);
   const [prefParking, setPrefParking]         = useState(false);
   const [prefFurnished, setPrefFurnished]     = useState(false);
+  const [prefWifi, setPrefWifi] = useState(false);
+  const [prefAc, setPrefAc] = useState(false);
+  const [prefLaundry, setPrefLaundry] = useState(false);
   const [recommendationLocation, setRecommendationLocation] = useState(true);
-  const [saveBudgetPreferences, setSaveBudgetPreferences] = useState(false);
   const [dashboardFavoriteRows, setDashboardFavoriteRows] = useState<DashboardFavoriteRow[]>([]);
   const [dashboardViewRows, setDashboardViewRows] = useState<DashboardApartmentViewRow[]>([]);
   const [dashboardRatingRows, setDashboardRatingRows] = useState<ApartmentRatingRow[]>([]);
@@ -139,12 +141,12 @@ export function StudentEmployeeDashboard() {
 
   const applyTenantPreferences = (preferences: TenantPreferenceSettings) => {
     setPreferredArea(preferences.preferredArea);
-    setMaxBudget(String(preferences.maxBudget || 6000));
+    setMaxBudget(String(preferences.maxBudget || 0));
     setPrefPetFriendly(preferences.petFriendly);
     setPrefParking(preferences.parking);
     setPrefFurnished(preferences.furnished);
+    setPrefWifi(preferences.wifi); setPrefAc(preferences.ac); setPrefLaundry(preferences.laundryArea);
     setRecommendationLocation(preferences.recommendationLocation);
-    setSaveBudgetPreferences(preferences.saveBudgetPreferences);
   };
 
   useEffect(() => {
@@ -223,14 +225,15 @@ export function StudentEmployeeDashboard() {
     const parsedBudget = Number(maxBudget);
 
     return {
-      maxBudget: saveBudgetPreferences && Number.isFinite(parsedBudget) && parsedBudget > 0 ? parsedBudget : undefined,
+      maxBudget: Number.isFinite(parsedBudget) && parsedBudget > 0 ? parsedBudget : undefined,
       preferredArea: recommendationLocation && preferredArea.trim() ? preferredArea.trim() : undefined,
       petFriendly: prefPetFriendly,
       parking: prefParking,
       furnished: prefFurnished,
+      wifi: prefWifi, ac: prefAc, laundryArea: prefLaundry,
       tenantType: getTenantType(user) ?? "other",
     };
-  }, [maxBudget, preferredArea, recommendationLocation, prefPetFriendly, prefParking, prefFurnished, saveBudgetPreferences, user?.role, user?.tenantType]);
+  }, [maxBudget, preferredArea, recommendationLocation, prefPetFriendly, prefParking, prefFurnished, prefWifi, prefAc, prefLaundry, user?.role, user?.tenantType]);
 
   // Personalized recommendations based on saved tenant preferences
   const suggestedApartments = useMemo(() => {
