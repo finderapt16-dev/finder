@@ -72,15 +72,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const NAV_MAIN = [
-  { icon: LayoutDashboard, label: "Dashboard",   section: "overview",   isLink: false },
-  { icon: Heart,           label: "My Favorites",section: "favorites",  isLink: false },
-  { icon: Sparkles,        label: "Suggested",   section: "suggested",  isLink: false },
-  { icon: TrendingUp,      label: "Popular",     section: "popular",    isLink: false },
-];
-
-const NAV_BROWSE = [
-  { icon: Search, label: "Browse All",     href: "/browse", isLink: true },
-  { icon: Clock,  label: "Recently Added", section: "recent", isLink: false },
+  { icon: Search,      label: "Apartments",   href: "/browse", section: "apartments" },
+  { icon: Heart,       label: "My Favorites", href: "/favorites", section: "favorites" },
+  { icon: Sparkles,    label: "Suggested",    section: "suggested" },
+  { icon: TrendingUp,  label: "Popular",      section: "popular" },
 ];
 
 const NAV_ACCOUNT = [
@@ -96,7 +91,7 @@ export function StudentEmployeeDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const { favorites: favoriteIds, toggleFavorite, refreshFavorites } = useFavorites();
-  const [activeSection, setActiveSection] = useState("overview");
+  const [activeSection, setActiveSection] = useState("suggested");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [favoriteFilter, setFavoriteFilter] = useState<"all" | "available" | "unavailable">("all");
   const [favoriteSort, setFavoriteSort] = useState<"newest" | "price-low" | "price-high" | "name">("newest");
@@ -285,7 +280,8 @@ export function StudentEmployeeDashboard() {
       .slice(0, 6);
   }, [dashboardFavoriteRows, dashboardViewRows, publishedApartments]);
 
-  // Recent apartments sorted by availability date
+  // Kept as an internal collection for the existing Newest discovery view.
+  // It is no longer exposed as a separate Tenant sidebar destination.
   const recentApartments = useMemo(() => {
     const now = Date.now();
     const recentCutoff = now - 30 * 24 * 60 * 60 * 1000;
@@ -475,74 +471,17 @@ export function StudentEmployeeDashboard() {
       <nav className="px-3 pt-4 pb-2">
         <p className="text-orange-400 text-[10px] font-black uppercase tracking-widest px-3 mb-2">Main</p>
         <div className="space-y-0.5">
-          {NAV_MAIN.map(({ icon: Icon, label, section }) => (
-            <button
-              key={section}
-              aria-current={activeSection === section ? "page" : undefined}
-              onClick={() => { setActiveSection(section); setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-bold transition-all ${
-                activeSection === section
-                  ? "bg-white text-orange-600 shadow-lg shadow-orange-950/20 ring-1 ring-orange-200"
-                  : "text-white/60 hover:text-white hover:bg-white/10"
-              }`}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {label}
-              {label === "My Favorites" && favoriteIds.length > 0 && (
-                <span className="app-sidebar-badge ml-auto h-5 px-1.5 bg-pink-500 rounded-full text-white text-[10px] font-black flex items-center justify-center min-w-[20px]">
-                  {favoriteIds.length}
-                </span>
-              )}
+          {NAV_MAIN.map(({ icon: Icon, label, section, href }) => href ? (
+            <Link key={section} to={href} onClick={() => setSidebarOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold text-white/60 transition-all hover:bg-white/10 hover:text-white">
+              <Icon className="h-4 w-4 shrink-0" />{label}
+              {label === "My Favorites" && favoriteIds.length > 0 && <span className="app-sidebar-badge ml-auto h-5 min-w-[20px] rounded-full bg-pink-500 px-1.5 text-[10px] font-black text-white flex items-center justify-center">{favoriteIds.length}</span>}
+            </Link>
+          ) : (
+            <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => { setActiveSection(section); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-bold transition-all ${activeSection === section ? "bg-white text-orange-600 shadow-lg shadow-orange-950/20 ring-1 ring-orange-200" : "text-white/60 hover:text-white hover:bg-white/10"}`}>
+              <Icon className="h-4 w-4 shrink-0" />{label}
+              {label === "My Favorites" && favoriteIds.length > 0 && <span className="app-sidebar-badge ml-auto h-5 px-1.5 bg-pink-500 rounded-full text-white text-[10px] font-black flex items-center justify-center min-w-[20px]">{favoriteIds.length}</span>}
             </button>
           ))}
-        </div>
-      </nav>
-
-      <nav className="px-3 pt-3 pb-2 border-t border-white/10 mt-2">
-        <p className="text-white/35 text-[10px] font-black uppercase tracking-widest px-3 mb-2">Browse</p>
-        <div className="space-y-0.5">
-          {NAV_BROWSE.map(({ icon: Icon, label, href, section, isLink }) =>
-            isLink && href ? (
-              label === "Browse All" ? (
-                <Link
-                  key={href}
-                  to={href}
-                  onClick={() => setSidebarOpen(false)}
-                  className="flex items-center justify-between px-3 py-3 rounded-lg text-sm font-bold text-white/65 hover:text-white hover:bg-white/10 transition-all group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span>{label}</span>
-                  </div>
-                  <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              ) : (
-                <Link
-                  key={href}
-                  to={href}
-                  onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-white/60 hover:text-white hover:bg-white/10 transition-all"
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {label}
-                </Link>
-              )
-            ) : (
-              <button
-                key={section}
-                aria-current={activeSection === section ? "page" : undefined}
-                onClick={() => { setActiveSection(section!); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-bold transition-all ${
-                  activeSection === section
-                    ? "bg-white text-orange-600 shadow-lg shadow-orange-950/20 ring-1 ring-orange-200"
-                    : "text-white/60 hover:text-white hover:bg-white/10"
-                }`}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {label}
-              </button>
-            )
-          )}
         </div>
       </nav>
 

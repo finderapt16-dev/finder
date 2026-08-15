@@ -4,13 +4,11 @@ import {
   Bookmark,
   Building2,
   ChevronRight,
-  Clock,
   Eye,
   Grid2X2,
   Heart,
   HelpCircle,
   Home,
-  LayoutDashboard,
   List,
   LogOut,
   MapPin,
@@ -291,7 +289,7 @@ export function Favorites() {
         <aside className="app-shell-sidebar hidden h-full w-64 shrink-0 flex-col bg-[#07142f] shadow-2xl shadow-slate-900/40 lg:flex">
           <div className="app-sidebar flex h-full w-full flex-col overflow-y-auto">
           <div className="app-sidebar-brand px-5 pb-5 pt-6">
-            <Link to="/dashboard" className="flex items-center gap-2.5">
+            <Link to="/browse" className="flex items-center gap-2.5">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-950/30">
                 <Home className="h-6 w-6 fill-white/20 text-white" />
               </div>
@@ -317,16 +315,10 @@ export function Favorites() {
 
           <nav className="space-y-1 px-3 py-3">
             <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-widest text-white/35">Main</p>
-            <SidebarLink icon={LayoutDashboard} label="Overview" href="/dashboard?section=overview" />
+            <SidebarLink icon={Search} label="Apartments" href="/browse" />
             <SidebarLink icon={Heart} label="My Favorites" href="/favorites" active badge={favoriteCount} />
             <SidebarLink icon={Sparkles} label="Suggested" href="/dashboard?section=suggested" />
             <SidebarLink icon={TrendingUp} label="Popular" href="/dashboard?section=popular" />
-          </nav>
-
-          <nav className="space-y-1 border-t border-white/10 px-3 py-4">
-            <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-widest text-white/35">Browse</p>
-            <SidebarLink icon={Search} label="Browse All" href="/browse" />
-            <SidebarLink icon={Clock} label="Recently Added" href="/dashboard?section=recent" />
           </nav>
 
           <nav className="space-y-1 border-t border-white/10 px-3 py-4">

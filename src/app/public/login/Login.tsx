@@ -3,7 +3,7 @@ import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallba
 import { Alert, AlertDescription } from "@/app/shared/components/ui/alert";
 import { Button } from "@/app/shared/components/ui/button";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
-import { resendSignupVerification } from "@/app/shared/services/authService";
+import { isTenantRole, resendSignupVerification } from "@/app/shared/services/authService";
 import {
   AlertCircle,
   ArrowRight,
@@ -123,7 +123,8 @@ export function Login() {
     try {
       const result = await login({ email, password });
       if (result.success) {
-        navigate(redirectTo, { replace: true });
+        const hasRequestedRedirect = requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//");
+        navigate(hasRequestedRedirect ? redirectTo : isTenantRole(result.user?.role) ? "/browse" : "/dashboard", { replace: true });
       } else {
         setError(result.error || "Unable to sign in. Check your email and password and try again.");
       }

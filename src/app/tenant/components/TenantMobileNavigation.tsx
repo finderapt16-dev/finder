@@ -1,10 +1,8 @@
 import {
   ChevronRight,
-  Clock,
   Heart,
   HelpCircle,
   Home,
-  LayoutDashboard,
   LogOut,
   Menu,
   Search,
@@ -23,12 +21,10 @@ import { getTenantType, isTenantRole } from "@/app/shared/services/authService";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 
 type TenantNavSection =
-  | "overview"
+  | "apartments"
   | "favorites"
   | "suggested"
   | "popular"
-  | "browse"
-  | "recent"
   | "settings"
   | "report"
   | "help";
@@ -37,7 +33,7 @@ interface TenantMobileNavigationProps {
   active?: TenantNavSection;
 }
 
-export function TenantMobileNavigation({ active = "overview" }: TenantMobileNavigationProps) {
+export function TenantMobileNavigation({ active = "apartments" }: TenantMobileNavigationProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { favorites } = useFavorites();
@@ -101,7 +97,7 @@ export function TenantMobileNavigation({ active = "overview" }: TenantMobileNavi
           {badge}
         </span>
       )}
-      {section === "browse" && <ChevronRight className="h-4 w-4" />}
+      {section === "apartments" && <ChevronRight className="h-4 w-4" />}
     </Link>
   );
 
@@ -133,7 +129,7 @@ export function TenantMobileNavigation({ active = "overview" }: TenantMobileNavi
 
             <div className="app-sidebar flex h-full w-full flex-col overflow-y-auto">
               <div className="app-sidebar-brand px-5 pb-5 pt-6">
-                <Link to="/dashboard" onClick={() => setOpen(false)} className="flex items-center gap-2.5">
+                <Link to="/browse" onClick={() => setOpen(false)} className="flex items-center gap-2.5">
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-950/30">
                     <Home className="h-6 w-6 fill-white/20 text-white" />
                   </div>
@@ -160,16 +156,10 @@ export function TenantMobileNavigation({ active = "overview" }: TenantMobileNavi
 
               <nav className="space-y-1 px-3 py-3">
                 <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-widest text-orange-400">Main</p>
-                <NavLink icon={LayoutDashboard} label="Overview" to="/dashboard?section=overview" section="overview" />
+                <NavLink icon={Search} label="Apartments" to="/browse" section="apartments" />
                 <NavLink icon={Heart} label="My Favorites" to="/favorites" section="favorites" badge={favorites.length} />
                 <NavLink icon={Sparkles} label="Suggested" to="/dashboard?section=suggested" section="suggested" />
                 <NavLink icon={TrendingUp} label="Popular" to="/dashboard?section=popular" section="popular" />
-              </nav>
-
-              <nav className="space-y-1 border-t border-white/10 px-3 py-4">
-                <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-widest text-white/35">Browse</p>
-                <NavLink icon={Search} label="Browse All" to="/browse" section="browse" />
-                <NavLink icon={Clock} label="Recently Added" to="/dashboard?section=recent" section="recent" />
               </nav>
 
               <nav className="space-y-1 border-t border-white/10 px-3 py-4">

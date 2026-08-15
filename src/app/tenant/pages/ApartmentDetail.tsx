@@ -38,7 +38,6 @@ import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
 import { getImageUrl } from "@/app/shared/utils/images";
 import { isTenantVisibleApartment } from "@/app/shared/utils/listingVisibility";
 import { hasValidApartmentCoordinates, isDefaultMapCenter } from "@/app/shared/utils/mapCoordinates";
-import { supabase } from "@/lib/supabaseclient";
 import { TenantMobileNavigation } from "@/app/tenant/components/TenantMobileNavigation";
 
 const STATUS_LABEL: Record<string, string> = { available: "Available", occupied: "Occupied", reserved: "Reserved", maintenance: "Maintenance" };
@@ -211,7 +210,7 @@ export function ApartmentDetail() {
 
   const sidebarItems = user?.role === "landlord"
     ? [{ label: "Dashboard", icon: LayoutDashboard, href: "/dashboard?section=overview" }, { label: "My Properties", icon: Building2, href: "/dashboard?section=properties" }, { label: "Activity", icon: TrendingUp, href: "/dashboard?section=activity" }, { label: "Notifications", icon: Bell, href: "/dashboard?section=notifications" }, { label: "Add Property", icon: Home, href: "/add-apartment" }, { label: "Browse All", icon: Search, href: "/browse" }, { label: "Settings", icon: Settings, href: "/dashboard?section=settings" }, { label: "Help & Support", icon: HelpCircle, href: "/dashboard?section=help" }]
-    : [{ label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" }, { label: "Browse All", icon: Search, href: "/browse" }, { label: "Favorites", icon: Heart, href: "/favorites" }, { label: "Settings", icon: Settings, href: "/settings" }];
+    : [{ label: "Apartments", icon: Search, href: "/browse" }, { label: "Favorites", icon: Heart, href: "/favorites" }, { label: "Settings", icon: Settings, href: "/settings" }];
 
   const activeSidebarLabel = ownListing ? "My Properties" : "Browse All";
   const Sidebar = () => {
@@ -223,7 +222,7 @@ export function ApartmentDetail() {
       return (
         <aside className="app-sidebar flex h-full w-64 flex-col bg-[#07142f] text-white shadow-2xl shadow-slate-900/40">
           <div className="app-sidebar-brand px-5 pb-5 pt-6">
-            <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2.5 text-left">
+            <button onClick={() => navigate("/browse")} className="flex items-center gap-2.5 text-left">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-950/30">
                 <Home className="h-6 w-6 fill-white/20 text-white" />
               </div>
@@ -249,24 +248,16 @@ export function ApartmentDetail() {
           <nav className="space-y-1 px-3 py-3">
             <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-widest text-white/35">Main</p>
             {[
-              { label: "Overview", icon: LayoutDashboard, href: "/dashboard?section=overview" },
+              { label: "Apartments", icon: Search, href: "/browse" },
               { label: "My Favorites", icon: Heart, href: "/favorites" },
               { label: "Suggested", icon: Sparkles, href: "/dashboard?section=suggested" },
               { label: "Popular", icon: TrendingUp, href: "/dashboard?section=popular" },
             ].map(({ label, icon: Icon, href }) => (
-              <button key={label} onClick={() => navigate(href)} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold text-white/65 transition hover:bg-white/10 hover:text-white">
+              <button key={label} aria-current={label === "Apartments" ? "page" : undefined} onClick={() => navigate(href)} className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold transition ${label === "Apartments" ? "bg-orange-500 text-white shadow-lg shadow-orange-950/25" : "text-white/65 hover:bg-white/10 hover:text-white"}`}>
                 <Icon className="h-4 w-4 shrink-0" />
                 {label}
               </button>
             ))}
-          </nav>
-
-          <nav className="space-y-1 border-t border-white/10 px-3 py-4">
-            <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-widest text-white/35">Browse</p>
-            <button aria-current="page" onClick={() => navigate("/browse")} className="flex w-full items-center gap-3 rounded-lg bg-orange-500 px-3 py-3 text-sm font-bold text-white shadow-lg shadow-orange-950/25">
-              <Search className="h-4 w-4 shrink-0" />
-              Browse All
-            </button>
           </nav>
 
           <nav className="space-y-1 border-t border-white/10 px-3 py-4">
@@ -310,7 +301,7 @@ export function ApartmentDetail() {
 
   return (
     <div className="app-shell fixed inset-0 z-50 overflow-hidden bg-[#f6f7f9] text-slate-950">
-      {renter && <TenantMobileNavigation active="browse" />}
+      {renter && <TenantMobileNavigation active="apartments" />}
       <div className="app-shell-frame flex h-full">
       <aside className="app-shell-sidebar hidden h-full w-64 shrink-0 flex-col bg-[#07142f] shadow-xl lg:flex">{Sidebar()}</aside>
       {mobileNav && !renter && <div className="app-sidebar-overlay fixed inset-0 z-50 lg:hidden"><button aria-label="Close navigation" className="absolute inset-0" onClick={() => setMobileNav(false)} /><div className="app-sidebar-drawer relative h-full w-60 max-w-[86vw]">{Sidebar()}<button aria-label="Close navigation" onClick={() => setMobileNav(false)} className="app-sidebar-close absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-md bg-white/10"><X className="h-4 w-4" /></button></div></div>}

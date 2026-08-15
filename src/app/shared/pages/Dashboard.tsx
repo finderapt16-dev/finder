@@ -1,6 +1,6 @@
 import { useAuth } from "@/app/shared/contexts/AuthContext";
 import { lazy, Suspense } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { isTenantRole } from "@/app/shared/services/authService";
 
 const AdminDashboard = lazy(() => import("@/app/admin/pages/AdminDashboard").then((module) => ({ default: module.AdminDashboard })));
@@ -13,6 +13,7 @@ function DashboardLoader() {
 
 export function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return <DashboardLoader />;
@@ -33,6 +34,9 @@ export function Dashboard() {
   }
 
   if (isTenantRole(user?.role)) {
+    if (!new URLSearchParams(location.search).get("section")) {
+      return <Navigate to="/browse" replace />;
+    }
     return <Suspense fallback={<DashboardLoader />}><StudentEmployeeDashboard /></Suspense>;
   }
 
