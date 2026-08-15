@@ -96,6 +96,28 @@ export interface CreateUserInput extends AuthCredentials {
   otherWorkplace?: string;
 }
 
+export interface SignupResult {
+  user: User;
+  accountCreated: boolean;
+  profileCreated: boolean;
+  requiresEmailVerification: boolean;
+  existingAccount: boolean;
+  profileSetupError?: string;
+}
+
+export class SignupFlowError extends Error {
+  constructor(
+    message: string,
+    public readonly stage: 'validation' | 'auth' | 'profile' | 'verification',
+    public readonly code: string,
+    options?: { cause?: unknown },
+  ) {
+    super(message);
+    this.name = 'SignupFlowError';
+    if (options && 'cause' in options) Object.defineProperty(this, 'cause', { value: options.cause, enumerable: false });
+  }
+}
+
 export interface UpdateUserInput {
   name?: string;
   email?: string;
@@ -447,7 +469,9 @@ async function ensureProfileForAuthUser(authUser: {
   }
 
   const role = normalizeRoleValue(authUser.user_metadata?.role);
-  assertValidRole(role);
+  if (role !== 'tenant' && role !== 'student' && role !== 'employee' && role !== 'landlord') {
+    throw new Error('A public account profile cannot be created with this role.');
+  }
   const name = typeof authUser.user_metadata?.name === 'string' ? authUser.user_metadata.name : email.split('@')[0] || 'User';
   const middleInitial = typeof authUser.user_metadata?.middleInitial === 'string' ? authUser.user_metadata.middleInitial : null;
   const address = typeof authUser.user_metadata?.address === 'string' ? authUser.user_metadata.address : null;
@@ -494,8 +518,8 @@ async function ensureProfileForAuthUser(authUser: {
   return profile;
 }
 
-function requiresPendingEmailVerification(authUser: { email_confirmed_at?: string | null; user_metadata?: Record<string, unknown> }): boolean {
-  return authUser.user_metadata?.requires_email_verification === true && !authUser.email_confirmed_at;
+function requiresPendingEmailVerification(authUser: { email_confirmed_at?: string | null }): boolean {
+  return !authUser.email_confirmed_at;
 }
 
 export async function getCurrentAuthenticatedUser(): Promise<User | null> {
@@ -557,13 +581,51 @@ export function onAuthStateChange(callback: (user: User | null) => void): () => 
   return () => data.subscription.unsubscribe();
 }
 
-export async function signupUser(input: CreateUserInput): Promise<User> {
+function signupLog(message: string, details?: Record<string, unknown>): void {
+  if (!import.meta.env.DEV) return;
+  if (details) console.info(message, details);
+  else console.info(message);
+}
+
+function mapSignupError(error: { message?: string; status?: number; code?: string }): SignupFlowError {
+  const message = error.message ?? '';
+  console.error('[AUTH] Signup request failed', { message, status: error.status, code: error.code });
+  if (/already registered|already exists|user.*exists/i.test(message)) {
+    return new SignupFlowError('An account may already exist for this email. Try signing in, resending verification, or resetting your password.', 'auth', 'email_exists', { cause: error });
+  }
+  if (/invalid.*email|email.*invalid/i.test(message)) return new SignupFlowError('Enter a valid email address.', 'validation', 'invalid_email', { cause: error });
+  if (/password|weak/i.test(message)) return new SignupFlowError('Choose a stronger password that meets the password requirements.', 'validation', 'weak_password', { cause: error });
+  if (/signup.*disabled|signups.*disabled/i.test(message)) return new SignupFlowError('Account registration is temporarily unavailable.', 'auth', 'signup_disabled', { cause: error });
+  if (error.status === 429 || /rate|too many|seconds/i.test(message)) return new SignupFlowError('Too many registration attempts. Please wait before trying again.', 'auth', 'rate_limit', { cause: error });
+  if (/database|trigger|permission|row-level|rls/i.test(message)) return new SignupFlowError('Account registration could not be completed because profile setup failed. No retry is needed until the database configuration is corrected.', 'profile', 'profile_database', { cause: error });
+  if (/fetch|network|connection/i.test(message)) return new SignupFlowError('We could not reach the account service. Check your connection and try again.', 'auth', 'network', { cause: error });
+  return new SignupFlowError('We could not complete account registration. Please try again later.', 'auth', 'unexpected', { cause: error });
+}
+
+function pendingSignupUser(input: CreateUserInput, authId: string, role: UserRole, tenantType: TenantType | undefined): User {
+  return {
+    id: authId,
+    authId,
+    name: input.name,
+    email: input.email.trim().toLowerCase(),
+    role,
+    tenantType,
+    status: role === 'landlord' ? 'pending' : 'active',
+    isVerified: role !== 'landlord',
+    mobile: input.mobile ?? input.mobileNumber,
+    mobileNumber: input.mobile ?? input.mobileNumber,
+  };
+}
+
+export async function signupUser(input: CreateUserInput): Promise<SignupResult> {
   const email = input.email.trim();
   const role: UserRole = isTenantRole(input.role) ? 'tenant' : input.role;
   const tenantType = normalizeTenantType(input.tenantType, input.role);
-  if (role === 'tenant' && !tenantType) throw new Error('Please select a tenant type.');
-  if (tenantType === 'other' && !nonEmptyString(input.otherOccupation)) throw new Error('Occupation / Tenant Type is required.');
-  const status = input.status ?? (role === 'landlord' ? 'pending' : 'active');
+  if (role !== 'tenant' && role !== 'landlord') throw new SignupFlowError('Public registration supports tenant and landlord accounts only.', 'validation', 'invalid_public_role');
+  if (role === 'tenant' && !tenantType) throw new SignupFlowError('Please select a tenant type.', 'validation', 'missing_tenant_type');
+  if (tenantType === 'other' && !nonEmptyString(input.otherOccupation)) throw new SignupFlowError('Occupation / Tenant Type is required.', 'validation', 'missing_occupation');
+
+  signupLog('[AUTH] Signup started', { email, role, tenantType });
 
   const { data: authData, error: authError } = await supabaseClient.auth.signUp({
     email,
@@ -592,104 +654,61 @@ export async function signupUser(input: CreateUserInput): Promise<User> {
     },
   });
 
-  if (authError) {
-    if (/already registered|already exists|user.*exists/i.test(authError.message)) {
-      const { error: resendError } = await supabaseClient.auth.resend({ type: 'signup', email, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } });
-      if (!resendError) {
-        return { id: '', name: input.name, email, role, tenantType, status, isVerified: role !== 'landlord', mobile: input.mobile ?? input.mobileNumber, mobileNumber: input.mobile ?? input.mobileNumber };
-      }
-      throw new Error('This email already has an account. Check its verification email, sign in, or reset its password.');
-    }
-    throw new Error(authError.message);
-  }
+  if (authError) throw mapSignupError(authError);
 
   if (!authData.user) {
-    throw new Error('Unable to create Supabase Auth user.');
+    console.error('[AUTH] Signup returned no user and no Supabase error');
+    throw new SignupFlowError('The account service returned an incomplete response. Check whether the account exists before trying again.', 'auth', 'missing_auth_response');
   }
 
-  if (!authData.session) {
+  // Supabase deliberately obscures duplicate-email signup when email
+  // confirmation is enabled. An empty identities array means no new identity
+  // was created, so never continue with profile creation or report success.
+  const existingAccount = Array.isArray(authData.user.identities) && authData.user.identities.length === 0;
+  if (existingAccount) {
+    signupLog('[AUTH] Existing account response received', { email });
     return {
-      id: authData.user.id,
-      authId: authData.user.id,
-      name: input.name,
-      email,
-      role,
-      tenantType,
-      status,
-      isVerified: role !== 'landlord',
-      mobile: input.mobile ?? input.mobileNumber,
-      mobileNumber: input.mobile ?? input.mobileNumber,
+      user: pendingSignupUser(input, authData.user.id, role, tenantType),
+      accountCreated: false,
+      profileCreated: false,
+      requiresEmailVerification: true,
+      existingAccount: true,
     };
   }
 
-  const existing = await fetchUserByEmail(email);
-  if (existing) {
-    const { data, error } = await supabaseClient
-      .from(APP_USERS_TABLE)
-      .update({
-        auth_id: authData.user.id,
-        name: input.name,
-        middle_initial: nonEmptyString(input.middleInitial),
-        address: nonEmptyString(input.address),
-        role,
-        tenant_type: tenantType ?? null,
-        status,
-        is_verified: role !== 'landlord',
-        mobile: nonEmptyString(input.mobile) ?? nonEmptyString(input.mobileNumber),
-        permit_number: role === 'landlord' ? nonEmptyString(input.permitNumber) : null,
-        department: nonEmptyString(input.department),
-        admin_level: nonEmptyString(input.adminLevel),
-        other_occupation: tenantType === 'other' ? nonEmptyString(input.otherOccupation) : null,
-        other_organization: tenantType === 'other' ? nonEmptyString(input.otherOrganization) : null,
-        other_workplace: tenantType === 'other' ? nonEmptyString(input.otherWorkplace) : null,
-      })
-      .eq('id', existing.id)
-      .select('*')
-      .single();
+  const requiresEmailVerification = !authData.user.email_confirmed_at;
+  signupLog('[AUTH] Auth account created', { authUserId: authData.user.id });
+  signupLog(requiresEmailVerification ? '[AUTH] Verification pending' : '[AUTH] Email already confirmed');
 
-    if (error) {
-      throw new Error(error.message);
+  // handle_new_auth_user runs in the same database transaction as Auth user
+  // creation. A successful signUp therefore means the base app_users and role
+  // profile upserts completed. With confirmation enabled there is no session,
+  // so the client must not attempt anonymous writes to private profile tables.
+  let profile = pendingSignupUser(input, authData.user.id, role, tenantType);
+  let profileSetupError: string | undefined;
+  if (authData.session) {
+    try {
+      signupLog('[PROFILE] Checking app_users profile');
+      profile = await ensureProfileForAuthUser(authData.user);
+      signupLog('[PROFILE] Profile exists', { profileId: profile.id });
+      await uploadLandlordSignupDocuments(profile.id, input);
+    } catch (error) {
+      console.error('[PROFILE] Auth account exists but profile finalization failed', error);
+      profileSetupError = 'Your account was created, but we could not finish setting up your profile. Verify your email, then try signing in or contact support.';
+    } finally {
+      await supabaseClient.auth.signOut();
     }
-
-    const profile = normalizeUser(data as AppUserRow);
-    await ensureRoleProfile(profile.id, role, { ...input, tenantType, isVerified: role !== 'landlord' });
-    await uploadLandlordSignupDocuments(profile.id, input);
-    await supabaseClient.auth.signOut();
-    return profile;
   }
 
-  const { data, error } = await supabaseClient
-    .from(APP_USERS_TABLE)
-    .insert({
-      auth_id: authData.user.id,
-      name: input.name,
-      email,
-      middle_initial: nonEmptyString(input.middleInitial),
-      address: nonEmptyString(input.address),
-      role,
-      tenant_type: tenantType ?? null,
-      status,
-      is_verified: role !== 'landlord',
-      mobile: nonEmptyString(input.mobile) ?? nonEmptyString(input.mobileNumber),
-      permit_number: role === 'landlord' ? nonEmptyString(input.permitNumber) : null,
-      department: nonEmptyString(input.department),
-      admin_level: nonEmptyString(input.adminLevel),
-      other_occupation: tenantType === 'other' ? nonEmptyString(input.otherOccupation) : null,
-      other_organization: tenantType === 'other' ? nonEmptyString(input.otherOrganization) : null,
-      other_workplace: tenantType === 'other' ? nonEmptyString(input.otherWorkplace) : null,
-    })
-    .select('*')
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const profile = normalizeUser(data as AppUserRow);
-  await ensureRoleProfile(profile.id, role, { ...input, tenantType, isVerified: role !== 'landlord' });
-  await uploadLandlordSignupDocuments(profile.id, input);
-  await supabaseClient.auth.signOut();
-  return profile;
+  signupLog('[AUTH] Signup flow complete', { requiresEmailVerification, profileSetupError: Boolean(profileSetupError) });
+  return {
+    user: profile,
+    accountCreated: true,
+    profileCreated: !profileSetupError,
+    requiresEmailVerification,
+    existingAccount: false,
+    profileSetupError,
+  };
 }
 
 export async function loginUser(credentials: AuthCredentials): Promise<User> {
@@ -725,11 +744,18 @@ export async function loginUser(credentials: AuthCredentials): Promise<User> {
 }
 
 export async function resendSignupVerification(email: string): Promise<void> {
+  const normalizedEmail = email.trim();
+  if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) throw new Error('Enter a valid email address.');
   const { error } = await supabaseClient.auth.resend({
-    type: 'signup', email: email.trim(),
+    type: 'signup', email: normalizedEmail,
     options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
   });
-  if (error) throw new Error(error.message);
+  if (!error) return;
+  console.error('[AUTH] Verification resend failed', { message: error.message, status: error.status, code: error.code });
+  if (error.status === 429 || /rate|too many|seconds/i.test(error.message)) throw new Error('Please wait before requesting another verification email.');
+  if (/already.*confirm|already.*verif/i.test(error.message)) throw new Error('This email is already verified. Try signing in or resetting your password.');
+  if (/invalid.*email/i.test(error.message)) throw new Error('Enter a valid email address.');
+  throw new Error('The verification email could not be requested. Please try again later.');
 }
 
 export async function updateUser(userId: string, updates: UpdateUserInput): Promise<User> {

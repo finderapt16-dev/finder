@@ -112,7 +112,7 @@ export function Login() {
       setResendCooldown(60);
     } catch (resendError) {
       console.error("Unable to resend verification email:", resendError);
-      setError("Unable to resend the verification email. Please try again later.");
+      setError(resendError instanceof Error ? resendError.message : "Unable to resend the verification email. Please try again later.");
     } finally { setResending(false); }
   };
 

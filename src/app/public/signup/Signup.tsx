@@ -151,6 +151,7 @@ export function Signup() {
   const loginPath = redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : "/login";
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const submissionInFlightRef = useRef(false);
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [openSection, setOpenSection] = useState<string>("personal");
@@ -198,6 +199,7 @@ export function Signup() {
   /* ── Submit ─────────────────────────────────────────────── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submissionInFlightRef.current) return;
     setError("");
     if (!formData.role) { setError("Please select a role."); return; }
     if (formData.role === "tenant" && !formData.tenantType) { setError("Please select a tenant type."); return; }
@@ -212,6 +214,7 @@ export function Signup() {
     if (formData.password.length < 6) { setError("Password must be at least 6 characters."); return; }
     if (formData.password !== formData.confirmPassword) { setError("Passwords do not match."); return; }
 
+    submissionInFlightRef.current = true;
     setLoading(true);
     const fullName = `${formData.firstName} ${formData.middleInitial ? formData.middleInitial + ". " : ""}${formData.lastName}`.trim();
     try {
@@ -237,14 +240,22 @@ export function Signup() {
         permitDocument: permitFile ?? undefined,
         idDocument: idFile ?? undefined,
       });
-      if (result.success) {
-        navigate(loginPath, { state: { message: "Check your email for a verification link before signing in.", verificationEmail: formData.email.trim() } });
+      if (result.success && result.signup?.existingAccount) {
+        setError("An account may already exist for this email. Sign in, resend verification, or reset your password instead of registering again.");
+      } else if (result.success && result.signup?.profileSetupError) {
+        navigate(loginPath, { state: { message: result.signup.profileSetupError, verificationEmail: formData.email.trim() } });
+      } else if (result.success && result.signup?.requiresEmailVerification) {
+        navigate(loginPath, { state: { message: `Account created. A verification link was requested for ${formData.email.trim()}. Check your inbox and spam folder before signing in.`, verificationEmail: formData.email.trim() } });
+      } else if (result.success) {
+        navigate(loginPath, { state: { message: "Account created successfully. You can now sign in." } });
       } else {
         setError(result.error || "Signup failed");
       }
-    } catch {
-      setError("Signup failed. Check your connection and Supabase setup.");
+    } catch (submitError) {
+      console.error("[AUTH] Unexpected signup UI failure", submitError);
+      setError("We could not finish the signup request. Check whether the account exists before trying again.");
     } finally {
+      submissionInFlightRef.current = false;
       setLoading(false);
     }
   };
@@ -395,6 +406,7 @@ export function Signup() {
                     <AlertCircle className="h-4 w-4 text-rose-500" />
                     <AlertDescription className="font-semibold text-rose-700 text-sm">{error}</AlertDescription>
                   </Alert>
+                  {error.includes("may already exist") && <div className="mt-2 flex flex-wrap gap-3 text-xs font-bold"><Link to={loginPath} className="text-amber-700">Sign in</Link><Link to="/forgot-password" className="text-amber-700">Forgot password</Link><Link to={loginPath} state={{ message: "Enter your email below, then use Resend Verification Email.", verificationEmail: formData.email.trim() }} className="text-amber-700">Resend verification</Link></div>}
                 </motion.div>
               )}
             </AnimatePresence>

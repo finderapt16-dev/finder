@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseclient";
+import { getCurrentAuthenticatedUser, isTenantRole } from "@/app/shared/services/authService";
 
 export function AuthCallback() {
   const navigate = useNavigate();
@@ -8,7 +9,14 @@ export function AuthCallback() {
   useEffect(() => {
     let active = true;
     void (async () => {
-      const code = new URLSearchParams(window.location.search).get("code");
+      const params = new URLSearchParams(window.location.search);
+      const callbackError = params.get("error_description") || params.get("error");
+      if (callbackError) {
+        console.error("Email verification callback was rejected:", callbackError);
+        if (active) setError("This verification link is invalid or has expired. Request a new verification email and try again.");
+        return;
+      }
+      const code = params.get("code");
       if (code) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         if (exchangeError) {
@@ -23,8 +31,15 @@ export function AuthCallback() {
         if (active) setError("Email verification could not be confirmed. Request a new verification email and try again.");
         return;
       }
-      await supabase.auth.signOut();
-      if (active) navigate("/login", { replace: true, state: { message: "Email verified. You can now sign in." } });
+      try {
+        const profile = await getCurrentAuthenticatedUser();
+        if (!profile) throw new Error("The verified account profile is not available.");
+        if (active) navigate(isTenantRole(profile.role) ? "/browse" : "/dashboard", { replace: true });
+      } catch (profileError) {
+        console.error("Email was verified but profile recovery failed:", profileError);
+        await supabase.auth.signOut();
+        if (active) navigate("/login", { replace: true, state: { message: "Email verified. Sign in to finish loading your profile." } });
+      }
     })();
     return () => { active = false; };
   }, [navigate]);

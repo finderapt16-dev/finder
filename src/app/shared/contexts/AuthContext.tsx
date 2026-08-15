@@ -26,6 +26,7 @@ import {
   verifyLandlord as verifyLandlordRecord,
   type AuthCredentials,
   type CreateUserInput,
+  type SignupResult,
   type UpdateUserInput,
   type User,
   type UserRole
@@ -37,6 +38,7 @@ export interface AuthActionResult {
   success: boolean;
   error?: string;
   user?: User;
+  signup?: SignupResult;
 }
 
 export interface AuthContextType {
@@ -207,11 +209,11 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
 
   const signup = useCallback(async (input: CreateUserInput): Promise<AuthActionResult> => {
     try {
-      const user = await signupUser(input);
-      void refreshUsers().catch((refreshError) => {
+      const signupResult = await signupUser(input);
+      if (signupResult.accountCreated && signupResult.profileCreated) void refreshUsers().catch((refreshError) => {
         console.warn('Failed to refresh users after signup:', refreshError);
       });
-      return { success: true, user };
+      return { success: true, user: signupResult.user, signup: signupResult };
     } catch (error) {
       return { success: false, error: getErrorMessage(error, 'Unable to create account.') };
     }
