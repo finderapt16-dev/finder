@@ -19,8 +19,6 @@ import {
   Building2,
   CalendarCheck,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   DollarSign,
   Flag,
   GraduationCap,
@@ -45,7 +43,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 /* ─── Animation helpers ──────────────────────────────────── */
-const fadeUp = { hidden: { opacity: 0, y: 28 }, show: { opacity: 1, y: 0 } };
+const fadeUp = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.1 } } };
 
 function AnimatedSection({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -55,9 +53,9 @@ function AnimatedSection({ children, className = "", delay = 0 }: { children: Re
     <motion.div
       ref={ref}
       className={className}
-      initial={{ opacity: 0, y: 32 }}
+      initial={{ opacity: 0, y: 18 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.4, delay, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
     </motion.div>
@@ -177,23 +175,23 @@ export function Landing() {
   const activeFiltersCount = [budget, roomType, rooms, availability].filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="landing-palette flex min-h-screen flex-col overflow-x-hidden bg-white">
 
       {/* ─── Sticky Header ──────────────────────────────────── */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-white/95 backdrop-blur-xl shadow-md border-b border-amber-100" : "bg-transparent"
+          scrolled ? "bg-white/95 backdrop-blur-xl border-b border-slate-200" : "bg-white/90 backdrop-blur-xl border-b border-transparent"
         }`}
       >
-        <div className="container mx-auto px-4 lg:px-8">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-12">
           <div className="flex h-16 items-center justify-between">
             <Link to="/" className="flex items-center space-x-2.5 group">
               <AppLogo className="h-10 w-10 rounded-xl transition-all group-hover:scale-105" iconClassName="h-5 w-5" />
               <div>
-                <span className={`text-xl font-black bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent`}>
-                  RentIloilo
+                <span className="text-xl font-black text-slate-950">
+                  AptFindr
                 </span>
-                <p className="text-[10px] text-amber-600/60 font-semibold -mt-0.5 leading-none">La Paz, Iloilo City</p>
+                <p className="text-[10px] text-slate-400 font-semibold -mt-0.5 leading-none">La Paz, Iloilo City</p>
               </div>
             </Link>
 
@@ -207,7 +205,7 @@ export function Landing() {
                   to={to}
                   onClick={isProtected ? handleProtectedAction : undefined}
                   className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition-colors rounded-lg ${
-                    scrolled ? "text-slate-700 hover:text-amber-600 hover:bg-amber-50" : "text-white/90 hover:text-white hover:bg-white/10"
+                    "text-slate-700 hover:text-slate-950 hover:bg-slate-100"
                   }`}
                 >
                   {icon}{label}
@@ -217,19 +215,19 @@ export function Landing() {
                 {!user ? (
                   <>
                     <Link to="/login">
-                      <Button variant="ghost" size="sm" className={`font-semibold ${scrolled ? "text-slate-700 hover:text-amber-600" : "text-white hover:bg-white/10"}`}>
+                      <Button variant="ghost" size="sm" className="font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-950">
                         Login
                       </Button>
                     </Link>
                     <Link to="/signup">
-                      <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg font-semibold rounded-lg px-5">
+                      <Button size="sm" className="rounded-lg border border-slate-900 bg-slate-950 px-5 font-semibold text-white shadow-none hover:bg-slate-800">
                         Sign Up
                       </Button>
                     </Link>
                   </>
                 ) : (
                   <Link to={dashboardPath}>
-                    <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg font-semibold rounded-lg px-5">
+                    <Button size="sm" className="rounded-lg border border-slate-900 bg-slate-950 px-5 font-semibold text-white shadow-none hover:bg-slate-800">
                       Dashboard
                     </Button>
                   </Link>
@@ -239,11 +237,11 @@ export function Landing() {
 
             <Sheet>
               <SheetTrigger className="md:hidden inline-flex items-center justify-center rounded-lg h-9 w-9 hover:bg-white/10">
-                <Menu className={`h-5 w-5 ${scrolled ? "text-slate-700" : "text-white"}`} />
+                <Menu className="h-5 w-5 text-slate-700" />
               </SheetTrigger>
-              <SheetContent className="bg-white border-amber-100">
-                <SheetTitle className="text-amber-900">Menu</SheetTitle>
-                <SheetDescription className="text-amber-700/60">RentIloilo — La Paz, Iloilo City</SheetDescription>
+              <SheetContent className="border-slate-200 bg-white">
+                <SheetTitle className="text-slate-950">Menu</SheetTitle>
+                <SheetDescription className="text-slate-500">AptFindr — La Paz, Iloilo City</SheetDescription>
                 <nav className="flex flex-col gap-2 mt-8">
                   {[
                     { to: "/browse", label: "Browse Apartments", protected: true },
@@ -251,7 +249,7 @@ export function Landing() {
                     ...(!user ? [{ to: "/login", label: "Login", protected: false }, { to: "/signup", label: "Sign Up", protected: false }] : [{ to: dashboardPath, label: "Dashboard", protected: false }]),
                   ].map(({ to, label, protected: isProtected }) => (
                     <Link key={to} to={to} onClick={isProtected ? handleProtectedAction : undefined}
-                      className="px-4 py-3 text-slate-700 hover:text-amber-700 hover:bg-amber-50 rounded-xl font-semibold transition-colors">
+                      className="rounded-xl px-4 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950">
                       {label}
                     </Link>
                   ))}
@@ -263,94 +261,53 @@ export function Landing() {
       </header>
 
       {/* ─── Hero ────────────────────────────────────────────── */}
-      <section className="relative min-h-[100svh] flex items-center overflow-hidden">
-        {/* Background carousel */}
-        <div className="absolute inset-0 z-0">
-          <AnimatePresence mode="sync">
-            <motion.div
-              key={heroIndex}
-              className="absolute inset-0"
-              initial={{ opacity: 0, scale: 1.04 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.2, ease: "easeInOut" }}
-            >
-              <ImageWithFallback
-                src={heroImages[heroIndex]}
-                alt="Apartment in La Paz"
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-          </AnimatePresence>
-          {/* Multi-layer overlay for readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/70 via-slate-900/50 to-slate-900/80" />
-          <div className="absolute inset-0 bg-gradient-to-r from-amber-900/30 via-transparent to-transparent" />
-        </div>
+      <section className="order-1 bg-white pt-16">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-12">
+          <div className="grid grid-cols-1 items-stretch lg:grid-cols-[47%_53%] xl:grid-cols-[44%_56%]">
+          <motion.div className="relative z-20 min-w-0 py-10 text-left sm:py-12 lg:py-14 xl:py-16" initial="hidden" animate="show" variants={stagger}>
 
-        {/* Carousel controls */}
-        <button aria-label="Previous hero image" onClick={() => setHeroIndex((i) => (i - 1 + heroImages.length) % heroImages.length)}
-          className="absolute left-2 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 backdrop-blur transition-colors hover:bg-white/20 sm:flex sm:left-4">
-          <ChevronLeft className="h-5 w-5 text-white" />
-        </button>
-        <button aria-label="Next hero image" onClick={() => setHeroIndex((i) => (i + 1) % heroImages.length)}
-          className="absolute right-2 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 backdrop-blur transition-colors hover:bg-white/20 sm:flex sm:right-4">
-          <ChevronRight className="h-5 w-5 text-white" />
-        </button>
-
-        {/* Carousel dots */}
-        <div className="absolute bottom-36 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-          {heroImages.map((_, i) => (
-            <button key={i} aria-label={`Show hero image ${i + 1}`} onClick={() => setHeroIndex(i)}
-              className={`h-1.5 rounded-full transition-all ${i === heroIndex ? "w-8 bg-amber-400" : "w-2 bg-white/40"}`} />
-          ))}
-        </div>
-
-        {/* Hero content */}
-        <div className="relative z-10 container mx-auto min-w-0 px-4 pt-20 pb-28 lg:px-8">
-          <motion.div className="mx-auto w-full min-w-0 max-w-4xl overflow-hidden text-center" initial="hidden" animate="show" variants={stagger}>
-
-            <motion.div variants={fadeUp} className="mx-auto mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-amber-400/30 bg-amber-500/20 px-3 py-2 backdrop-blur-md sm:mb-6 sm:px-4">
+            <motion.div variants={fadeUp} className="mb-4 inline-flex max-w-full items-center gap-2 border-0 bg-transparent px-0 py-1 sm:mb-5">
               <motion.span animate={{ rotate: [0, 15, -10, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
-                <MapPin className="h-4 w-4 text-amber-400" />
+                <MapPin className="h-4 w-4 text-[#8B735B]" />
               </motion.span>
-              <span className="min-w-0 truncate text-xs font-bold text-amber-200 sm:text-sm">Apartment listings in La Paz, Iloilo City</span>
+              <span className="min-w-0 truncate text-xs font-bold uppercase tracking-[0.16em] text-[#8B735B] sm:text-sm">Apartment listings in La Paz, Iloilo City</span>
             </motion.div>
 
-            <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 leading-[1.05] tracking-tight text-white">
-              Find Apartments{" "}
-              <span className="relative inline-block">
-                <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">That Fit Your Needs</span>
+            <motion.h1 variants={fadeUp} className="mb-5 max-w-[520px] text-5xl font-black leading-[1.01] tracking-[-0.04em] text-slate-950 sm:text-[52px] lg:text-[50px] xl:text-[56px]">
+              <span className="block">Find Apartments</span>
+              <span className="relative block">
+                <span className="text-slate-950">That Fit Your Needs</span>
                 <motion.div
-                  className="absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full"
+                  className="hidden"
                   initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.8, duration: 0.7 }}
                 />
               </span>
-              <br />in La Paz
+              <span className="block">in La Paz</span>
             </motion.h1>
 
-            <motion.p variants={fadeUp} className="mx-auto mb-7 max-w-2xl text-base leading-relaxed text-white/75 sm:mb-10 sm:text-lg md:text-xl">
+            <motion.p variants={fadeUp} className="mb-7 max-w-[500px] text-base leading-relaxed text-slate-600 sm:mb-8 sm:text-lg">
               Browse apartments, compare rental options, view locations, and review room, amenity, and verification information.
             </motion.p>
 
             {/* ── Search panel ── */}
-            <motion.div variants={fadeUp} className="mx-auto w-full min-w-0 max-w-3xl overflow-hidden rounded-2xl border border-white/50 bg-white/95 shadow-2xl backdrop-blur-xl">
+            <motion.div variants={fadeUp} className="relative z-20 w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.08)] lg:w-[calc(100%+120px)] lg:max-w-[820px] xl:w-[calc(100%+200px)] xl:max-w-[880px]">
               <form className="min-w-0" onSubmit={handleLandingSearch}>
                 {/* Main search bar */}
                 <div className="flex flex-col items-stretch gap-2 p-3 sm:flex-row sm:items-center sm:gap-3">
                   <div className="relative min-w-0 flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-amber-500" />
+                    <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8B735B]" />
                     <input
                       value={landingSearch}
                       onChange={(e) => setLandingSearch(e.target.value)}
                       placeholder="Search by area, address, or apartment name..."
-                      className="h-13 min-w-0 w-full rounded-xl border border-amber-100 bg-amber-50/60 py-3.5 pl-12 pr-4 text-base font-medium text-slate-800 placeholder:text-slate-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      className="h-12 min-w-0 w-full rounded-xl border border-transparent bg-white py-3 pl-12 pr-4 text-base font-medium text-slate-800 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
                     />
                   </div>
                   <button type="button" onClick={() => setShowFilters(!showFilters)}
-                    className={`relative flex w-full items-center justify-center gap-2 px-4 py-3.5 rounded-xl border font-semibold text-sm transition-all sm:w-auto ${
+                    className={`relative flex h-12 w-full items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-all sm:w-auto ${
                       showFilters || activeFiltersCount > 0
-                        ? "bg-amber-100 border-amber-300 text-amber-800"
-                        : "bg-slate-50 border-slate-200 text-slate-600 hover:border-amber-300"
+                        ? "border-[#8B735B] bg-[#FAF8F5] text-[#8B735B]"
+                        : "bg-white border-slate-200 text-slate-600 hover:border-slate-400"
                     }`}>
                     <SlidersHorizontal className="h-4 w-4" />
                     Filters
@@ -361,7 +318,7 @@ export function Landing() {
                     )}
                   </button>
                   <Button type="submit"
-                    className="h-auto w-full whitespace-nowrap rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-3.5 text-base font-bold text-white shadow-lg hover:from-amber-600 hover:to-orange-700 sm:w-auto">
+                    className="h-12 w-full whitespace-nowrap rounded-xl bg-slate-950 px-6 text-base font-bold text-white shadow-none hover:bg-slate-800 sm:w-auto">
                     Search
                   </Button>
                 </div>
@@ -434,24 +391,32 @@ export function Landing() {
               </form>
             </motion.div>
 
-            <motion.div variants={fadeUp} className="mt-5 flex flex-wrap justify-center gap-2 px-6 text-xs text-white/70 sm:mt-6 sm:gap-3 sm:px-0 sm:text-sm">
-              <span className="font-semibold text-white/50">Popular:</span>
+            <motion.div variants={fadeUp} className="mt-3 flex max-w-[880px] flex-wrap items-center justify-start gap-2 text-xs text-slate-600 sm:gap-2.5">
+              <span className="font-semibold text-slate-400">Popular:</span>
               {["Divinagracia", "Sto. Rosario", "Near CPU", "Near schools"].map((s) => (
                 <button key={s} type="button"
                   onClick={() => { setLandingSearch(s); }}
-                  className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full border border-white/20 transition-colors font-medium">
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium transition-colors hover:border-slate-400">
                   {s}
                 </button>
               ))}
             </motion.div>
           </motion.div>
+          <div className="relative h-[320px] min-w-0 overflow-hidden rounded-3xl border border-slate-200 sm:h-[420px] lg:h-[580px] lg:rounded-none lg:rounded-bl-[48px] lg:border-0 xl:h-[610px]">
+            <AnimatePresence mode="sync">
+              <motion.div key={heroIndex} className="absolute inset-0" initial={{ opacity: 0, scale: 1.02 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.8, ease: "easeInOut" }}>
+                <ImageWithFallback src={heroImages[heroIndex]} alt="Apartment in La Paz" className="h-full w-full object-cover object-center" />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          </div>
         </div>
       </section>
 
       {/* ─── Stats bar ───────────────────────────────────────── */}
-      <section className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 py-6 shadow-lg">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
+      <section className="landing-feature-row order-2 mt-8 border-t border-slate-200 bg-white py-7 lg:mt-9">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-12">
+          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-4 md:gap-6">
             {[
               { label: "Search & Filters", value: "Browse", icon: Building2 },
               { label: "Room Availability", value: "Check", icon: BedDouble },
@@ -459,13 +424,13 @@ export function Landing() {
               { label: "Map Locations", value: "Compare", icon: TrendingUp },
             ].map(({ label, value, icon: Icon }, i) => (
               <AnimatedSection key={label} delay={i * 0.06}>
-                <div className="flex items-center gap-3 text-white">
-                  <div className="flex-shrink-0 h-10 w-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <div className="flex items-center gap-3 text-slate-900">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
                     <div className="text-2xl font-black leading-none">{value}</div>
-                    <div className="text-xs text-white/80 font-medium mt-0.5">{label}</div>
+                    <div className="mt-0.5 text-xs font-medium text-slate-500">{label}</div>
                   </div>
                 </div>
               </AnimatedSection>
@@ -475,25 +440,25 @@ export function Landing() {
       </section>
 
       {/* ─── Categories ──────────────────────────────────────── */}
-      <section className="py-20 bg-gradient-to-b from-white to-amber-50/40">
+      <section className="landing-category-section order-4 bg-[#FAF8F5] pb-14 pt-8 md:pb-20 md:pt-10">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-12">
-            <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Browse by Type</p>
+            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">Browse by Type</p>
             <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Apartment Categories</h2>
             <p className="text-slate-500 max-w-lg mx-auto">Explore listings by housing type and room features.</p>
           </AnimatedSection>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-5xl mx-auto">
-            {categories.map(({ icon: Icon, label, color, bg, border }, i) => (
+            {categories.map(({ icon: Icon, label }, i) => (
               <AnimatedSection key={label} delay={i * 0.07}>
                 <Link to="/browse" onClick={handleProtectedAction}>
                   <motion.div
                     whileHover={{ y: -6, scale: 1.02 }}
                     whileTap={{ scale: 0.97 }}
-                    className={`${bg} ${border} border-2 rounded-2xl p-5 text-center cursor-pointer transition-shadow hover:shadow-lg group`}
+                    className="group cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 text-center transition-all hover:-translate-y-0.5 hover:border-slate-400"
                   >
-                    <div className={`inline-flex h-14 w-14 rounded-2xl bg-gradient-to-br ${color} items-center justify-center mb-3 shadow-md group-hover:scale-110 transition-transform`}>
-                      <Icon className="h-7 w-7 text-white" />
+                    <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 transition-transform group-hover:scale-105">
+                      <Icon className="h-7 w-7 text-slate-800" />
                     </div>
                     <p className="font-bold text-slate-800 text-sm leading-tight">{label}</p>
                   </motion.div>
@@ -505,22 +470,15 @@ export function Landing() {
       </section>
 
       {/* ─── Featured Listings (preserved component) ─────────── */}
-      <div className="bg-white">
-        <div className="container mx-auto px-4 lg:px-8 pt-4 pb-2">
-          <AnimatedSection className="text-center mb-2">
-            <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Current listings</p>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Apartments to Explore</h2>
-            <p className="text-slate-500 max-w-lg mx-auto">Review recently published apartments in La Paz.</p>
-          </AnimatedSection>
-        </div>
+      <div className="order-3 bg-white">
         <LandingListingsSection onBrowseClick={handleProtectedAction} />
       </div>
 
       {/* ─── Browse by Location ───────────────────────────────── */}
-      <section className="py-20 bg-gradient-to-b from-amber-50/40 to-white">
+      <section className="order-5 border-y border-slate-100 bg-slate-50/60 py-14 md:py-20">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-12">
-            <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Explore the area</p>
+            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">Explore the area</p>
             <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Browse by Location</h2>
             <p className="text-slate-500 max-w-lg mx-auto">Apartments across barangays within La Paz, Iloilo City</p>
           </AnimatedSection>
@@ -531,12 +489,12 @@ export function Landing() {
                 <Link to="/browse" onClick={handleProtectedAction}>
                   <motion.div
                     whileHover={{ y: -5 }}
-                    className="bg-white border-2 border-amber-100 hover:border-amber-300 rounded-2xl p-5 flex items-center gap-4 cursor-pointer shadow-sm hover:shadow-md transition-all group"
+                    className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:border-slate-400"
                   >
                     <span className="text-3xl">{emoji}</span>
                     <div className="min-w-0">
-                      <p className="font-bold text-slate-800 group-hover:text-amber-700 transition-colors text-sm leading-snug">{name}</p>
-                      <p className="text-xs text-amber-600 font-semibold mt-0.5">{count}</p>
+                      <p className="text-sm font-bold leading-snug text-slate-800 transition-colors group-hover:text-slate-950">{name}</p>
+                      <p className="mt-0.5 text-xs font-semibold text-slate-500">{count}</p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-amber-400 ml-auto flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </motion.div>
@@ -548,12 +506,12 @@ export function Landing() {
       </section>
 
       {/* ─── Who It's For ────────────────────────────────────── */}
-      <section className="py-20 bg-slate-900">
+      <section className="order-9 bg-white py-14 md:py-20">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-12">
-            <p className="text-amber-400 font-bold text-sm uppercase tracking-widest mb-2">Platform users</p>
-            <h2 className="text-3xl md:text-4xl font-black text-white mb-3">Who Uses RentIloilo</h2>
-            <p className="text-slate-400 max-w-xl mx-auto">Tools for renters, landlords, and platform administrators.</p>
+            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">Platform users</p>
+            <h2 className="mb-3 text-3xl font-black text-slate-950 md:text-4xl">Who Uses AptFindr</h2>
+            <p className="mx-auto max-w-xl text-slate-500">Tools for renters, landlords, and platform administrators.</p>
           </AnimatedSection>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
@@ -562,17 +520,17 @@ export function Landing() {
               { icon: Briefcase, role: "Employees", desc: "Compare rental prices, amenities, availability, and locations near work.", gradient: "from-orange-500 to-orange-600" },
               { icon: Building2, role: "Landlords", desc: "Create listings, manage rooms and availability, upload images, and monitor recorded engagement.", gradient: "from-rose-500 to-rose-600" },
               { icon: UserCog, role: "Administrators", desc: "Review verification information, manage listings and reports, and monitor platform activity.", gradient: "from-pink-500 to-pink-600" },
-            ].map(({ icon: Icon, role, desc, gradient }, i) => (
+            ].map(({ icon: Icon, role, desc }, i) => (
               <AnimatedSection key={role} delay={i * 0.08}>
                 <motion.div
                   whileHover={{ y: -8 }}
-                  className="bg-slate-800 border border-slate-700 rounded-2xl p-6 h-full"
+                  className="h-full rounded-2xl border border-slate-200 bg-white p-6"
                 >
-                  <div className={`inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} mb-4 shadow-lg`}>
-                    <Icon className="h-6 w-6 text-white" />
+                  <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
+                    <Icon className="h-6 w-6 text-slate-800" />
                   </div>
-                  <h3 className="text-lg font-black text-white mb-2">{role}</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">{desc}</p>
+                  <h3 className="mb-2 text-lg font-black text-slate-950">{role}</h3>
+                  <p className="text-sm leading-relaxed text-slate-500">{desc}</p>
                 </motion.div>
               </AnimatedSection>
             ))}
@@ -581,10 +539,10 @@ export function Landing() {
       </section>
 
       {/* ─── Why Choose Us ───────────────────────────────────── */}
-      <section className="py-20 bg-white">
+      <section className="order-6 bg-white py-14 md:py-20">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-12">
-            <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Platform features</p>
+            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">Platform features</p>
             <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Useful Information in One Place</h2>
             <p className="text-slate-500 max-w-xl mx-auto">Review listings and manage properties using recorded platform information.</p>
           </AnimatedSection>
@@ -597,14 +555,14 @@ export function Landing() {
               { icon: Map, title: "GIS Map View", desc: "Compare apartment locations in La Paz and review nearby listing options.", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
               { icon: Bot, title: "Platform Guide", desc: "The built-in assistant explains platform features and helps users navigate available options.", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
               { icon: TrendingUp, title: "Listing Activity", desc: "Landlords can monitor recorded views and favorites, while renters receive suggestions based on their preferences.", color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-100" },
-            ].map(({ icon: Icon, title, desc, color, bg, border }, i) => (
+            ].map(({ icon: Icon, title, desc }, i) => (
               <AnimatedSection key={title} delay={i * 0.07}>
                 <motion.div
                   whileHover={{ y: -6 }}
-                  className={`${bg} ${border} border-2 rounded-2xl p-6 h-full`}
+                  className="h-full rounded-2xl border border-slate-200 bg-white p-6"
                 >
-                  <div className={`inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white border ${border} mb-4 shadow-sm`}>
-                    <Icon className={`h-5 w-5 ${color}`} />
+                  <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
+                    <Icon className="h-5 w-5 text-slate-800" />
                   </div>
                   <h3 className="font-black text-slate-900 mb-2">{title}</h3>
                   <p className="text-slate-600 text-sm leading-relaxed">{desc}</p>
@@ -616,17 +574,17 @@ export function Landing() {
       </section>
 
       {/* ─── How It Works ────────────────────────────────────── */}
-      <section className="py-20 bg-gradient-to-b from-amber-50/60 to-white">
+      <section className="order-7 border-y border-slate-100 bg-slate-50/60 py-14 md:py-20">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-14">
-            <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Simple process</p>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">How RentIloilo Works</h2>
+            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">Simple process</p>
+            <h2 className="mb-3 text-3xl font-black text-slate-900 md:text-4xl">How AptFindr Works</h2>
             <p className="text-slate-500 max-w-xl mx-auto">Create an account, review listings, and compare suitable options.</p>
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto relative">
             {/* connector line */}
-            <div className="hidden md:block absolute top-[52px] left-1/4 right-1/4 h-px bg-gradient-to-r from-amber-300 to-orange-300" />
+            <div className="absolute left-1/4 right-1/4 top-[52px] hidden border-t border-dashed border-slate-300 md:block" />
 
             {[
               { icon: UserCheck, title: "Create your account", desc: "Register as a renter or landlord. Landlords can then submit verification information for review." },
@@ -634,11 +592,11 @@ export function Landing() {
               { icon: CheckCircle2, title: "Review your options", desc: "Use listing details, availability, verification status, and personalized suggestions to compare rentals." },
             ].map(({ icon: Icon, title, desc }, i) => (
               <AnimatedSection key={title} delay={i * 0.12}>
-                <motion.div whileHover={{ y: -6 }} className="relative bg-white border-2 border-amber-100 rounded-3xl p-8 text-center shadow-sm">
-                  <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg mb-5 mx-auto">
-                    <Icon className="h-7 w-7 text-white" />
+                <motion.div whileHover={{ y: -3 }} className="relative bg-transparent p-8 text-center">
+                  <div className="mx-auto mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white">
+                    <Icon className="h-7 w-7 text-slate-900" />
                   </div>
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 h-8 w-8 bg-white border-2 border-amber-200 rounded-full flex items-center justify-center text-xs font-black text-amber-600 shadow-sm">
+                  <div className="absolute left-1/2 top-0 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-xs font-black text-slate-600">
                     {i + 1}
                   </div>
                   <h3 className="text-lg font-black text-slate-900 mb-2">{title}</h3>
@@ -651,10 +609,10 @@ export function Landing() {
       </section>
 
       {/* ─── Community Section ───────────────────────────────── */}
-      <section className="py-20 bg-white">
+      <section className="order-8 bg-white py-14 md:py-20">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-12">
-            <p className="text-amber-600 font-bold text-sm uppercase tracking-widest mb-2">Renter needs</p>
+            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">Renter needs</p>
             <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Ways to Compare Apartments</h2>
             <p className="text-slate-500 max-w-lg mx-auto">Use listing information to review options for school, work, or household needs.</p>
           </AnimatedSection>
@@ -680,7 +638,7 @@ export function Landing() {
       </section>
 
       {/* ─── CTA ─────────────────────────────────────────────── */}
-      <section className="py-20 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 relative overflow-hidden">
+      <section className="landing-final-cta relative order-10 overflow-hidden border-y border-slate-200 bg-slate-950 py-14 md:py-20">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-72 h-72 bg-white rounded-full blur-3xl" />
@@ -688,24 +646,24 @@ export function Landing() {
         <div className="relative z-10 container mx-auto px-4 lg:px-8 text-center">
           <AnimatedSection>
             <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-white/20 backdrop-blur rounded-full border border-white/30">
-              <Zap className="h-4 w-4 text-white" />
-              <span className="text-sm font-bold text-white">Ready to review available apartments?</span>
+              <Zap className="h-4 w-4 text-[#8B735B]" />
+              <span className="text-sm font-bold text-[#302820]">Ready to review available apartments?</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-5 leading-tight">
+            <h2 className="mb-5 text-4xl font-black leading-tight text-[#302820] md:text-5xl">
               Explore apartment<br />listings in La Paz
             </h2>
-            <p className="text-white/85 text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
+            <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-[#756A60]">
               Create an account to browse listings, use the map view, save favorites, and receive suggestions based on your preferences.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/signup">
-                <Button size="lg" className="bg-white text-amber-700 hover:bg-amber-50 shadow-xl font-black text-base px-8 py-4 h-auto rounded-xl inline-flex items-center gap-2">
+                <Button size="lg" className="inline-flex h-auto items-center gap-2 rounded-xl bg-[#8B735B] px-8 py-4 text-base font-black text-white shadow-none hover:bg-[#756A60]">
                   <UserCheck className="h-5 w-5" />
                   Create Account
                 </Button>
               </Link>
               <Link to="/browse" onClick={handleProtectedAction}>
-                <Button size="lg" variant="outline" className="border-2 border-white/50 text-white hover:bg-white/10 backdrop-blur font-bold text-base px-8 py-4 h-auto rounded-xl inline-flex items-center gap-2">
+                <Button size="lg" variant="outline" className="inline-flex h-auto items-center gap-2 rounded-xl border border-[#E8DED1] bg-white px-8 py-4 text-base font-bold text-[#302820] hover:bg-[#FAF8F5]">
                   <Building2 className="h-5 w-5" />
                   Browse Listings
                 </Button>
@@ -716,14 +674,14 @@ export function Landing() {
       </section>
 
       {/* ─── Footer ──────────────────────────────────────────── */}
-      <footer className="bg-slate-950 text-slate-400 pt-16 pb-8">
+      <footer className="order-[11] border-t border-slate-200 bg-white pb-8 pt-16 text-slate-500">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
             {/* Brand */}
             <div className="lg:col-span-2">
               <div className="flex items-center gap-3 mb-4">
                 <AppLogo className="h-10 w-10 rounded-xl" iconClassName="h-5 w-5" />
-                <span className="font-black text-white text-xl">RentIloilo</span>
+                <span className="text-xl font-black text-slate-950">AptFindr</span>
               </div>
               <p className="text-slate-400 leading-relaxed max-w-xs text-sm">
                 A Progressive Web Application for apartment discovery and listing management in La Paz, Iloilo City. Academic thesis project.
@@ -737,7 +695,7 @@ export function Landing() {
 
             {/* Quick links */}
             <div>
-              <h4 className="font-black text-white text-sm uppercase tracking-widest mb-4">Quick Links</h4>
+              <h4 className="mb-4 text-sm font-black uppercase tracking-widest text-slate-950">Quick Links</h4>
               <ul className="space-y-2">
                 {[
                   { to: "/browse", label: "Browse Listings", protected: true },
@@ -749,7 +707,7 @@ export function Landing() {
                 ].map(({ to, label, protected: isProtected }) => (
                   <li key={to}>
                     <Link to={to} onClick={isProtected ? handleProtectedAction : undefined}
-                      className="text-sm hover:text-amber-400 transition-colors flex items-center gap-1.5 group">
+                      className="group flex items-center gap-1.5 text-sm transition-colors hover:text-slate-950">
                       <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                       {label}
                     </Link>
@@ -760,14 +718,14 @@ export function Landing() {
 
             {/* About / Legal */}
             <div>
-              <h4 className="font-black text-white text-sm uppercase tracking-widest mb-4">About</h4>
+              <h4 className="mb-4 text-sm font-black uppercase tracking-widest text-slate-950">About</h4>
               <ul className="space-y-2 text-sm">
                 <li><span className="text-slate-500">About Us</span></li>
                 <li><span className="text-slate-500">Privacy Policy</span></li>
                 <li><span className="text-slate-500">Terms & Conditions</span></li>
                 <li><span className="text-slate-500">Contact Us</span></li>
               </ul>
-              <div className="mt-6 pt-5 border-t border-slate-800">
+              <div className="mt-6 border-t border-slate-200 pt-5">
                 <p className="text-xs text-slate-600 font-semibold uppercase tracking-wide mb-2">Coverage Area</p>
                 <div className="flex items-center gap-2">
                   <MapPin className="h-3.5 w-3.5 text-amber-500" />
@@ -777,8 +735,8 @@ export function Landing() {
             </div>
           </div>
 
-          <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-slate-600">© 2026 RentIloilo PWA — La Paz, Iloilo City. Academic thesis project.</p>
+          <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-6 sm:flex-row">
+            <p className="text-xs text-slate-600">© 2026 AptFindr PWA — La Paz, Iloilo City. Academic thesis project.</p>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-slate-800 px-3 py-1.5 rounded-full">
                 <Smartphone className="h-3 w-3" /> Progressive Web App

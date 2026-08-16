@@ -6,7 +6,6 @@ import { useAuth } from "@/app/shared/contexts/AuthContext";
 import { isTenantRole, resendSignupVerification } from "@/app/shared/services/authService";
 import {
   AlertCircle,
-  ArrowRight,
   BadgeCheck,
   CheckCircle2, Eye, EyeOff,
   Home,
@@ -15,7 +14,6 @@ import {
   MapPin,
   ShieldCheck,
   Sparkles,
-  Star,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
@@ -30,11 +28,13 @@ function FloatInput({
   icon?: React.ReactNode; suffix?: React.ReactNode;
 }) {
   const [focused, setFocused] = useState(false);
-  const lifted = focused || value.length > 0;
   return (
-    <div className="relative">
-      <div className={`relative flex items-center border-2 rounded-xl transition-all duration-200 bg-white ${
-        focused ? "border-amber-400 shadow-sm shadow-amber-100" : "border-slate-200 hover:border-slate-300"
+    <div className="space-y-2">
+      <label htmlFor={id} className="block text-sm font-semibold text-slate-700">
+        {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
+      </label>
+      <div className={`relative flex h-12 items-center rounded-xl border bg-white transition-all duration-200 ${
+        focused ? "border-amber-500 ring-2 ring-amber-500/10" : "border-slate-200 hover:border-slate-300"
       }`}>
         {icon && (
           <span className={`absolute left-3.5 transition-colors duration-200 ${focused ? "text-amber-500" : "text-slate-400"}`}>
@@ -48,18 +48,10 @@ function FloatInput({
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder=" "
+          placeholder={`Enter your ${label.toLowerCase()}`}
           required={required}
-          className={`w-full bg-transparent text-slate-800 text-sm font-medium outline-none pt-5 pb-2 ${icon ? "pl-10" : "pl-4"} ${suffix ? "pr-10" : "pr-4"} placeholder:text-transparent`}
+          className={`h-full w-full bg-transparent text-slate-800 text-sm outline-none ${icon ? "pl-10" : "pl-4"} ${suffix ? "pr-10" : "pr-4"} placeholder:text-slate-400`}
         />
-        <label
-          htmlFor={id}
-          className={`absolute pointer-events-none transition-all duration-200 font-medium ${icon ? "left-10" : "left-4"} ${
-            lifted ? "top-2 text-[10px] tracking-wide uppercase" : "top-1/2 -translate-y-1/2 text-sm"
-          } ${focused ? "text-amber-500" : "text-slate-400"}`}
-        >
-          {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
-        </label>
         {suffix && <div className="absolute right-3.5">{suffix}</div>}
       </div>
     </div>
@@ -138,18 +130,17 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50">
+    <div className="auth-palette min-h-screen flex flex-col lg:flex-row bg-slate-50">
 
       {/* ── LEFT PANEL ────────────────────────────────────────── */}
-      <div className="hidden lg:flex flex-col w-[420px] xl:w-[480px] flex-shrink-0 relative overflow-hidden min-h-screen">
+      <div className="auth-visual-panel hidden lg:flex flex-col w-[38%] xl:w-[40%] flex-shrink-0 relative overflow-hidden min-h-screen">
         <div className="absolute inset-0">
           <ImageWithFallback
             src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=960"
             alt="Modern apartment in La Paz"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-bottom opacity-25"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/60 to-slate-900/90" />
-          <div className="absolute inset-0 bg-gradient-to-tr from-amber-900/30 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-[#FAF8F5]/90" />
         </div>
 
         <div className="relative z-10 flex flex-col h-full p-8 xl:p-10">
@@ -157,7 +148,7 @@ export function Login() {
           <Link to="/" className="flex items-center gap-3 group mb-auto">
             <AppLogo className="h-10 w-10 rounded-xl group-hover:scale-105 transition-transform" iconClassName="h-5 w-5" />
             <div>
-              <span className="text-lg font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">RentIloilo</span>
+              <span className="text-lg font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">AptFindr</span>
               <p className="text-[10px] text-white/40 font-semibold -mt-0.5 uppercase tracking-widest">La Paz, Iloilo City</p>
             </div>
           </Link>
@@ -176,7 +167,7 @@ export function Login() {
               <h2 className="text-3xl xl:text-4xl font-black text-white leading-tight mb-4">
                 Continue to<br />
                 <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-                  RentIloilo
+                  AptFindr
                 </span>
               </h2>
               <p className="text-white/60 text-sm leading-relaxed max-w-xs">
@@ -187,16 +178,15 @@ export function Login() {
 
           {/* Benefits list */}
           <motion.div
-            className="space-y-3 mb-10"
+            className="space-y-3 mb-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.6 }}
           >
             {[
               { icon: BadgeCheck, text: "Review landlord verification status" },
-              { icon: ShieldCheck, text: "Report inaccurate listing information" },
+              { icon: ShieldCheck, text: "Check available rooms and listing details" },
               { icon: MapPin,     text: "Compare apartment locations on the map" },
-              { icon: Star,       text: "Receive suggestions based on your preferences" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
                 <div className="flex-shrink-0 h-7 w-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
@@ -208,34 +198,6 @@ export function Login() {
           </motion.div>
 
           {/* Stats */}
-          <motion.div
-            className="grid grid-cols-2 gap-3"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45, duration: 0.55 }}
-          >
-            {[
-              { value: "Browse", label: "Apartments" },
-              { value: "Save", label: "Favorites" },
-              { value: "Check", label: "Available Rooms" },
-              { value: "Compare", label: "Locations" },
-            ].map(({ value, label }) => (
-              <div key={label} className="bg-white/8 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 text-center">
-                <p className="text-xl font-black text-white">{value}</p>
-                <p className="text-[11px] text-white/50 font-medium mt-0.5">{label}</p>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* Trust badges */}
-          <div className="flex flex-wrap gap-2 mt-5">
-            {["Account Access", "Role-Based Dashboard", "Password Recovery"].map((b) => (
-              <div key={b} className="flex items-center gap-1.5 px-2.5 py-1 bg-white/8 border border-white/10 rounded-full">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                <span className="text-[10px] text-white/50 font-semibold">{b}</span>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -246,7 +208,7 @@ export function Login() {
         <div className="lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3.5 bg-white/90 backdrop-blur border-b border-slate-100 shadow-sm">
           <Link to="/" className="flex items-center gap-2.5">
             <AppLogo className="h-8 w-8 rounded-lg" iconClassName="h-4 w-4" />
-            <span className="font-black text-amber-600 text-base">RentIloilo</span>
+            <span className="font-black text-amber-600 text-base">AptFindr</span>
           </Link>
           <Link to={signupPath} className="text-sm font-bold text-slate-500 hover:text-amber-600 transition-colors">
             Create account
@@ -254,13 +216,13 @@ export function Login() {
         </div>
 
         <div className="flex-1 flex items-center justify-center px-4 py-8 lg:py-12 lg:px-10 xl:px-16">
-          <div className="w-full max-w-lg">
+          <div className="w-full max-w-[470px]">
 
             {/* Page heading */}
             <div className="mb-8">
               <h1 className="text-2xl lg:text-3xl font-black text-slate-900 leading-tight">Sign in to your account</h1>
               <p className="text-slate-500 text-sm mt-1.5">
-                New to RentIloilo?{" "}
+                New to AptFindr?{" "}
                 <Link to={signupPath} className="text-amber-600 font-bold hover:text-amber-700 transition-colors">
                   Create an account
                 </Link>
@@ -301,11 +263,11 @@ export function Login() {
               )}
             </AnimatePresence>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
 
               {/* Form card — same rounded-2xl border-2 treatment as Signup accordion sections */}
-              <div className="rounded-2xl border-2 border-slate-200 bg-white overflow-hidden">
-                <div className="px-5 py-5 space-y-4">
+              <div>
+                <div className="space-y-5">
                   <FloatInput
                     id="email"
                     label="Email Address"
@@ -339,7 +301,7 @@ export function Login() {
                     <div className="flex justify-end pt-1">
                       <Link
                         to="/forgot-password"
-                        className="text-xs font-bold text-amber-600 hover:text-amber-700 transition-colors"
+                        className="text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors"
                       >
                         Forgot password?
                       </Link>
@@ -352,7 +314,7 @@ export function Login() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-13 py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl font-black text-base shadow-lg shadow-orange-200 hover:shadow-orange-300 transition-all flex items-center justify-center gap-2.5 disabled:opacity-60"
+                className="w-full h-12 bg-[#8B735B] hover:bg-[#75604B] text-white rounded-xl font-bold text-base shadow-none transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {loading ? (
                   <>
@@ -365,34 +327,16 @@ export function Login() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-5 w-5" />
                     Sign In
-                    <ArrowRight className="h-4 w-4" />
                   </>
                 )}
               </Button>
 
               {/* Trust badges — same as Signup */}
-              <div className="flex items-center justify-center gap-4 pt-1">
-                {["Email", "Password", "Account Access"].map((b) => (
-                  <div key={b} className="flex items-center gap-1 text-xs text-slate-400 font-medium">
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    {b}
-                  </div>
-                ))}
-              </div>
-
-              {/* Divider */}
-              <div className="flex items-center gap-3 py-1">
-                <div className="flex-1 h-px bg-slate-200" />
-                <span className="text-xs text-slate-400 font-medium">or</span>
-                <div className="flex-1 h-px bg-slate-200" />
-              </div>
-
               {/* Back to Home */}
               <Link
                 to="/"
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border-2 border-slate-200 bg-white hover:border-amber-200 hover:bg-amber-50/40 text-sm font-bold text-slate-600 hover:text-amber-700 transition-all duration-200"
+                className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-500 hover:text-amber-700 transition-colors"
               >
                 <Home className="h-4 w-4" />
                 Back to Home

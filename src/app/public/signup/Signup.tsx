@@ -21,7 +21,6 @@ import {
   Phone,
   ShieldCheck,
   Sparkles,
-  Star,
   Upload,
   User,
   Users
@@ -265,19 +264,18 @@ export function Signup() {
 
   /* ══════════════════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50">
+    <div className="auth-palette min-h-screen flex flex-col lg:flex-row bg-slate-50">
 
       {/* ── LEFT PANEL ────────────────────────────────────────── */}
-      <div className="hidden lg:flex flex-col w-[420px] xl:w-[480px] flex-shrink-0 relative overflow-hidden min-h-screen">
+      <div className="auth-visual-panel hidden lg:flex flex-col w-[38%] xl:w-[40%] flex-shrink-0 relative overflow-hidden min-h-screen">
         {/* Full-height apartment photo */}
         <div className="absolute inset-0">
           <ImageWithFallback
             src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=960"
             alt="Modern apartment in La Paz"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-bottom opacity-25"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/60 to-slate-900/90" />
-          <div className="absolute inset-0 bg-gradient-to-tr from-amber-900/30 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-[#FAF8F5]/90" />
         </div>
 
         {/* Content */}
@@ -286,7 +284,7 @@ export function Signup() {
           <Link to="/" className="flex items-center gap-3 group mb-auto">
             <AppLogo className="h-10 w-10 rounded-xl group-hover:scale-105 transition-transform" iconClassName="h-5 w-5" />
             <div>
-              <span className="text-lg font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">RentIloilo</span>
+              <span className="text-lg font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">AptFindr</span>
               <p className="text-[10px] text-white/40 font-semibold -mt-0.5 uppercase tracking-widest">La Paz, Iloilo City</p>
             </div>
           </Link>
@@ -305,7 +303,7 @@ export function Signup() {
               <h2 className="text-3xl xl:text-4xl font-black text-white leading-tight mb-4">
                 Create your<br />
                 <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-                  RentIloilo account
+                  AptFindr account
                 </span>
               </h2>
               <p className="text-white/60 text-sm leading-relaxed max-w-xs">
@@ -316,7 +314,7 @@ export function Signup() {
 
           {/* Benefits list */}
           <motion.div
-            className="space-y-3 mb-10"
+            className="space-y-3 mb-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.6 }}
@@ -325,7 +323,6 @@ export function Signup() {
               { icon: BadgeCheck, text: "Review landlord verification status" },
               { icon: ShieldCheck, text: "Submit listing reports for admin review" },
               { icon: MapPin, text: "Compare apartment locations on the map" },
-              { icon: Star, text: "Set preferences for apartment suggestions" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
                 <div className="flex-shrink-0 h-7 w-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
@@ -337,34 +334,6 @@ export function Signup() {
           </motion.div>
 
           {/* Stats frosted bar */}
-          <motion.div
-            className="grid grid-cols-2 gap-3"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45, duration: 0.55 }}
-          >
-            {[
-              { value: "Browse", label: "Apartments" },
-              { value: "Manage", label: "Property Listings" },
-              { value: "Check", label: "Available Rooms" },
-              { value: "Compare", label: "Locations" },
-            ].map(({ value, label }) => (
-              <div key={label} className="bg-white/8 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 text-center">
-                <p className="text-xl font-black text-white">{value}</p>
-                <p className="text-[11px] text-white/50 font-medium mt-0.5">{label}</p>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* Trust badges */}
-          <div className="flex flex-wrap gap-2 mt-5">
-            {["Tenant Accounts", "Landlord Accounts", "Role Details"].map((b) => (
-              <div key={b} className="flex items-center gap-1.5 px-2.5 py-1 bg-white/8 border border-white/10 rounded-full">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                <span className="text-[10px] text-white/50 font-semibold">{b}</span>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -375,7 +344,7 @@ export function Signup() {
         <div className="lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3.5 bg-white/90 backdrop-blur border-b border-slate-100 shadow-sm">
           <Link to="/" className="flex items-center gap-2.5">
             <AppLogo className="h-8 w-8 rounded-lg" iconClassName="h-4 w-4" />
-            <span className="font-black text-amber-600 text-base">RentIloilo</span>
+            <span className="font-black text-amber-600 text-base">AptFindr</span>
           </Link>
           <Link to={loginPath} className="text-sm font-bold text-slate-500 hover:text-amber-600 transition-colors">
             Sign in

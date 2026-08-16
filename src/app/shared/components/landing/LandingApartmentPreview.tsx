@@ -10,7 +10,7 @@ import { VerifiedBadge } from "../common/VerifiedBadge";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { Button } from "../ui/button";
 
-const PREVIEW_LIMIT = 6;
+const PREVIEW_LIMIT = 4;
 
 function resolveApartmentImage(image: string): string {
   if (!image) {
@@ -31,28 +31,23 @@ function PreviewCard({
 }) {
   return (
     <motion.div
+      className="h-full"
       initial={{ opacity: 0, y: 26 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 0.5 }}
-      whileHover={{ y: -8, scale: 1.015 }}
+      whileHover={{ y: -3 }}
     >
       <Link
         to={`/apartment/${apartment.id}`}
         onClick={onApartmentClick}
-        className="group block bg-white/90 backdrop-blur border-2 border-amber-100 rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:border-amber-300 transition-all duration-300"
+        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition-all duration-200 hover:border-slate-400 hover:shadow-[0_10px_30px_rgba(15,23,42,0.07)]"
       >
         <div className="relative aspect-[4/3] overflow-hidden">
           <ImageWithFallback
             src={resolveApartmentImage(apartment.image)}
             alt={apartment.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-          <span className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <motion.span
-            className="absolute inset-y-0 -left-1/2 w-1/3 rotate-12 bg-white/20 blur-xl"
-            animate={{ x: ["0%", "420%"] }}
-            transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut" }}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
           {apartment.landlordVerified === true && (
             <VerifiedBadge label="Verified Landlord" className="absolute left-3 top-3 bg-white/95 shadow-lg backdrop-blur-sm" />
@@ -63,26 +58,26 @@ function PreviewCard({
             </span>
           )}
         </div>
-        <div className="p-5">
+        <div className="flex flex-1 flex-col p-5">
           <div className="flex items-start justify-between gap-3 mb-2">
-            <h3 className="font-black text-lg text-slate-900 group-hover:text-amber-700 transition-colors line-clamp-2">
+            <h3 className="line-clamp-2 text-lg font-bold text-slate-900 transition-colors group-hover:text-slate-950">
               {apartment.title}
             </h3>
-            <p className="shrink-0 text-sm font-black text-orange-600">View room prices</p>
+            <p className="shrink-0 text-xs font-bold text-slate-500">View prices</p>
           </div>
           <div className="flex items-center text-slate-600 text-sm mb-3">
-            <MapPin className="h-4 w-4 mr-1 text-amber-500 flex-shrink-0" />
+            <MapPin className="mr-1 h-4 w-4 flex-shrink-0 text-slate-400" />
             <span className="truncate">
               {[apartment.city, apartment.state].filter(Boolean).join(", ") || apartment.address || "La Paz, Iloilo"}
             </span>
           </div>
-          <article className="flex items-center gap-4 text-sm text-slate-600 pt-3 border-t border-amber-100">
+          <article className="mt-auto flex items-center gap-4 border-t border-slate-100 pt-3 text-sm text-slate-600">
             <span className="flex items-center gap-1">
-              <Bed className="h-4 w-4 text-amber-600" />
+              <Bed className="h-4 w-4 text-slate-500" />
               {apartment.bedrooms} bed
             </span>
             <span className="flex items-center gap-1">
-              <Bath className="h-4 w-4 text-orange-600" />
+              <Bath className="h-4 w-4 text-slate-500" />
               {apartment.bathrooms} bath
             </span>
             {apartment.sqft > 0 && <span className="text-slate-500">{apartment.sqft} sqft</span>}
@@ -95,12 +90,12 @@ function PreviewCard({
 
 function PreviewSkeleton() {
   return (
-    <div className="bg-white/80 border-2 border-amber-100 rounded-2xl overflow-hidden animate-pulse">
-      <div className="aspect-[4/3] bg-amber-100" />
+    <div className="animate-pulse overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="aspect-[4/3] bg-slate-100" />
       <div className="p-5 space-y-3">
-        <span className="h-5 bg-amber-100 rounded w-3/4" />
-        <div className="h-4 bg-amber-50 rounded w-1/2" />
-        <div className="h-4 bg-amber-50 rounded w-full" />
+        <span className="h-5 w-3/4 rounded bg-slate-100" />
+        <div className="h-4 w-1/2 rounded bg-slate-50" />
+        <div className="h-4 w-full rounded bg-slate-50" />
       </div>
     </div>
   );
@@ -125,7 +120,7 @@ export function LandingApartmentPreview({ onBrowseClick }: LandingApartmentPrevi
 
   if (isLoading) {
     return (
-      <section className="py-20 bg-gradient-to-b from-amber-50/50 to-white/50">
+      <section className="bg-white pb-8 pt-14 md:pb-10 md:pt-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-black mb-3 text-slate-900">Available Apartment Listings</h2>
@@ -134,8 +129,8 @@ export function LandingApartmentPreview({ onBrowseClick }: LandingApartmentPrevi
               Loading apartment records...
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {Array.from({ length: 3 }).map((_, index) => (
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: PREVIEW_LIMIT }).map((_, index) => (
               <PreviewSkeleton key={index} />
             ))}
           </div>
@@ -149,43 +144,40 @@ export function LandingApartmentPreview({ onBrowseClick }: LandingApartmentPrevi
   }
 
   return (
-    <section className="py-20 bg-gradient-to-b from-amber-50/50 to-white/50">
-      <div className="container mx-auto px-4">
-        <section className="text-center mb-12 block">
-          <div className="inline-block mb-4 px-4 py-1.5 bg-white/70 backdrop-blur-md border border-amber-200/50 rounded-full shadow-sm">
-            <span className="text-xs font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent uppercase tracking-wider flex items-center justify-center gap-2">
-              <Building2 className="h-3.5 w-3.5 text-amber-500" />
+    <section className="bg-white pb-8 pt-14 md:pb-10 md:pt-20">
+      <div className="container mx-auto px-4 lg:px-8">
+        <section className="mx-auto mb-10 flex max-w-6xl flex-col items-start justify-between gap-5 sm:flex-row sm:items-end">
+          <div className="max-w-2xl text-left">
+          <div className="mb-4 inline-block rounded-full border border-slate-200 bg-white px-4 py-1.5">
+            <span className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+              <Building2 className="h-3.5 w-3.5 text-slate-500" />
               Centralized listing data
             </span>
           </div>
-          <h2 className="text-4xl md:text-5xl font-black mb-3 text-slate-900">Available Apartments in La Paz</h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+          <h2 className="mb-3 text-3xl font-black text-slate-900 md:text-4xl">Available Apartments in La Paz</h2>
+          <p className="text-base text-slate-600 md:text-lg">
             {publishedApartments.length}{" "}
             {publishedApartments.length === 1 ? "listing" : "listings"} available now. Open a card to review photos,
             rent details, location, amenities, and landlord information.
             {error ? " Some listings may be unavailable." : ""}
           </p>
+          </div>
+          <Link to="/browse" onClick={onBrowseClick} className="shrink-0">
+            <Button className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 font-bold text-slate-900 shadow-none hover:border-slate-400 hover:bg-slate-50">
+              {publishedApartments.length > PREVIEW_LIMIT
+                ? `View all ${publishedApartments.length} listings`
+                : "Browse all listings"}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
         </section>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {previewApartments.map((apartment) => (
             <PreviewCard key={apartment.id} apartment={apartment} onApartmentClick={onBrowseClick} />
           ))}
         </div>
 
-        <div className="text-center mt-10">
-          <Link to="/browse" onClick={onBrowseClick}>
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl font-bold px-8 inline-flex items-center gap-2 shadow-lg"
-            >
-              {publishedApartments.length > PREVIEW_LIMIT
-                ? `View all ${publishedApartments.length} listings`
-                : "Browse all listings"}
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-          </Link>
-        </div>
       </div>
     </section>
   );
@@ -216,7 +208,7 @@ export function LandingListingsPlaceholder({
   onBrowseClick: (e: React.MouseEvent) => void;
 }) {
   return (
-    <section className="py-20 bg-gradient-to-b from-amber-50/50 to-white/50">
+    <section className="bg-white py-20">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-black mb-3 text-slate-900">Explore Apartment Listings</h2>
