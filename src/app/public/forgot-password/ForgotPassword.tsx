@@ -29,11 +29,13 @@ function FloatInput({
   icon?: React.ReactNode;
 }) {
   const [focused, setFocused] = useState(false);
-  const lifted = focused || value.length > 0;
   return (
-    <div className="relative">
-      <div className={`relative flex items-center border-2 rounded-xl transition-all duration-200 bg-white ${
-        focused ? "border-amber-400 shadow-sm shadow-amber-100" : "border-slate-200 hover:border-slate-300"
+    <div className="space-y-2">
+      <label htmlFor={id} className="block text-[15px] font-semibold leading-5 text-slate-700">
+        {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
+      </label>
+      <div className={`relative flex h-[50px] items-center rounded-xl border bg-white transition-all duration-200 ${
+        focused ? "border-amber-500 ring-[3px] ring-amber-500/10" : "border-slate-200 hover:border-slate-300"
       }`}>
         {icon && (
           <span className={`absolute left-3.5 transition-colors duration-200 ${focused ? "text-amber-500" : "text-slate-400"}`}>
@@ -47,18 +49,10 @@ function FloatInput({
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder=" "
+          placeholder={`Enter your ${label.toLowerCase()}`}
           required={required}
-          className={`w-full bg-transparent text-slate-800 text-sm font-medium outline-none pt-5 pb-2 ${icon ? "pl-10" : "pl-4"} pr-4 placeholder:text-transparent`}
+          className={`h-full w-full bg-transparent text-base text-slate-800 outline-none ${icon ? "pl-10" : "pl-4"} pr-4 placeholder:text-slate-500`}
         />
-        <label
-          htmlFor={id}
-          className={`absolute pointer-events-none transition-all duration-200 font-medium ${icon ? "left-10" : "left-4"} ${
-            lifted ? "top-2 text-[10px] tracking-wide uppercase" : "top-1/2 -translate-y-1/2 text-sm"
-          } ${focused ? "text-amber-500" : "text-slate-400"}`}
-        >
-          {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
-        </label>
       </div>
     </div>
   );
@@ -103,14 +97,14 @@ export function ForgotPassword() {
     <div className="auth-palette min-h-screen flex flex-col lg:flex-row bg-slate-50">
 
       {/* ── LEFT PANEL ────────────────────────────────────────── */}
-      <div className="auth-visual-panel hidden lg:flex flex-col w-[38%] xl:w-[40%] flex-shrink-0 relative overflow-hidden min-h-screen">
+      <div className="auth-visual-panel hidden lg:flex flex-col w-[38%] xl:w-[40%] flex-shrink-0 relative overflow-hidden min-h-screen border-r border-[#EEE7DE]">
         <div className="absolute inset-0">
           <ImageWithFallback
             src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=960"
             alt="Modern apartment in La Paz"
-            className="w-full h-full object-cover object-bottom opacity-25"
+            className="auth-background-image w-full h-full object-cover object-[center_72%] opacity-30"
           />
-          <div className="absolute inset-0 bg-[#FAF8F5]/90" />
+          <div className="auth-background-overlay absolute inset-0" />
         </div>
 
         <div className="relative z-10 flex flex-col h-full p-8 xl:p-10">
@@ -148,7 +142,7 @@ export function ForgotPassword() {
 
           {/* Security highlights */}
           <motion.div
-            className="space-y-3 mb-auto"
+            className="auth-benefits space-y-3 mb-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.6 }}
@@ -159,8 +153,8 @@ export function ForgotPassword() {
               { icon: BadgeCheck,  text: "Choose a new account password" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
-                <div className="flex-shrink-0 h-7 w-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-                  <Icon className="h-3.5 w-3.5 text-amber-400" />
+                <div className="flex-shrink-0 h-6 w-6 rounded-md bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                  <Icon className="h-3 w-3 text-amber-400" />
                 </div>
                 <span className="text-sm text-white/70 font-medium">{text}</span>
               </div>
@@ -186,7 +180,7 @@ export function ForgotPassword() {
         </div>
 
         <div className="flex-1 flex items-center justify-center px-4 py-8 lg:py-12 lg:px-10 xl:px-16">
-          <div className="w-full max-w-lg">
+          <div className="auth-form-shell w-full max-w-[470px]">
 
             {/* Page heading */}
             <div className="mb-8">
@@ -261,7 +255,7 @@ export function ForgotPassword() {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="w-full h-13 py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl font-black text-base shadow-lg shadow-orange-200 hover:shadow-orange-300 transition-all flex items-center justify-center gap-2.5 disabled:opacity-60"
+                      className="w-full h-12 bg-[#8B735B] hover:bg-[#76614D] text-white rounded-xl font-bold text-base shadow-none transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                     >
                       {loading ? (
                         <>
@@ -274,34 +268,16 @@ export function ForgotPassword() {
                         </>
                       ) : (
                         <>
-                          <Sparkles className="h-5 w-5" />
                           Send Reset Link
-                          <ArrowRight className="h-4 w-4" />
                         </>
                       )}
                     </Button>
 
                     {/* Trust badges */}
-                    <div className="flex items-center justify-center gap-4 pt-1">
-                      {["Account Email", "Reset Instructions", "Password Recovery"].map((b) => (
-                        <div key={b} className="flex items-center gap-1 text-xs text-slate-400 font-medium">
-                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                          {b}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Divider */}
-                    <div className="flex items-center gap-3 py-1">
-                      <div className="flex-1 h-px bg-slate-200" />
-                      <span className="text-xs text-slate-400 font-medium">or</span>
-                      <div className="flex-1 h-px bg-slate-200" />
-                    </div>
-
                     {/* Back to Sign In */}
                     <Link
                       to="/login"
-                      className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border-2 border-slate-200 bg-white hover:border-amber-200 hover:bg-amber-50/40 text-sm font-bold text-slate-600 hover:text-amber-700 transition-all duration-200"
+                      className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-500 hover:text-amber-700 transition-colors"
                     >
                       <ArrowLeft className="h-4 w-4" />
                       Back to Sign In
@@ -371,7 +347,7 @@ export function ForgotPassword() {
                   <Button
                     type="button"
                     onClick={() => navigate("/login")}
-                    className="w-full h-13 py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl font-black text-base shadow-lg shadow-orange-200 hover:shadow-orange-300 transition-all flex items-center justify-center gap-2.5"
+                    className="w-full h-12 bg-[#8B735B] hover:bg-[#76614D] text-white rounded-xl font-bold text-base shadow-none transition-colors flex items-center justify-center gap-2"
                   >
                     <Sparkles className="h-5 w-5" />
                     Back to Sign In

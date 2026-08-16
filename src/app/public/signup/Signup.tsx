@@ -6,7 +6,6 @@ import { useAuth, type UserRole } from "@/app/shared/contexts/AuthContext";
 import type { TenantType } from "@/app/shared/services/authService";
 import {
   AlertCircle,
-  ArrowRight,
   BadgeCheck,
   Briefcase, Building2,
   Check,
@@ -15,6 +14,7 @@ import {
   ClipboardList,
   Eye, EyeOff,
   GraduationCap,
+  Home,
   Key,
   Lock, Mail,
   MapPin,
@@ -38,11 +38,13 @@ function FloatInput({
   icon?: React.ReactNode; suffix?: React.ReactNode; placeholder?: string;
 }) {
   const [focused, setFocused] = useState(false);
-  const lifted = focused || value.length > 0;
   return (
-    <div className="relative">
-      <div className={`relative flex items-center border-2 rounded-xl transition-all duration-200 bg-white ${
-        focused ? "border-amber-400 shadow-sm shadow-amber-100" : "border-slate-200 hover:border-slate-300"
+    <div className="space-y-2">
+      <label htmlFor={id} className="block text-[15px] font-semibold leading-5 text-slate-700">
+        {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
+      </label>
+      <div className={`relative flex h-[50px] items-center rounded-xl border bg-white transition-all duration-200 ${
+        focused ? "border-amber-500 ring-[3px] ring-amber-500/10" : "border-slate-200 hover:border-slate-300"
       }`}>
         {icon && (
           <span className={`absolute left-3.5 transition-colors duration-200 ${focused ? "text-amber-500" : "text-slate-400"}`}>
@@ -56,21 +58,11 @@ function FloatInput({
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder={placeholder}
+          placeholder={placeholder === " " ? `Enter your ${label.toLowerCase()}` : placeholder}
           required={required}
-          className={`w-full bg-transparent text-slate-800 text-sm font-medium outline-none pt-5 pb-2 ${icon ? "pl-10" : "pl-4"} ${suffix ? "pr-10" : "pr-4"} placeholder:text-transparent focus:placeholder:text-slate-400`}
+          className={`h-full w-full bg-transparent text-base text-slate-800 outline-none ${icon ? "pl-10" : "pl-4"} ${suffix ? "pr-12" : "pr-4"} placeholder:text-slate-500`}
         />
-        <label
-          htmlFor={id}
-          className={`absolute pointer-events-none transition-all duration-200 font-medium ${icon ? "left-10" : "left-4"} ${
-            lifted
-              ? "top-2 text-[10px] tracking-wide uppercase"
-              : "top-1/2 -translate-y-1/2 text-sm"
-          } ${focused ? "text-amber-500" : "text-slate-400"}`}
-        >
-          {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
-        </label>
-        {suffix && <div className="absolute right-3.5">{suffix}</div>}
+        {suffix && <div className="absolute inset-y-0 right-0 flex w-11 items-center justify-center">{suffix}</div>}
       </div>
     </div>
   );
@@ -267,15 +259,15 @@ export function Signup() {
     <div className="auth-palette min-h-screen flex flex-col lg:flex-row bg-slate-50">
 
       {/* ── LEFT PANEL ────────────────────────────────────────── */}
-      <div className="auth-visual-panel hidden lg:flex flex-col w-[38%] xl:w-[40%] flex-shrink-0 relative overflow-hidden min-h-screen">
+      <div className="auth-visual-panel hidden lg:flex flex-col w-[38%] xl:w-[40%] flex-shrink-0 relative overflow-hidden min-h-screen border-r border-[#EEE7DE]">
         {/* Full-height apartment photo */}
         <div className="absolute inset-0">
           <ImageWithFallback
             src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=960"
             alt="Modern apartment in La Paz"
-            className="w-full h-full object-cover object-bottom opacity-25"
+            className="auth-background-image w-full h-full object-cover object-[center_72%] opacity-30"
           />
-          <div className="absolute inset-0 bg-[#FAF8F5]/90" />
+          <div className="auth-background-overlay absolute inset-0" />
         </div>
 
         {/* Content */}
@@ -314,7 +306,7 @@ export function Signup() {
 
           {/* Benefits list */}
           <motion.div
-            className="space-y-3 mb-auto"
+            className="auth-benefits space-y-3 mb-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.6 }}
@@ -325,8 +317,8 @@ export function Signup() {
               { icon: MapPin, text: "Compare apartment locations on the map" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
-                <div className="flex-shrink-0 h-7 w-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-                  <Icon className="h-3.5 w-3.5 text-amber-400" />
+                <div className="flex-shrink-0 h-6 w-6 rounded-md bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                  <Icon className="h-3 w-3 text-amber-400" />
                 </div>
                 <span className="text-sm text-white/70 font-medium">{text}</span>
               </div>
@@ -352,7 +344,7 @@ export function Signup() {
         </div>
 
         <div className="flex-1 flex items-start justify-center px-4 py-8 lg:py-12 lg:px-10 xl:px-16">
-          <div className="w-full max-w-lg">
+          <div className="w-full max-w-[470px]">
 
             {/* Page heading */}
             <div className="mb-8">
@@ -388,16 +380,16 @@ export function Signup() {
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Choose your account type</p>
                 <div className="grid grid-cols-2 gap-2.5">
                   {[
-                    { id: "tenant", label: "Tenant", sub: "Browse apartments", icon: Users, grad: "from-amber-500 to-orange-600" },
-                    { id: "landlord", label: "Landlord", sub: "Manage listings", icon: Building2, grad: "from-rose-500 to-rose-600" },
+                    { id: "tenant", label: "Tenant", sub: "Browse apartments", icon: Users },
+                    { id: "landlord", label: "Landlord", sub: "Manage listings", icon: Building2 },
                   ].map((item) => {
                     const selected = formData.role === item.id;
                     return (
                       <motion.button
                         key={item.id}
                         type="button"
-                        whileHover={{ y: -3, scale: 1.02 }}
-                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ y: -1 }}
+                        whileTap={{ y: 0 }}
                         onClick={() => setFormData((previous) => ({
                           ...previous,
                           role: item.id as UserRole,
@@ -414,12 +406,12 @@ export function Signup() {
                         }))}
                         className={`relative flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all duration-200 ${
                           selected
-                            ? "border-amber-500 bg-amber-50 shadow-lg shadow-amber-100"
+                            ? "border-amber-500 bg-amber-50"
                             : "border-slate-200 bg-white hover:border-amber-200"
                         }`}
                       >
-                        <div className={`h-11 w-11 rounded-xl bg-gradient-to-br ${item.grad} flex items-center justify-center shadow-sm mb-2.5 transition-transform ${selected ? "scale-110" : ""}`}>
-                          <item.icon className="h-5 w-5 text-white" />
+                        <div className={`h-10 w-10 rounded-xl border flex items-center justify-center mb-2.5 transition-colors ${selected ? "border-amber-500 bg-amber-50 text-amber-600" : "border-slate-200 bg-white text-slate-500"}`}>
+                          <item.icon className="h-5 w-5" />
                         </div>
                         <span className="font-bold text-sm text-slate-900">{item.label}</span>
                         <span className="text-[11px] text-slate-500 mt-0.5">{item.sub}</span>
@@ -621,7 +613,7 @@ export function Signup() {
                     required
                     icon={<Key className="h-4 w-4" />}
                     suffix={
-                      <button type="button" onClick={() => setShowPass(!showPass)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                      <button type="button" onClick={() => setShowPass(!showPass)} className="auth-password-toggle text-slate-500 hover:text-slate-700 transition-colors" aria-label={showPass ? "Hide password" : "Show password"}>
                         {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     }
@@ -653,7 +645,7 @@ export function Signup() {
                   required
                   icon={<Lock className="h-4 w-4" />}
                   suffix={
-                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="auth-password-toggle text-slate-500 hover:text-slate-700 transition-colors" aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}>
                       {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   }
@@ -711,7 +703,7 @@ export function Signup() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-13 py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl font-black text-base shadow-lg shadow-orange-200 hover:shadow-orange-300 transition-all flex items-center justify-center gap-2.5 disabled:opacity-60"
+                className="w-full h-12 bg-[#8B735B] hover:bg-[#76614D] text-white rounded-xl font-bold text-base shadow-none transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {loading ? (
                   <>
@@ -724,22 +716,16 @@ export function Signup() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-5 w-5" />
                     Create Account
-                    <ArrowRight className="h-4 w-4" />
                   </>
                 )}
               </Button>
 
               {/* Trust badges below submit */}
-              <div className="flex items-center justify-center gap-4 pt-1">
-                {["Account Type", "Required Details", "Password"].map((b) => (
-                  <div key={b} className="flex items-center gap-1 text-xs text-slate-400 font-medium">
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    {b}
-                  </div>
-                ))}
-              </div>
+              <Link to="/" className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-500 hover:text-amber-700 transition-colors">
+                <Home className="h-4 w-4" />
+                Back to Home
+              </Link>
             </form>
           </div>
         </div>
