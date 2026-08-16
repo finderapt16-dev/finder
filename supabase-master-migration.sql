@@ -84,6 +84,7 @@ create table if not exists public.app_users (
   language text not null default 'en',
   timezone text not null default 'Asia/Manila',
   is_verified boolean not null default false,
+  email_verified boolean not null default false,
   verification_status text,
   landlord_status text,
   permit_number text,
@@ -101,6 +102,7 @@ alter table public.app_users add column if not exists middle_initial text;
 alter table public.app_users add column if not exists address text;
 alter table public.app_users add column if not exists status text default 'active';
 alter table public.app_users add column if not exists verification_status text;
+alter table public.app_users add column if not exists email_verified boolean not null default false;
 alter table public.app_users add column if not exists landlord_status text;
 alter table public.app_users add column if not exists permit_number text;
 alter table public.app_users add column if not exists department text;
@@ -1569,11 +1571,14 @@ begin
   v_role := case
     when new.raw_user_meta_data ->> 'role' in ('student', 'employee', 'landlord', 'admin')
       then (new.raw_user_meta_data ->> 'role')::public.app_user_role
+    when new.raw_user_meta_data ->> 'role' = 'tenant'
+      and new.raw_user_meta_data ->> 'tenantType' in ('student', 'employee')
+      then (new.raw_user_meta_data ->> 'tenantType')::public.app_user_role
     else 'student'::public.app_user_role
   end;
   v_name := coalesce(nullif(trim(new.raw_user_meta_data ->> 'name'), ''), split_part(coalesce(new.email, ''), '@', 1), 'User');
 
-  insert into public.app_users (auth_id, email, name, role, status, mobile, middle_initial, address, is_verified, permit_number, signup_source)
+  insert into public.app_users (auth_id, email, name, role, status, mobile, middle_initial, address, is_verified, email_verified, verification_status, permit_number, signup_source)
   values (
     new.id, new.email, v_name, v_role,
     case when v_role = 'landlord' then 'pending' else 'active' end,
@@ -1581,6 +1586,8 @@ begin
     nullif(new.raw_user_meta_data ->> 'middleInitial', ''),
     nullif(new.raw_user_meta_data ->> 'address', ''),
     v_role <> 'landlord',
+    new.email_confirmed_at is not null,
+    case when new.email_confirmed_at is null then 'pending_email_verification' else 'email_verified' end,
     case when v_role = 'landlord' then nullif(new.raw_user_meta_data ->> 'permitNumber', '') else null end,
     'web'
   )
@@ -1628,8 +1635,30 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_auth_user();
 
+create or replace function public.sync_auth_email_verification()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.app_users
+  set email_verified = new.email_confirmed_at is not null,
+      verification_status = case when new.email_confirmed_at is null then 'pending_email_verification' else 'email_verified' end
+  where auth_id = new.id;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_email_verified on auth.users;
+create trigger on_auth_user_email_verified
+  after update of email_confirmed_at on auth.users
+  for each row
+  when (old.email_confirmed_at is distinct from new.email_confirmed_at)
+  execute function public.sync_auth_email_verification();
+
 -- Repair profiles for Auth users created before this trigger existed.
-insert into public.app_users (auth_id, email, name, role, status, is_verified, signup_source)
+insert into public.app_users (auth_id, email, name, role, status, is_verified, email_verified, verification_status, signup_source)
 select
   u.id,
   u.email,
@@ -1638,10 +1667,15 @@ select
     then (u.raw_user_meta_data ->> 'role')::public.app_user_role else 'student'::public.app_user_role end,
   case when u.raw_user_meta_data ->> 'role' = 'landlord' then 'pending' else 'active' end,
   coalesce(u.raw_user_meta_data ->> 'role', 'student') <> 'landlord',
+  u.email_confirmed_at is not null,
+  case when u.email_confirmed_at is null then 'pending_email_verification' else 'email_verified' end,
   'auth_backfill'
 from auth.users u
 where u.email is not null
-on conflict (email) do update set auth_id = excluded.auth_id;
+on conflict (email) do update set
+  auth_id = excluded.auth_id,
+  email_verified = excluded.email_verified,
+  verification_status = excluded.verification_status;
 
 -- Repair pending landlord permits created by older signup flows. Verification
 -- must never be required before an administrator can review the submitted
@@ -2821,6 +2855,8 @@ begin
   )
   on conflict (email) do update set
     auth_id = excluded.auth_id,
+    email_verified = excluded.email_verified,
+    verification_status = excluded.verification_status,
     -- Never replace a stored privileged role from public metadata.
     role = app_users.role,
     tenant_type = coalesce(excluded.tenant_type, app_users.tenant_type),

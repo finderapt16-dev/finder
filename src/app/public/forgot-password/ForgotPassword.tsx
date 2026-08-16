@@ -77,20 +77,26 @@ export function ForgotPassword() {
     setError("");
     setLoading(true);
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/settings`,
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+      setError("Enter a valid email address.");
+      setLoading(false);
+      return;
+    }
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
     });
-
     setLoading(false);
-
     if (resetError) {
       console.error("Password recovery request failed:", resetError);
-      setError("Unable to send reset instructions. Please try again.");
-      return;
+      if (resetError.status === 429 || /rate|too many|seconds/i.test(resetError.message)) {
+        setError("Too many email requests. Please wait before trying again.");
+        return;
+      }
     }
 
     setSent(true);
-    toast.success("Password reset email sent.");
+    toast.success("If an account exists for this email, password reset instructions have been sent.");
   };
 
   return (
@@ -362,7 +368,7 @@ export function ForgotPassword() {
                         <p className="text-sm text-slate-500 font-medium mt-1">
                           Password reset instructions were requested for
                         </p>
-                        <p className="text-sm font-black text-amber-600 mt-0.5 break-all">{email}</p>
+                        <p className="text-sm text-slate-600 mt-2">If an account exists for this email, password reset instructions have been sent.</p>
                       </div>
                     </div>
 

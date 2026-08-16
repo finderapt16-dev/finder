@@ -15,4 +15,8 @@ Browse All keeps saved preferences separate from temporary search. Preferences i
 
 ## Auth profile repair
 
-Run `scripts/fix-auth-profile-sync.sql` once in the Supabase SQL Editor after deploying this version. It synchronizes `auth.users` with `app_users` and backfills incomplete email-confirmation signups.
+Run the current `supabase-master-migration.sql` once in the Supabase SQL Editor after deploying this version. It transactionally synchronizes `auth.users` with `app_users`, backfills incomplete signups, and keeps email verification separate from landlord approval.
+
+In Supabase Authentication URL Configuration, set the deployed app as the Site URL and allow both `/auth/callback` and `/reset-password` for production. For local Vite development, allow `http://localhost:5173/auth/callback` and `http://localhost:5173/reset-password`.
+
+Production confirmation and recovery mail should use Supabase custom SMTP with a verified sender/domain. Keep the SMTP password or provider API key in Supabase only; browser code must contain only `VITE_SUPABASE_URL` and the public anon key.

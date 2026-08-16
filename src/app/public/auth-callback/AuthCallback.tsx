@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseclient";
-import { getCurrentAuthenticatedUser, isTenantRole } from "@/app/shared/services/authService";
+import { getCurrentAuthenticatedUser } from "@/app/shared/services/authService";
 
 export function AuthCallback() {
   const navigate = useNavigate();
@@ -34,7 +34,8 @@ export function AuthCallback() {
       try {
         const profile = await getCurrentAuthenticatedUser();
         if (!profile) throw new Error("The verified account profile is not available.");
-        if (active) navigate(isTenantRole(profile.role) ? "/browse" : "/dashboard", { replace: true });
+        await supabase.auth.signOut();
+        if (active) navigate("/login", { replace: true, state: { message: "Email verified successfully. You can now sign in." } });
       } catch (profileError) {
         console.error("Email was verified but profile recovery failed:", profileError);
         await supabase.auth.signOut();

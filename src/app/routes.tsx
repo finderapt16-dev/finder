@@ -8,6 +8,7 @@ const AdminApartmentDetail = lazy(() => import("./admin/pages/AdminApartmentDeta
 const AddApartment = lazy(() => import("./landlord/pages/AddApartment").then((module) => ({ default: module.AddApartment })));
 const ManageRooms = lazy(() => import("./landlord/pages/ManageRooms").then((module) => ({ default: module.ManageRooms })));
 const ForgotPassword = lazy(() => import("./public/forgot-password/ForgotPassword").then((module) => ({ default: module.ForgotPassword })));
+const ResetPassword = lazy(() => import("./public/reset-password/ResetPassword").then((module) => ({ default: module.ResetPassword })));
 const Landing = lazy(() => import("./public/landing/Landing").then((module) => ({ default: module.Landing })));
 const Login = lazy(() => import("./public/login/Login").then((module) => ({ default: module.Login })));
 const NotFound = lazy(() => import("./public/not-found/NotFound").then((module) => ({ default: module.NotFound })));
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
   { path: "/design-guide", element: <PageLoader><DesignGuide /></PageLoader> },
   { path: "/", element: <PublicLandingRoute /> },
   { path: "/auth/callback", element: <PageLoader><AuthCallback /></PageLoader> },
+  { path: "/reset-password", element: <PageLoader><ResetPassword /></PageLoader> },
 
   // Main app wrapped in Root layout
   {

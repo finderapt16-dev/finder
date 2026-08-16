@@ -618,12 +618,13 @@ function pendingSignupUser(input: CreateUserInput, authId: string, role: UserRol
 }
 
 export async function signupUser(input: CreateUserInput): Promise<SignupResult> {
-  const email = input.email.trim();
+  const email = input.email.trim().toLowerCase();
   const role: UserRole = isTenantRole(input.role) ? 'tenant' : input.role;
   const tenantType = normalizeTenantType(input.tenantType, input.role);
   if (role !== 'tenant' && role !== 'landlord') throw new SignupFlowError('Public registration supports tenant and landlord accounts only.', 'validation', 'invalid_public_role');
   if (role === 'tenant' && !tenantType) throw new SignupFlowError('Please select a tenant type.', 'validation', 'missing_tenant_type');
   if (tenantType === 'other' && !nonEmptyString(input.otherOccupation)) throw new SignupFlowError('Occupation / Tenant Type is required.', 'validation', 'missing_occupation');
+  if (!/^\S+@\S+\.\S+$/.test(email)) throw new SignupFlowError('Enter a valid email address.', 'validation', 'invalid_email');
 
   signupLog('[AUTH] Signup started', { email, role, tenantType });
 
@@ -658,7 +659,7 @@ export async function signupUser(input: CreateUserInput): Promise<SignupResult> 
 
   if (!authData.user) {
     console.error('[AUTH] Signup returned no user and no Supabase error');
-    throw new SignupFlowError('The account service returned an incomplete response. Check whether the account exists before trying again.', 'auth', 'missing_auth_response');
+    throw new SignupFlowError('We could not confirm that account registration completed. Try signing in, resending verification, or resetting your password before registering again.', 'auth', 'missing_auth_response');
   }
 
   // Supabase deliberately obscures duplicate-email signup when email
@@ -712,7 +713,7 @@ export async function signupUser(input: CreateUserInput): Promise<SignupResult> 
 }
 
 export async function loginUser(credentials: AuthCredentials): Promise<User> {
-  const email = credentials.email?.trim();
+  const email = credentials.email?.trim().toLowerCase();
   const password = credentials.password;
 
   if (!email || !password) {
@@ -725,7 +726,14 @@ export async function loginUser(credentials: AuthCredentials): Promise<User> {
   });
 
   if (error) {
-    throw new Error(error.message);
+    console.error('[AUTH] Sign-in failed', { message: error.message, status: error.status, code: error.code });
+    if (/email.*not.*confirm|confirm.*email/i.test(error.message)) {
+      throw new Error('Please verify your email before signing in.');
+    }
+    if (error.status === 429 || /rate|too many/i.test(error.message)) {
+      throw new Error('Too many sign-in attempts. Please wait before trying again.');
+    }
+    throw new Error('Invalid email or password.');
   }
 
   if (!data.user) {
@@ -734,7 +742,7 @@ export async function loginUser(credentials: AuthCredentials): Promise<User> {
 
   if (requiresPendingEmailVerification(data.user)) {
     await supabaseClient.auth.signOut();
-    throw new Error('Email verification required. Check your inbox and verify your email before signing in.');
+    throw new Error('Please verify your email before signing in.');
   }
 
   const profile = await ensureProfileForAuthUser(data.user);

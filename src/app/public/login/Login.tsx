@@ -126,7 +126,9 @@ export function Login() {
         const hasRequestedRedirect = requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//");
         navigate(hasRequestedRedirect ? redirectTo : isTenantRole(result.user?.role) ? "/browse" : "/dashboard", { replace: true });
       } else {
-        setError(result.error || "Unable to sign in. Check your email and password and try again.");
+        const message = result.error || "Invalid email or password.";
+        setError(message);
+        if (message === "Please verify your email before signing in.") setVerificationEmail(email.trim().toLowerCase());
       }
     } catch {
       setError("Unable to sign in. Check your connection and try again.");

@@ -211,6 +211,7 @@ export function Signup() {
     if (!formData.address) { setError("Home address is required."); return; }
     if (!formData.mobileNumber) { setError("Mobile number is required."); return; }
     if (!formData.email) { setError("Email is required."); return; }
+    if (!/^\S+@\S+\.\S+$/.test(formData.email.trim())) { setError("Enter a valid email address."); return; }
     if (formData.password.length < 6) { setError("Password must be at least 6 characters."); return; }
     if (formData.password !== formData.confirmPassword) { setError("Passwords do not match."); return; }
 
@@ -253,7 +254,7 @@ export function Signup() {
       }
     } catch (submitError) {
       console.error("[AUTH] Unexpected signup UI failure", submitError);
-      setError("We could not finish the signup request. Check whether the account exists before trying again.");
+      setError("We could not confirm that registration completed. Try signing in, resending verification, or resetting your password before registering again.");
     } finally {
       submissionInFlightRef.current = false;
       setLoading(false);
