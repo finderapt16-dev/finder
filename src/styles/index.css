@@ -1,4 +1,816 @@
 @import './tailwind.css';
 @import './theme.css';
 @import './sidebar.css';
+
+/* Tenant Apartments — warm, white-dominant AptFindr system */
+.tenant-browse {
+  --tenant-ink: #302820;
+  --tenant-muted: #756a60;
+  --tenant-accent: #8b735b;
+  --tenant-surface: #faf8f5;
+  --tenant-surface-strong: #f3efeA;
+  --tenant-border: #e8ded1;
+  color: var(--tenant-ink);
+}
+
+.tenant-browse .app-sidebar {
+  background: #fff !important;
+  border: 0 !important;
+  border-left: 0 !important;
+  border-right: 1px solid var(--tenant-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  scrollbar-color: rgba(139,115,91,.28) transparent;
+}
+.tenant-browse .app-sidebar::before { display: none; }
+.tenant-browse .app-sidebar::-webkit-scrollbar-thumb { background: rgba(139,115,91,.24); }
+.tenant-browse .app-sidebar-brand svg { color: var(--tenant-accent) !important; }
+.tenant-browse .app-sidebar-brand span { color: var(--tenant-ink) !important; }
+.tenant-browse .app-sidebar-brand p { color: var(--tenant-muted) !important; }
+.tenant-browse .app-sidebar-profile {
+  border-color: var(--tenant-border) !important;
+  background: var(--tenant-surface) !important;
+  box-shadow: none !important;
+}
+.tenant-browse .app-sidebar-profile:hover {
+  border-color: var(--tenant-border) !important;
+  box-shadow: none !important;
+}
+.tenant-browse .app-sidebar-profile p:first-of-type { color: var(--tenant-ink) !important; }
+.tenant-browse .app-sidebar-profile p:last-of-type,
+.tenant-browse .app-sidebar-profile > svg { color: var(--tenant-muted) !important; }
+.tenant-browse .app-sidebar nav { border-color: var(--tenant-border) !important; }
+.tenant-browse .app-sidebar nav > p { color: var(--tenant-muted) !important; font-size: 12px !important; }
+.tenant-browse .app-sidebar nav > p::after { background: var(--tenant-accent) !important; opacity: .45; }
+.tenant-browse .app-sidebar nav a {
+  color: var(--tenant-ink) !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.tenant-browse .app-sidebar nav button {
+  color: var(--tenant-ink) !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.tenant-browse .app-sidebar nav a:hover {
+  color: var(--tenant-accent) !important;
+  border-color: transparent !important;
+  background: var(--tenant-surface) !important;
+  box-shadow: none !important;
+}
+.tenant-browse .app-sidebar nav button:hover {
+  color: var(--tenant-accent) !important;
+  border-color: transparent !important;
+  background: var(--tenant-surface) !important;
+  box-shadow: none !important;
+}
+.tenant-browse .app-sidebar nav a[aria-current="page"] {
+  color: var(--tenant-accent) !important;
+  background: var(--tenant-surface-strong) !important;
+}
+.tenant-browse .app-sidebar nav button[aria-current="page"] {
+  color: var(--tenant-accent) !important;
+  background: var(--tenant-surface-strong) !important;
+}
+.tenant-browse .app-sidebar nav a[aria-current="page"]::before,
+.tenant-browse .app-sidebar nav button[aria-current="page"]::before { background: var(--tenant-accent) !important; box-shadow: none !important; }
+.tenant-browse .app-sidebar nav a > svg:first-child {
+  color: var(--tenant-muted) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.tenant-browse .app-sidebar nav button > svg:first-child {
+  color: var(--tenant-muted) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.tenant-browse .app-sidebar nav a:hover > svg:first-child { color: var(--tenant-accent) !important; background: transparent !important; }
+.tenant-browse .app-sidebar nav button:hover > svg:first-child,
+.tenant-browse .app-sidebar nav button[aria-current="page"] > svg:first-child { color: var(--tenant-accent) !important; background: transparent !important; }
+.tenant-browse .app-sidebar nav a[aria-current="page"] > svg:first-child { color: var(--tenant-accent) !important; }
+.tenant-browse .app-sidebar-badge { background: var(--tenant-accent) !important; box-shadow: none !important; animation: none !important; }
+.tenant-browse .app-sidebar-logout {
+  color: var(--tenant-muted) !important;
+  border: 1px solid var(--tenant-border) !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+.tenant-browse .app-sidebar-logout svg { color: var(--tenant-muted) !important; }
+.tenant-browse .app-sidebar-logout:hover {
+  color: #9f3f46 !important;
+  border-color: #f2d7d9 !important;
+  background: #fff7f7 !important;
+  box-shadow: none !important;
+}
+.tenant-browse .app-sidebar-logout:hover svg { color: #9f3f46 !important; }
+.tenant-browse .app-sidebar nav a:focus-visible,
+.tenant-browse .app-sidebar-nav-item:focus-visible,
+.tenant-browse .app-sidebar-logout:focus-visible,
+.tenant-browse .app-sidebar-close:focus-visible,
+.tenant-browse .app-sidebar-trigger:focus-visible {
+  outline-color: var(--tenant-accent) !important;
+}
+.tenant-browse .app-sidebar-trigger {
+  color: #fff !important;
+  border-color: var(--tenant-accent) !important;
+  background: var(--tenant-accent) !important;
+  box-shadow: 0 8px 20px rgba(48,40,32,.16) !important;
+}
+.tenant-browse .app-sidebar-trigger:hover { background: #75604d !important; box-shadow: 0 10px 22px rgba(48,40,32,.2) !important; }
+.tenant-browse .app-sidebar-close {
+  color: var(--tenant-muted) !important;
+  border-color: var(--tenant-border) !important;
+  background: #fff !important;
+}
+.tenant-browse .app-sidebar-close:hover { color: var(--tenant-accent) !important; background: var(--tenant-surface) !important; }
+
+.tenant-browse .app-shell-main { background: #fff; }
+.tenant-browse form:first-of-type { box-shadow: none !important; }
+.tenant-browse form:first-of-type input { border-color: var(--tenant-border) !important; color: var(--tenant-ink) !important; font-size: 16px; }
+.tenant-browse form:first-of-type input:focus { border-color: var(--tenant-accent) !important; box-shadow: 0 0 0 3px rgba(139,115,91,.12) !important; }
+.tenant-browse form:first-of-type button { border-color: var(--tenant-border) !important; color: var(--tenant-ink) !important; background: #fff !important; box-shadow: none !important; }
+.tenant-browse form:first-of-type button svg { color: var(--tenant-accent); }
+
+.tenant-browse main section:nth-of-type(1) {
+  min-height: 220px;
+  margin-top: 24px !important;
+  border: 1px solid #f3efeA;
+  border-radius: 12px !important;
+  background: linear-gradient(105deg, #faf8f5, #fffdfb) !important;
+}
+.tenant-browse main section:nth-of-type(1) > div:first-child { max-width: 58%; }
+.tenant-browse main section:nth-of-type(1) > div:first-child > div:first-child {
+  border-color: var(--tenant-border) !important;
+  border-radius: 999px !important;
+  color: var(--tenant-accent) !important;
+}
+.tenant-browse main section:nth-of-type(1) p { color: var(--tenant-muted) !important; font-size: 16px !important; }
+.tenant-browse main .tenant-favorites-hero { min-height: 160px; margin-top: 0 !important; }
+
+/* Landlord Market Overview inherits the finalized warm AptFindr portal palette. */
+.landlord-market .bg-orange-500 { background-color: #8b735b !important; }
+.landlord-market .hover\:bg-orange-600:hover { background-color: #756a60 !important; }
+.landlord-market .bg-orange-50 { background-color: #faf8f5 !important; }
+.landlord-market .border-orange-100 { border-color: #e8ded1 !important; }
+.landlord-market .text-orange-500,
+.landlord-market .text-orange-600,
+.landlord-market .text-orange-700 { color: #8b735b !important; }
+.landlord-market .focus\:border-orange-400:focus { border-color: #8b735b !important; }
+.landlord-market .focus\:ring-orange-100:focus { --tw-ring-color: rgba(139, 115, 91, 0.18) !important; }
+
+/* Add Property wizard uses the same landlord shell palette without changing its workflow. */
+.landlord-add-property .text-amber-600,
+.landlord-add-property .text-amber-700,
+.landlord-add-property .text-orange-600 { color: #8b735b !important; }
+.landlord-add-property .text-amber-800,
+.landlord-add-property .text-amber-900 { color: #5f5a55 !important; }
+.landlord-add-property .bg-amber-50,
+.landlord-add-property .bg-orange-50 { background-color: #faf8f5 !important; }
+.landlord-add-property .border-amber-100,
+.landlord-add-property .border-amber-200,
+.landlord-add-property .border-orange-100 { border-color: #e8ded1 !important; }
+.landlord-add-property .from-amber-500 { --tw-gradient-from: #8b735b !important; --tw-gradient-to: rgba(139, 115, 91, 0) !important; }
+.landlord-add-property .to-orange-500,
+.landlord-add-property .to-orange-600 { --tw-gradient-to: #756a60 !important; }
+.landlord-add-property .focus-visible\:ring-orange-200:focus-visible,
+.landlord-add-property .focus-visible\:ring-orange-300:focus-visible { --tw-ring-color: rgba(139, 115, 91, 0.22) !important; }
+.tenant-browse main .suggested-hero { min-height: 180px; margin-top: 0 !important; }
+.tenant-browse main .popular-hero { min-height: 175px; margin-top: 0 !important; }
+
+.suggested-card > a > div,
+.popular-card > a > div {
+  border-color: #e8ded1 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 12px rgba(48,40,32,.06) !important;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease !important;
+}
+.suggested-card > a:hover > div,
+.popular-card > a:hover > div {
+  transform: translateY(-2px) !important;
+  border-color: #dfd2c3 !important;
+  box-shadow: 0 8px 24px rgba(48,40,32,.10) !important;
+}
+.suggested-card [class*="from-green-500"],
+.popular-card [class*="from-green-500"] {
+  color: #756a60 !important;
+  border: 1px solid #e8ded1 !important;
+  background: #f3efeA !important;
+  box-shadow: none !important;
+}
+.suggested-card [class*="from-white"], .popular-card [class*="from-white"] { background: #fff !important; }
+.suggested-card h3, .popular-card h3 { color: #302820 !important; }
+.suggested-card .text-orange-600,
+.suggested-card .text-amber-500,
+.suggested-card .text-purple-500,
+.suggested-card .text-pink-500,
+.popular-card .text-orange-600,
+.popular-card .text-amber-500,
+.popular-card .text-purple-500,
+.popular-card .text-pink-500 { color: #8b735b !important; }
+.suggested-card [class*="border-amber"], .popular-card [class*="border-amber"] { border-color: #e8ded1 !important; }
+.tenant-browse main section:nth-of-type(2) { border-color: var(--tenant-border) !important; border-radius: 12px !important; box-shadow: 0 2px 12px rgba(48,40,32,.04) !important; }
+.tenant-browse main section:nth-of-type(2) button { transition: background-color 180ms ease, color 180ms ease; }
+.tenant-browse main section:nth-of-type(2) button.bg-orange-500 { background: var(--tenant-accent) !important; color: #fff !important; }
+.tenant-browse main section:nth-of-type(2) button.bg-orange-50 { background: var(--tenant-surface-strong) !important; color: var(--tenant-accent) !important; }
+.tenant-browse main section:nth-of-type(3) article { border-color: var(--tenant-border) !important; border-radius: 12px !important; box-shadow: 0 2px 12px rgba(48,40,32,.06) !important; }
+.tenant-browse main section:nth-of-type(3) article:hover { box-shadow: 0 8px 24px rgba(48,40,32,.10) !important; }
+.tenant-browse main section:nth-of-type(3) article h2 { color: var(--tenant-ink) !important; }
+.tenant-browse main section:nth-of-type(3) article .text-orange-500,
+.tenant-browse main section:nth-of-type(3) article .text-orange-600 { color: var(--tenant-accent) !important; }
+.tenant-browse main section:nth-of-type(3) article a { border-color: var(--tenant-border) !important; color: var(--tenant-accent) !important; }
+.tenant-browse main section:nth-of-type(3) article a:hover { background: var(--tenant-surface) !important; }
+
+/* Tenant settings keeps the approved warm-neutral system without affecting its account behavior. */
+.tenant-browse main .tenant-settings .settings-hero {
+  min-height: 170px;
+  margin-top: 0 !important;
+  border-color: var(--tenant-border) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 18px rgba(48,40,32,.05) !important;
+}
+.tenant-browse main .tenant-settings section {
+  min-height: 0 !important;
+  margin-top: 0 !important;
+  border-radius: 12px !important;
+}
+.tenant-settings section:not(.settings-danger-zone) {
+  border-color: var(--tenant-border) !important;
+  box-shadow: 0 2px 12px rgba(48,40,32,.045) !important;
+}
+.tenant-settings .settings-card-icon {
+  background: var(--tenant-surface-strong) !important;
+  color: var(--tenant-accent) !important;
+}
+.tenant-settings .settings-danger-zone .settings-card-icon {
+  background: #fff !important;
+  color: #dc2626 !important;
+}
+.tenant-settings input,
+.tenant-settings textarea,
+.tenant-settings select {
+  border-color: var(--tenant-border) !important;
+  color: var(--tenant-ink) !important;
+}
+.tenant-settings input:focus,
+.tenant-settings textarea:focus,
+.tenant-settings select:focus {
+  border-color: var(--tenant-accent) !important;
+  box-shadow: 0 0 0 3px rgba(139,115,91,.10) !important;
+}
+.tenant-settings .settings-save-bar {
+  background: var(--tenant-surface) !important;
+}
+.tenant-settings .settings-profile-summary {
+  background: linear-gradient(100deg, #faf8f5 0%, #fff 55%, #f8f4ef 100%) !important;
+}
+
+/* Tenant preferences dialog controls use the shared warm-neutral interaction system. */
+.tenant-preferences [data-slot="switch"] {
+  width: 2.5rem;
+  height: 1.5rem;
+}
+.tenant-preferences [data-slot="switch"][data-state="checked"] {
+  background: #8b735b !important;
+}
+.tenant-preferences [data-slot="switch"][data-state="unchecked"] {
+  background: #e8ded1 !important;
+}
+.tenant-preferences [data-slot="switch-thumb"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  background: #fff !important;
+}
+.tenant-preferences [data-slot="switch"]:focus-visible {
+  box-shadow: 0 0 0 3px rgba(139,115,91,.14) !important;
+}
+
+/* Tenant report page: warm-neutral inspection workflow and scoped upload treatment. */
+.tenant-browse main .report-page .report-hero {
+  min-height: 170px;
+  margin-top: 0 !important;
+  border-color: var(--tenant-border) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 18px rgba(48,40,32,.05) !important;
+}
+.tenant-browse main .report-page .report-step {
+  min-height: 0 !important;
+  margin-top: 0 !important;
+  border-color: var(--tenant-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.report-page .report-form,
+.report-page .report-success {
+  border-color: var(--tenant-border) !important;
+}
+.report-page .border-violet-500,
+.report-page .border-violet-300,
+.report-page .border-violet-200,
+.report-page .hover\:border-violet-200:hover,
+.report-page .hover\:border-violet-300:hover {
+  border-color: var(--tenant-accent) !important;
+}
+.report-page .bg-violet-50,
+.report-page .bg-violet-50\/30,
+.report-page .bg-violet-50\/60,
+.report-page .hover\:bg-violet-50\/60:hover {
+  background: var(--tenant-surface) !important;
+}
+.report-page .text-violet-600,
+.report-page .hover\:text-violet-600:hover {
+  color: var(--tenant-accent) !important;
+}
+.report-page .ring-violet-200 {
+  --tw-ring-color: rgba(139,115,91,.18) !important;
+}
+.report-page .border-slate-200,
+.report-page .border-slate-100 {
+  border-color: var(--tenant-border) !important;
+}
+.report-page .bg-slate-50 {
+  background: var(--tenant-surface) !important;
+}
+.report-page .text-slate-950,
+.report-page .text-slate-900 {
+  color: var(--tenant-ink) !important;
+}
+.report-page .text-slate-500,
+.report-page .text-slate-600 {
+  color: var(--tenant-muted) !important;
+}
+
+/* Tenant help: scoped guide surfaces and hero reset for the shared dashboard selectors. */
+.tenant-browse main .help-page .help-hero {
+  min-height: 170px;
+  margin-top: 0 !important;
+  border-color: var(--tenant-border) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 18px rgba(48,40,32,.05) !important;
+}
+.help-page .help-shortcut,
+.help-page .help-guide-card,
+.help-page .help-support-card {
+  border-color: var(--tenant-border) !important;
+}
+.help-page [data-slot="card-description"] {
+  color: var(--tenant-muted) !important;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.help-page input,
+.help-page textarea,
+.help-page select {
+  border-color: var(--tenant-border) !important;
+  color: var(--tenant-ink) !important;
+}
+.help-page input:focus,
+.help-page textarea:focus,
+.help-page select:focus {
+  border-color: var(--tenant-accent) !important;
+  box-shadow: 0 0 0 3px rgba(139,115,91,.10) !important;
+}
+
+/* Landing editorial rhythm: dividers replace repeated individual card shells. */
+.landing-open-features > *,
+.landing-category-nav > *,
+.landing-user-directory > *,
+.landing-information-grid > * {
+  border-color: #e8ded1;
+}
+.landing-editorial-art {
+  display: block;
+  width: 100%;
+  max-height: 100%;
+  opacity: .72;
+}
+.landing-dimensional-art {
+  display: block;
+  max-height: 330px;
+  filter: saturate(.88) contrast(.98);
+}
+.landing-location-directory > * { border-color: #e8ded1; }
+.landing-open-features > *:nth-child(odd) {
+  border-right: 1px solid #e8ded1;
+}
+.landing-open-features > *:nth-child(-n+2),
+.landing-user-directory > *,
+.landing-information-grid > * {
+  border-bottom: 1px solid #e8ded1;
+}
+.landing-user-directory > *:last-child,
+.landing-information-grid > *:last-child { border-right: 0; border-bottom: 0; }
+.landing-category-nav > *:nth-child(odd) { border-right: 1px solid #e8ded1; }
+.landing-category-nav > *:last-child { border-right: 0; }
+@media (min-width: 768px) {
+  .landing-open-features > * { border-right: 1px solid #e8ded1; border-bottom: 0; }
+  .landing-open-features > *:last-child { border-right: 0; }
+  .landing-category-nav > * { border-right: 1px solid #e8ded1; border-bottom: 0; }
+  .landing-category-nav > *:nth-child(3n) { border-right: 0; }
+  .landing-category-nav > *:last-child { border-right: 0; }
+  .landing-user-directory > *:nth-child(even) { border-right: 0; }
+  .landing-information-grid > *:nth-child(even) { border-right: 0; }
+  .landing-location-directory > *:nth-child(odd) { border-right: 1px solid #e8ded1; }
+}
+@media (min-width: 1024px) {
+  .landing-category-nav > * { border-right: 1px solid #e8ded1; border-bottom: 0; }
+  .landing-category-nav > *:nth-child(3n) { border-right: 1px solid #e8ded1; }
+  .landing-category-nav > *:last-child { border-right: 0; }
+  .landing-user-directory > * { border-right: 1px solid #e8ded1; border-bottom: 0; }
+  .landing-user-directory > *:last-child { border-right: 0; }
+  .landing-information-grid > * { border-right: 1px solid #e8ded1; }
+  .landing-information-grid > *:nth-child(3n) { border-right: 0; }
+  .landing-information-grid > *:nth-child(n+4) { border-bottom: 0; }
+}
+@media (min-width: 1280px) {
+  .landing-location-directory > * { border-right: 1px solid #e8ded1; }
+  .landing-location-directory > *:nth-child(odd) { border-right: 1px solid #e8ded1; }
+  .landing-location-directory > *:nth-child(3n) { border-right: 0; }
+}
+
+.tenant-architecture { display: block; width: 100%; animation: tenant-architecture-float 12s ease-in-out infinite; }
+.tenant-architecture-lines { stroke-dasharray: 1250; stroke-dashoffset: 1250; animation: tenant-line-draw 1.6s ease-out forwards; }
+@keyframes tenant-line-draw { to { stroke-dashoffset: 0; } }
+@keyframes tenant-architecture-float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.01); } }
+
+@media (max-width: 767px) {
+  .tenant-browse main section:nth-of-type(1) { min-height: 0; }
+  .tenant-browse main section:nth-of-type(1) > div:first-child { max-width: 100%; }
+}
+
+/* Tenant apartment details: color parity with the finalized Tenant portal. */
+.tenant-detail-colors {
+  background: #fff !important;
+  color: #302820;
+}
+
+.tenant-detail-colors .app-shell-sidebar,
+.tenant-detail-colors .app-sidebar {
+  border-color: #e8ded1 !important;
+  background: #fff !important;
+  color: #302820 !important;
+  box-shadow: none !important;
+}
+
+.tenant-detail-colors .app-sidebar-brand button > div:first-child {
+  border: 1px solid #e8ded1 !important;
+  background: #faf8f5 !important;
+  color: #8b735b !important;
+  box-shadow: none !important;
+}
+
+.tenant-detail-colors .app-sidebar-brand svg {
+  color: #8b735b !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tenant-detail-colors .app-sidebar-brand span,
+.tenant-detail-colors .app-sidebar-profile p:first-child {
+  color: #302820 !important;
+}
+
+.tenant-detail-colors .app-sidebar-brand p,
+.tenant-detail-colors .app-sidebar-profile p:last-child,
+.tenant-detail-colors .app-sidebar nav p {
+  color: #756a60 !important;
+}
+
+.tenant-detail-colors .app-sidebar-profile {
+  border-color: #e8ded1 !important;
+  background: #faf8f5 !important;
+  box-shadow: none !important;
+}
+
+.tenant-detail-colors .app-sidebar-profile > div:first-child {
+  background: #8b735b !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+.tenant-detail-colors .app-sidebar nav {
+  border-color: #e8ded1 !important;
+}
+
+.tenant-detail-colors .app-sidebar nav button {
+  position: relative;
+  color: #302820 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tenant-detail-colors .app-sidebar nav button:hover {
+  color: #8b735b !important;
+  background: #faf8f5 !important;
+}
+
+.tenant-detail-colors .app-sidebar nav button[aria-current="page"] {
+  color: #8b735b !important;
+  background: #f3efea !important;
+}
+
+.tenant-detail-colors .app-sidebar nav button[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  inset-block: 10px;
+  left: 0;
+  width: 2px;
+  border-radius: 999px;
+  background: #8b735b;
+}
+
+.tenant-detail-colors .app-sidebar nav button > svg:first-child {
+  color: #756a60 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tenant-detail-colors .app-sidebar nav button:hover > svg:first-child,
+.tenant-detail-colors .app-sidebar nav button[aria-current="page"] > svg:first-child {
+  color: #8b735b !important;
+}
+
+.tenant-detail-colors .app-sidebar nav a {
+  position: relative;
+  color: #302820 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tenant-detail-colors .app-sidebar nav a:hover {
+  color: #8b735b !important;
+  background: #faf8f5 !important;
+}
+
+.tenant-detail-colors .app-sidebar nav a[aria-current="page"] {
+  color: #8b735b !important;
+  background: #f3efea !important;
+}
+
+.tenant-detail-colors .app-sidebar nav a[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  inset-block: 10px;
+  left: 0;
+  width: 2px;
+  border-radius: 999px;
+  background: #8b735b;
+}
+
+.tenant-detail-colors .app-sidebar nav a > svg:first-child {
+  color: #756a60 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tenant-detail-colors .app-sidebar nav a:hover > svg:first-child,
+.tenant-detail-colors .app-sidebar nav a[aria-current="page"] > svg:first-child {
+  color: #8b735b !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tenant-detail-colors .app-sidebar-logout {
+  border: 1px solid #e8ded1 !important;
+  background: #fff !important;
+  color: #756a60 !important;
+  box-shadow: none !important;
+}
+
+.tenant-detail-colors .app-sidebar-logout:hover {
+  border-color: #f2d7d9 !important;
+  background: #fff7f7 !important;
+  color: #9f3f46 !important;
+}
+
+.tenant-detail-colors .text-orange-500,
+.tenant-detail-colors .text-orange-600,
+.tenant-detail-colors .text-orange-700 {
+  color: #8b735b !important;
+}
+
+.tenant-detail-colors .bg-orange-50,
+.tenant-detail-colors .bg-orange-50\/40,
+.tenant-detail-colors .bg-orange-50\/60,
+.tenant-detail-colors .bg-orange-100 {
+  background-color: #f3efea !important;
+}
+
+.tenant-detail-colors .bg-orange-500,
+.tenant-detail-colors .bg-orange-600 {
+  background-color: #8b735b !important;
+}
+
+.tenant-detail-colors .border-orange-100,
+.tenant-detail-colors .border-orange-200,
+.tenant-detail-colors .border-orange-300,
+.tenant-detail-colors .border-orange-500 {
+  border-color: #c9b8a5 !important;
+}
+
+.tenant-detail-colors .hover\:bg-orange-100:hover,
+.tenant-detail-colors .hover\:bg-orange-50\/40:hover {
+  background-color: #faf8f5 !important;
+  color: #8b735b !important;
+}
+
+.tenant-detail-colors .hover\:bg-orange-600:hover {
+  background-color: #75614e !important;
+  color: #fff !important;
+}
+
+.tenant-detail-colors .focus\:ring-orange-100:focus,
+.tenant-detail-colors .focus\:ring-orange-200:focus {
+  --tw-ring-color: rgb(139 115 91 / 0.15) !important;
+}
+
+.tenant-detail-colors header > div:last-child.bg-gradient-to-br {
+  border: 1px solid #e8ded1;
+  background: #fff !important;
+  color: #302820 !important;
+  box-shadow: 0 1px 3px rgb(48 40 32 / 0.08) !important;
+}
+
+.tenant-detail-colors header > div:last-child.bg-gradient-to-br > p:first-child {
+  color: #8b735b !important;
+}
+
+.tenant-detail-colors header > div:last-child.bg-gradient-to-br > p:nth-child(2) {
+  color: #756a60 !important;
+}
+
+.tenant-detail-colors header > div:last-child.bg-gradient-to-br > div {
+  border-color: #e8ded1 !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tenant-architecture, .tenant-architecture-lines { animation: none !important; stroke-dashoffset: 0; }
+}
 @import 'leaflet/dist/leaflet.css';
+
+/* Landlord home aligned with the Tenant warm-neutral design system. */
+.landlord-shell .app-shell-main { background: #fcfaf7; }
+.landlord-shell .app-sidebar {
+  --sidebar-orange: #8b735b;
+  --sidebar-orange-deep: #756a60;
+  --sidebar-ink: #302820;
+  --sidebar-muted: #756a60;
+  --sidebar-line: #e8ded1;
+  background: #fff !important;
+  color: #302820;
+  border: 0 !important;
+  border-left: 0 !important;
+  border-right: 1px solid #e8ded1 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  scrollbar-color: rgba(139, 115, 91, .28) transparent;
+}
+.landlord-shell .app-sidebar::before { display: none !important; }
+.landlord-shell .app-sidebar::-webkit-scrollbar-thumb { background: rgba(139, 115, 91, .24) !important; }
+.landlord-shell .app-sidebar-brand { box-shadow: none !important; }
+.landlord-shell .app-sidebar-brand > div:hover { transform: none; }
+.landlord-shell .app-sidebar-brand svg { color: #8b735b !important; }
+.landlord-shell .app-sidebar-brand span { color: #302820 !important; -webkit-text-fill-color: #302820; }
+.landlord-shell .app-sidebar-brand p { color: #756a60 !important; -webkit-text-fill-color: #756a60; }
+.landlord-shell .app-sidebar-brand > div > div:first-child {
+  background: #faf8f5 !important;
+  border-color: #e8ded1 !important;
+  box-shadow: none !important;
+}
+.landlord-shell .app-sidebar-brand,
+.landlord-shell .app-sidebar > div:nth-child(2),
+.landlord-shell .app-sidebar nav,
+.landlord-shell .app-sidebar > div:last-child { border-color: #e8ded1 !important; }
+.landlord-shell .app-sidebar-profile { background: #faf8f5 !important; border-color: #e8ded1 !important; }
+.landlord-shell .app-sidebar-profile:hover { transform: none !important; border-color: #e8ded1 !important; box-shadow: none !important; }
+.landlord-shell .app-sidebar-profile > div:first-child { background: #8b735b !important; border-radius: 999px; }
+.landlord-shell .app-sidebar-profile p:first-child { color: #302820 !important; }
+.landlord-shell .app-sidebar-profile p:nth-child(2) { color: #756a60 !important; }
+.landlord-shell .app-sidebar nav > p { color: #756a60 !important; }
+.landlord-shell .app-sidebar nav button,
+.landlord-shell .app-sidebar nav a { color: #302820 !important; box-shadow: none !important; }
+.landlord-shell .app-sidebar nav button[aria-current="page"] { background: #f3efea !important; color: #8b735b !important; }
+.landlord-shell .app-sidebar nav button:hover,
+.landlord-shell .app-sidebar nav a:hover { background: #faf8f5 !important; color: #8b735b !important; }
+.landlord-shell .app-sidebar nav button > svg:first-child,
+.landlord-shell .app-sidebar nav a > svg:first-child { color: #756a60 !important; background: transparent !important; box-shadow: none !important; }
+.landlord-shell .app-sidebar nav button:hover > svg:first-child,
+.landlord-shell .app-sidebar nav a:hover > svg:first-child,
+.landlord-shell .app-sidebar nav button[aria-current="page"] > svg:first-child { color: #8b735b !important; }
+.landlord-shell .app-sidebar-nav-item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  border-radius: 999px;
+  background: #8b735b;
+}
+.landlord-shell .app-sidebar-badge { background: #8b735b !important; color: #fff !important; box-shadow: none !important; }
+.landlord-shell .app-sidebar-logout { background: #fff !important; border: 1px solid #e8ded1; color: #756a60 !important; }
+.landlord-shell .app-sidebar-logout:hover { background: #fff5f5 !important; color: #9f4b4b !important; }
+.landlord-shell .app-sidebar-close { background: #faf8f5 !important; color: #756a60 !important; }
+.landlord-shell .app-sidebar-close:hover { background: #f3efea !important; color: #302820 !important; }
+.landlord-shell .app-sidebar nav button:focus-visible,
+.landlord-shell .app-sidebar nav a:focus-visible,
+.landlord-shell .app-sidebar-logout:focus-visible,
+.landlord-shell .app-sidebar-close:focus-visible,
+.landlord-shell .app-sidebar-trigger:focus-visible { outline-color: #8b735b !important; }
+.landlord-home .landlord-panel { box-shadow: 0 10px 28px rgba(76, 60, 45, .045); }
+
+/* Landlord-owned property detail only; tenant/public detail remains unchanged. */
+.landlord-property-detail .app-shell-main { background: #fcfaf7 !important; color: #302820; }
+.landlord-property-detail .app-shell-content { padding-top: 1.5rem; }
+.landlord-property-detail .app-shell-content main,
+.landlord-property-detail .app-shell-content section { border-color: #e8ded1; }
+.landlord-property-detail .app-shell-content [class*="text-orange-"] { color: #8b735b !important; }
+.landlord-property-detail .app-shell-content [class*="border-orange-"] { border-color: #e8ded1 !important; }
+.landlord-property-detail .app-shell-content [class*="bg-orange-50"] { background-color: #faf8f5 !important; }
+.landlord-property-detail .app-shell-content [class*="hover:border-orange"]:hover { border-color: #cdbba8 !important; }
+.landlord-property-detail .app-shell-content [class*="hover:bg-orange"]:hover { background-color: #f3efea !important; }
+.landlord-property-detail .app-shell-content [class*="focus:ring-orange"]:focus { --tw-ring-color: rgba(139, 115, 91, .22) !important; }
+.landlord-property-detail .app-shell-content [class*="focus:border-orange"]:focus { border-color: #8b735b !important; }
+.landlord-property-detail .app-shell-content section.rounded-lg,
+.landlord-property-detail .app-shell-content .rounded-lg.border.bg-white { border-color: #e8ded1; box-shadow: 0 8px 24px rgba(76, 60, 45, .04); }
+.landlord-property-detail .app-shell-content section:nth-of-type(2) { background: #e8ded1 !important; }
+.landlord-property-detail .app-shell-content > div > section:first-of-type > div:first-child {
+  aspect-ratio: auto !important;
+  height: min(52vw, 520px) !important;
+  min-height: 16rem;
+}
+.landlord-property-detail .app-sidebar-overlay { background: rgba(48, 40, 32, .36); }
+.landlord-property-detail .app-sidebar-drawer { background: #fff; }
+.landlord-property-detail .app-sidebar-trigger { border-color: #e8ded1 !important; background: #8b735b !important; color: #fff !important; }
+.landlord-property-detail > .fixed.bottom-0 strong { color: #8b735b !important; }
+@media (min-width: 1024px) {
+  .landlord-property-detail > .fixed.bottom-0 { left: 15rem !important; }
+}
+
+/* Manage Rooms visual consistency; room behavior and status logic are unchanged. */
+.landlord-manage-rooms .app-shell-fixed-sidebar { width: 15rem !important; background: #fff !important; }
+.landlord-manage-rooms .app-sidebar nav > div + div { border-top: 1px solid #e8ded1; padding-top: 1rem; }
+.landlord-manage-rooms .app-shell-page-main { background: #fcfaf7 !important; }
+.landlord-manage-rooms .app-shell-content [class*="text-orange-"] { color: #8b735b !important; }
+.landlord-manage-rooms .app-shell-content [class*="border-orange-"] { border-color: #e8ded1 !important; }
+.landlord-manage-rooms .app-shell-content [class*="bg-orange-50"] { background-color: #faf8f5 !important; }
+.landlord-manage-rooms .app-shell-content [class*="bg-orange-500"],
+.landlord-manage-rooms .app-shell-content [class*="bg-orange-600"] { background-color: #8b735b !important; color: #fff !important; }
+.landlord-manage-rooms .app-shell-content [class*="hover:bg-orange"]:hover { background-color: #756a60 !important; }
+.landlord-manage-rooms .app-shell-content [class*="shadow-orange"] { --tw-shadow-color: transparent !important; }
+.landlord-manage-rooms .app-shell-content [class*="text-violet-"] { color: #9a6b28 !important; }
+.landlord-manage-rooms .app-shell-content [class*="border-violet-"] { border-color: #eadcc8 !important; }
+.landlord-manage-rooms .app-shell-content [class*="bg-violet-"] { background-color: #faf8f5 !important; }
+.landlord-manage-rooms .app-shell-content [class*="hover:bg-violet"]:hover { background-color: #f5eee4 !important; }
+.landlord-manage-rooms .app-shell-content article,
+.landlord-manage-rooms .app-shell-content .rounded-lg.border.bg-white { border-color: #e8ded1; box-shadow: 0 8px 24px rgba(76, 60, 45, .04); }
+.landlord-manage-rooms .app-shell-content article [class*="bg-slate-50"] { background-color: #faf8f5 !important; }
+.landlord-manage-rooms .app-shell-content article svg.text-orange-500 { color: #756a60 !important; }
+.landlord-manage-rooms .app-shell-content article button[class*="border-orange"] { border-color: #d8c7b5 !important; color: #8b735b !important; background: #fff !important; }
+.landlord-manage-rooms .app-shell-content article button[class*="border-orange"]:hover { background: #faf8f5 !important; }
+.landlord-manage-rooms .app-shell-content > section:last-child { border-color: #e8ded1 !important; background: #faf8f5 !important; }
+.landlord-manage-rooms .app-shell-content > section:last-child > span { color: #8b735b !important; }
+
+/* My Properties keeps one status summary; engagement details remain on Activity. */
+.landlord-status-summary > section + section,
+.landlord-home > .grid > aside > section:first-child,
+.landlord-home article > div:nth-child(2) > div:last-child {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .landlord-home > .grid {
+    grid-template-columns: minmax(0, 1.45fr) minmax(280px, .85fr);
+    align-items: start;
+  }
+  .landlord-home > .grid > div:first-child {
+    display: contents;
+  }
+  .landlord-status-summary {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .landlord-home > .grid > aside {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .landlord-home > .grid > div:first-child > section {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+.landlord-status-summary > section:first-child,
+.landlord-home > .grid > aside > section:last-child {
+  min-height: 0;
+  padding: 1.5rem;
+}
+
+@media (max-width: 767px) {
+  .landlord-settings [role="tabpanel"] .grid-cols-2,
+  .landlord-settings [role="tabpanel"] .grid-cols-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

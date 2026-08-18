@@ -71,6 +71,67 @@ import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from 
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+function SuggestedLineArt() {
+  return (
+    <svg aria-hidden="true" className="tenant-architecture" viewBox="0 0 520 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g className="tenant-architecture-lines" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 194h484M150 194V43c0-11 9-20 20-20h166c11 0 20 9 20 20v151M171 194V51h164v143M253 51v63" />
+        <path d="M215 181c-8-19-7-39 2-58 7-15 20-23 36-23h24c18 0 32 9 39 26 7 18 7 36-1 55M210 181h111M224 181l-6 13m91-13 7 13M229 135c8 9 21 14 38 14 16 0 29-5 39-14" />
+        <path d="M395 194V76m0 0c0-18 14-31 32-31h22M381 76h28M449 45l20 12-20 12M395 157h53m-42 0v37m31-37v37M399 157c0-6 5-11 11-11h33c6 0 11 5 11 11" />
+        <path d="M88 194v-39h43v39M109 155c-2-31-6-57-19-81m19 81c1-35 9-66 27-93m-27 93c-13-27-31-47-53-61m53 61c16-20 34-34 55-42M90 74c-18-2-26 8-24 24 16 2 25-7 24-24Zm46-12c16 0 23 11 18 26-15-1-22-10-18-26ZM56 94c-16 1-22 12-17 26 15-1 21-11 17-26Zm108 19c15 2 20 13 14 27-14-3-19-13-14-27Z" />
+        <path d="M34 194v-22h28v22m-14-22c0-17 2-31 8-43m-8 43c-4-14-10-25-19-34m19 20c7-10 15-17 25-21" />
+        <path d="m455 22 3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8Zm34 54 2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5ZM78 35l2.5 6.5L87 44l-6.5 2.5L78 53l-2.5-6.5L69 44l6.5-2.5L78 35Z" />
+      </g>
+    </svg>
+  );
+}
+
+function PopularLineArt() {
+  return (
+    <svg aria-hidden="true" className="tenant-architecture" viewBox="0 0 520 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g className="tenant-architecture-lines" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 194h496M66 194V83h82v111M82 100h18m17 0h15m-50 24h18m17 0h15m-50 24h18m17 0h15M174 194V48h105v146M193 70h23m24 0h21m-68 29h23m24 0h21m-68 29h23m24 0h21m-68 29h23m24 0h21M309 194V104h85v90m-67-70h20m20 0h11m-51 27h20m20 0h11" />
+        <path d="M39 168c45-7 84-19 119-37 35-17 68-40 100-70 28-26 58-40 91-42" strokeWidth="1.8" />
+        <path d="m335 12 15 7-13 10M428 194v-35m-22 35v-35h45v35m-52-35h59M478 194c5-15 5-30 0-45m0 22c-8-5-10-12-9-18m9 10c8-6 10-13 9-21" />
+        <path d="M422 82c0-13 10-23 23-23s23 10 23 23c0 18-23 39-23 39s-23-21-23-39Zm23-8a8 8 0 1 0 0 16 8 8 0 0 0 0-16Z" />
+        <path d="m382 38 3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8Zm90-10 2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z" />
+      </g>
+    </svg>
+  );
+}
+
+function ReportLineArt() {
+  return (
+    <svg aria-hidden="true" className="tenant-architecture" viewBox="0 0 520 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g className="tenant-architecture-lines" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 194h484M112 194V33h172v161M136 33V20h124l24 25M260 20v25h24" />
+        <path d="M145 69h105M145 87h78M145 105h94M145 142h52M145 160h74" />
+        <path d="M145 116h64v17h-64zM155 128l13-8 12 7 10-6 12 8" />
+        <path d="M348 148a48 48 0 1 0 0-96 48 48 0 0 0 0 96Zm34-14 48 48M421 173l18 18" strokeWidth="1.8" />
+        <path d="M332 83h32v31h-32zM339 91h18m-18 8h13m-13 8h17" />
+        <path d="M442 54h45v34h-30l-10 10 2-10h-7V54Zm11 12h23m-23 9h16" />
+        <path d="M72 194v-30h34v30M89 164c-1-22-5-40-14-55m14 55c1-25 7-46 19-64m-19 64c-8-16-19-28-33-36m33 21c8-10 18-17 29-21" />
+        <path d="M390 37h17l9 15-9 15h-17l-9-15 9-15Zm8 9v9m0 5h.01" />
+      </g>
+    </svg>
+  );
+}
+
+function HelpLineArt() {
+  return (
+    <svg aria-hidden="true" className="tenant-architecture" viewBox="0 0 520 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g className="tenant-architecture-lines" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 194h484M112 171c36-9 72-6 108 10V61c-34-17-70-20-108-10v120Zm216 0c-36-9-72-6-108 10V61c34-17 70-20 108-10v120Z" />
+        <path d="M132 73c24-4 47-1 68 8m-68 16c24-4 47-1 68 8m-68 16c24-4 47-1 68 8m108-56c-24-4-47-1-68 8m68 16c-24-4-47-1-68 8m68 16c-24-4-47-1-68 8" />
+        <path d="M181 151v33l13-9 13 9v-29M407 160a39 39 0 1 0 0-78 39 39 0 0 0 0 78Zm0-64v50m-25-25h50" />
+        <path d="M407 104l11 17-11 17-11-17 11-17Z" />
+        <path d="M66 194v-34h37v34M85 160c-1-25-6-46-16-64m16 64c2-28 9-51 23-69m-23 69c-10-18-23-32-39-42m39 27c11-13 24-22 39-27" />
+        <path d="M371 57c13-21 35-34 65-40m-9-7 14 6-10 12M455 194V91m0 0c0-15 12-27 27-27h14M443 91h24" />
+      </g>
+    </svg>
+  );
+}
+
 const NAV_MAIN = [
   { icon: Search,      label: "Apartments",   href: "/browse", section: "apartments" },
   { icon: Heart,       label: "My Favorites", href: "/favorites", section: "favorites" },
@@ -259,6 +320,7 @@ export function StudentEmployeeDashboard() {
     return publishedApartments.slice(0, 6);
   }, [dashboardFavoriteRows, dashboardRatingRows, dashboardViewRows, favoriteIds, publishedApartments, tenantRankingPreferences, user?.role]);
 
+
   // Popular apartments (most viewed, most favorited, highest engagement)
   const popularApartments = useMemo(() => {
     const getApartmentId = (row: DashboardFavoriteRow | DashboardApartmentViewRow) => row.apartment_id ?? row.apartmentId ?? "";
@@ -444,19 +506,19 @@ export function StudentEmployeeDashboard() {
     <div className="app-sidebar flex flex-col h-full overflow-y-auto">
       <div className="app-sidebar-brand px-5 pt-6 pb-5">
         <div className="flex items-center gap-2.5">
-          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-950/30 shrink-0">
-            <Home className="h-6 w-6 text-white fill-white/20" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#e8ded1] bg-[#faf8f5] text-[#8b735b]">
+            <Home className="h-6 w-6" />
           </div>
           <div>
-            <span className="font-black text-white text-lg tracking-tight">Rent<span className="text-orange-500">Iloilo</span></span>
-            <p className="text-white/50 text-xs font-medium -mt-0.5">{portalLabel}</p>
+            <span className="text-xl font-bold tracking-tight text-[#302820]">AptFindr</span>
+            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#756a60]">La Paz, Iloilo City</p>
           </div>
         </div>
       </div>
 
       <div className="px-4 pb-5">
         <div className="app-sidebar-profile flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.07] px-3 py-3 shadow-inner shadow-white/5">
-          <div className="h-11 w-11 rounded-full bg-gradient-to-br from-amber-300 to-orange-500 flex items-center justify-center shrink-0 font-black text-white text-sm shadow overflow-hidden">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#8b735b] text-sm font-bold text-white">
             {user?.avatar ? (
               <img src={user.avatar} alt="Profile" className="h-full w-full object-cover" />
             ) : (
@@ -464,32 +526,32 @@ export function StudentEmployeeDashboard() {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-white font-bold text-sm truncate">{displayName || "Welcome"}</p>
-            <p className="text-white/40 text-xs truncate">{user?.email ?? ""}</p>
+            <p className="truncate text-sm font-bold text-[#302820]">{displayName || "Welcome"}</p>
+            <p className="truncate text-xs text-[#756a60]">{user?.email ?? ""}</p>
           </div>
-          <ChevronRight className="h-4 w-4 text-white/40" />
+          <ChevronRight className="h-4 w-4 text-[#756a60]" />
         </div>
       </div>
 
       <nav className="px-3 pt-4 pb-2">
-        <p className="text-orange-400 text-[10px] font-black uppercase tracking-widest px-3 mb-2">Main</p>
+        <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756a60]">Main</p>
         <div className="space-y-0.5">
           {NAV_MAIN.map(({ icon: Icon, label, section, href }) => href ? (
-            <Link key={section} to={href} onClick={() => setSidebarOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold text-white/60 transition-all hover:bg-white/10 hover:text-white">
+            <Link key={section} to={href} onClick={() => setSidebarOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] transition hover:bg-[#faf8f5] hover:text-[#8b735b]">
               <Icon className="h-4 w-4 shrink-0" />{label}
-              {label === "My Favorites" && favoriteIds.length > 0 && <span className="app-sidebar-badge ml-auto h-5 min-w-[20px] rounded-full bg-pink-500 px-1.5 text-[10px] font-black text-white flex items-center justify-center">{favoriteIds.length}</span>}
+              {label === "My Favorites" && favoriteIds.length > 0 && <span className="app-sidebar-badge ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#8b735b] px-1.5 text-[10px] font-bold text-white">{favoriteIds.length}</span>}
             </Link>
           ) : (
-            <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => { setActiveSection(section); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-bold transition-all ${activeSection === section ? "bg-white text-orange-600 shadow-lg shadow-orange-950/20 ring-1 ring-orange-200" : "text-white/60 hover:text-white hover:bg-white/10"}`}>
+            <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => { setActiveSection(section); setSidebarOpen(false); }} className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition ${activeSection === section ? "bg-[#f3efeA] text-[#8b735b]" : "text-[#302820] hover:bg-[#faf8f5] hover:text-[#8b735b]"}`}>
               <Icon className="h-4 w-4 shrink-0" />{label}
-              {label === "My Favorites" && favoriteIds.length > 0 && <span className="app-sidebar-badge ml-auto h-5 px-1.5 bg-pink-500 rounded-full text-white text-[10px] font-black flex items-center justify-center min-w-[20px]">{favoriteIds.length}</span>}
+              {label === "My Favorites" && favoriteIds.length > 0 && <span className="app-sidebar-badge ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#8b735b] px-1.5 text-[10px] font-bold text-white">{favoriteIds.length}</span>}
             </button>
           ))}
         </div>
       </nav>
 
       <nav className="px-3 pt-3 pb-2 border-t border-white/10 mt-2">
-        <p className="text-white/35 text-[10px] font-black uppercase tracking-widest px-3 mb-2">Account</p>
+        <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756a60]">Account</p>
         <div className="space-y-0.5">
           {NAV_ACCOUNT.map(({ icon: Icon, label, section, isLink }) =>
             !isLink ? (
@@ -499,8 +561,8 @@ export function StudentEmployeeDashboard() {
                 onClick={() => { setActiveSection(section!); setSidebarOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-bold transition-all ${
                   activeSection === section
-                    ? "bg-white text-orange-600 shadow-lg shadow-orange-950/20 ring-1 ring-orange-200"
-                    : "text-white/60 hover:text-white hover:bg-white/10"
+                    ? "bg-[#f3efeA] text-[#8b735b]"
+                    : "text-[#302820] hover:bg-[#faf8f5] hover:text-[#8b735b]"
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -515,7 +577,7 @@ export function StudentEmployeeDashboard() {
 
       <div className="px-4 py-4 border-t border-white/10 mt-2">
         <LogoutConfirmation onConfirm={handleLogout}>
-          <button className="app-sidebar-logout w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all">
+          <button className="app-sidebar-logout flex w-full items-center gap-3 rounded-lg border border-[#e8ded1] bg-white px-3 py-3 text-sm font-semibold text-[#756a60] transition hover:border-red-100 hover:bg-red-50 hover:text-red-700">
             <LogOut className="h-4 w-4 shrink-0" />
             Log Out
           </button>
@@ -922,26 +984,26 @@ export function StudentEmployeeDashboard() {
 
   // ── Section: Suggested ───────────────────────────────────────────────────
   const renderSuggested = () => (
-    <div className="mx-auto max-w-7xl space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center shadow-sm">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <h2 className="text-3xl font-black text-slate-950">Suggested for You</h2>
+    <div className="suggested-page mx-auto max-w-7xl space-y-5">
+      <section className="suggested-hero relative flex min-h-[180px] items-center overflow-hidden rounded-xl border border-[#e8ded1] bg-gradient-to-r from-[#faf8f5] to-[#fffdfb] p-6 md:px-8">
+        <div className="relative z-10 max-w-[58%] max-md:max-w-full">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e8ded1] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b735b] shadow-sm">
+            <Sparkles className="h-4 w-4" />
+            Personalized Discovery
           </div>
-          <p className="mt-2 text-base font-medium text-slate-600">Recommendations from the current published apartment records.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">Suggested for You</h2>
+          <p className="mt-3 text-base font-medium text-[#756a60]">Apartments that may match what you're looking for.</p>
         </div>
-        <Button onClick={() => navigate("/browse")} className="rounded-lg bg-orange-500 font-black text-white hover:bg-orange-600">
-          Browse All
-        </Button>
+        <div className="pointer-events-none absolute inset-y-0 right-3 hidden w-[43%] items-end text-[#b9a58f] md:flex"><SuggestedLineArt /></div>
+      </section>
+      <div className="flex justify-end">
+        <Button onClick={() => navigate("/browse")} variant="outline" className="h-11 rounded-lg border-[#e8ded1] bg-white px-5 font-bold text-[#8b735b] hover:bg-[#faf8f5]">Browse All</Button>
       </div>
       {suggestedApartments.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {suggestedApartments.map((apartment) => (
-            <div key={apartment.id} className="relative">
-              <Badge className="absolute top-6 left-6 z-10 bg-orange-500 hover:bg-orange-600 shadow-lg text-white font-bold">Suggested</Badge>
+            <div key={apartment.id} className="suggested-card relative">
+              <Badge className="absolute right-16 top-3 z-10 border border-[#e8ded1] bg-[#faf8f5] text-xs font-semibold text-[#8b735b] shadow-sm hover:bg-[#faf8f5]">Suggested</Badge>
               <ApartmentCard apartment={apartment} ratingStats={ratingSummary.byApartment.get(apartment.id)} ratingsLoading={ratingsLoading} detailState={{ returnTo: "/dashboard?section=suggested", backLabel: "Back to Suggested" }} />
             </div>
           ))}
@@ -959,26 +1021,26 @@ export function StudentEmployeeDashboard() {
 
   // ── Section: Popular ─────────────────────────────────────────────────────
   const renderPopular = () => (
-    <div className="mx-auto max-w-7xl space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm">
-              <TrendingUp className="h-5 w-5" />
-            </div>
-            <h2 className="text-3xl font-black text-slate-950">Most Popular</h2>
+    <div className="popular-page mx-auto max-w-7xl space-y-5">
+      <section className="popular-hero relative flex min-h-[175px] items-center overflow-hidden rounded-xl border border-[#e8ded1] bg-gradient-to-r from-[#faf8f5] to-[#fffdfb] p-6 md:px-8">
+        <div className="relative z-10 max-w-[58%] max-md:max-w-full">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e8ded1] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b735b] shadow-sm">
+            <TrendingUp className="h-4 w-4" />
+            Trending Choices
           </div>
-          <p className="mt-2 text-base font-medium text-slate-600">Published apartments ranked from current listing signals.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">Most Popular</h2>
+          <p className="mt-3 text-base font-medium text-[#756a60]">Explore apartments highlighted by AptFindr's current popularity ranking.</p>
         </div>
-        <Button onClick={() => navigate("/browse")} className="rounded-lg bg-orange-500 font-black text-white hover:bg-orange-600">
-          Browse All
-        </Button>
+        <div className="pointer-events-none absolute inset-y-0 right-3 hidden w-[43%] items-end text-[#b9a58f] md:flex"><PopularLineArt /></div>
+      </section>
+      <div className="flex justify-end">
+        <Button onClick={() => navigate("/browse")} variant="outline" className="h-11 rounded-lg border-[#e8ded1] bg-white px-5 font-bold text-[#8b735b] hover:bg-[#faf8f5]">Browse All</Button>
       </div>
       {popularApartments.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {popularApartments.map((apartment) => (
-            <div key={apartment.id} className="relative">
-              <Badge className="absolute top-6 left-6 z-10 bg-indigo-600 hover:bg-indigo-700 shadow-lg text-white font-bold">Popular</Badge>
+            <div key={apartment.id} className="popular-card relative">
+              <Badge className="absolute right-16 top-3 z-10 border border-[#e8ded1] bg-[#faf8f5] text-xs font-semibold text-[#8b735b] shadow-sm hover:bg-[#faf8f5]">Popular</Badge>
               <ApartmentCard apartment={apartment} ratingStats={ratingSummary.byApartment.get(apartment.id)} ratingsLoading={ratingsLoading} detailState={{ returnTo: "/dashboard?section=popular", backLabel: "Back to Popular" }} />
             </div>
           ))}
@@ -1023,90 +1085,79 @@ export function StudentEmployeeDashboard() {
 
   // ── Section: Settings ────────────────────────────────────────────────────
   const renderReportPremium = () => (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600 shadow-sm">
-            <AlertTriangle className="h-10 w-10" />
+    <div className="report-page mx-auto max-w-6xl space-y-6">
+      <header className="report-hero relative flex min-h-[170px] items-center overflow-hidden rounded-2xl border border-[#e8ded1] bg-gradient-to-r from-[#faf8f5] to-[#fffdfb] p-6 md:px-8">
+        <div className="relative z-10 max-w-[58%] max-md:max-w-full">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e8ded1] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b735b] shadow-sm">
+            <AlertTriangle className="h-4 w-4" />
+            Support &amp; Safety
           </div>
-          <div>
-            <h2 className="text-4xl font-black tracking-tight text-slate-950">Report a Problem</h2>
-            <p className="mt-2 text-base font-medium text-slate-500">Let us know about any issues you encountered with an apartment listing.</p>
-          </div>
+          <h2 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">Report a Problem</h2>
+          <p className="mt-3 text-base font-medium text-[#756a60]">Tell us about inaccurate or problematic apartment listing information.</p>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.08)] lg:w-96">
-          <div className="flex gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600">
-              <Shield className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="font-black text-slate-950">Your report matters</p>
-              <p className="mt-1 text-sm font-medium leading-6 text-slate-500">All reports are reviewed by our team to help keep the community safe.</p>
-            </div>
-          </div>
-        </div>
+        <div className="pointer-events-none absolute inset-y-0 right-3 hidden w-[43%] items-end text-[#b9a58f] md:flex"><ReportLineArt /></div>
       </header>
 
       {reportSubmitted ? (
-        <Card className="rounded-lg border border-emerald-100 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.1)]">
+        <Card className="report-success rounded-xl border border-emerald-100 bg-white shadow-[0_4px_18px_rgba(48,40,32,0.06)]">
           <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 shadow-sm">
               <CheckCircle className="h-10 w-10" />
             </div>
-            <h3 className="text-2xl font-black text-slate-950">Report Submitted</h3>
-            <p className="max-w-md text-sm font-medium leading-6 text-slate-500">
+            <h3 className="text-2xl font-black text-[#302820]">Report Submitted</h3>
+            <p className="max-w-md text-sm font-medium leading-6 text-[#756a60]">
               Thank you for helping us keep listings accurate. Our team will review your report and notify you if more details are needed.
             </p>
-            <Button onClick={resetReport} className="mt-2 rounded-lg bg-orange-500 px-6 font-black text-white hover:bg-orange-600">
+            <Button onClick={resetReport} className="mt-2 rounded-lg bg-[#8b735b] px-6 font-black text-white hover:bg-[#75614e]">
               Submit Another Report
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <Card className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.1)]">
+        <Card className="report-form overflow-hidden rounded-xl border border-[#e8ded1] bg-white shadow-[0_4px_18px_rgba(48,40,32,0.06)]">
           <CardContent className="p-0">
-            <ReportStep icon={Building2} step="1" title="Select Apartment" description="Choose the apartment listing related to your report." tone="bg-orange-50 text-orange-600">
-              <select value={reportForm.apartment} onChange={(e) => setReportForm((f) => ({ ...f, apartment: e.target.value }))} className="h-14 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 outline-none transition focus:border-orange-300 focus:ring-2 focus:ring-orange-100">
+            <ReportStep icon={Building2} step="1" title="Select Apartment" description="Choose the apartment listing related to your report." tone="bg-[#f3efea] text-[#8b735b]">
+              <select value={reportForm.apartment} onChange={(e) => setReportForm((f) => ({ ...f, apartment: e.target.value }))} className="h-12 w-full rounded-xl border border-[#e8ded1] bg-white px-4 text-base font-semibold text-[#302820] outline-none transition focus:border-[#8b735b] focus:ring-2 focus:ring-[#8b735b]/10">
                 <option value="">Select an apartment...</option>
                 {publishedApartments.map((apt) => <option key={apt.id} value={apt.id}>{apt.title}</option>)}
               </select>
             </ReportStep>
 
-            <ReportStep icon={MessageCircle} step="2" title="Describe the Problem" description="Please provide as much detail as possible." tone="bg-orange-50 text-orange-600">
+            <ReportStep icon={MessageCircle} step="2" title="Describe the Problem" description="Please provide as much detail as possible." tone="bg-[#f3efea] text-[#8b735b]">
               <div className="relative">
-                <textarea rows={5} maxLength={500} value={reportForm.details} onChange={(e) => setReportForm((f) => ({ ...f, details: e.target.value }))} placeholder="Describe what you experienced in as much detail as possible..." className="min-h-40 w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-4 text-sm font-medium text-slate-800 outline-none transition focus:border-orange-300 focus:ring-2 focus:ring-orange-100" />
+                <textarea rows={5} maxLength={500} value={reportForm.details} onChange={(e) => setReportForm((f) => ({ ...f, details: e.target.value }))} placeholder="Describe what you experienced in as much detail as possible..." className="min-h-40 w-full resize-none rounded-xl border border-[#e8ded1] bg-white px-4 py-4 text-base font-medium text-[#302820] outline-none transition focus:border-[#8b735b] focus:ring-2 focus:ring-[#8b735b]/10" />
                 <span className="absolute bottom-3 right-4 text-xs font-bold text-slate-400">{reportForm.details.length}/500</span>
               </div>
             </ReportStep>
 
-            <ReportStep icon={ImageIcon} step="3" title="Upload Image / Evidence" description="Attach images or documents that can help us understand the issue." note="Optional" tone="bg-violet-50 text-violet-600">
+            <ReportStep icon={ImageIcon} step="3" title="Upload Image / Evidence" description="Attach images or documents that can help us understand the issue." note="Optional" tone="bg-[#f3efea] text-[#8b735b]">
               <EvidenceUploader evidenceFiles={reportEvidenceFiles} onEvidenceChange={setReportEvidenceFiles} maxFiles={5} maxFileSize={10} required={false} />
-              <div className="mt-4 flex items-start gap-3 rounded-lg border border-violet-100 bg-violet-50 p-4">
-                <Shield className="mt-0.5 h-5 w-5 shrink-0 text-violet-600" />
+              <div className="mt-4 flex items-start gap-3 rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-4">
+                <Shield className="mt-0.5 h-5 w-5 shrink-0 text-[#8b735b]" />
                 <div>
-                  <p className="text-sm font-black text-violet-900">Evidence helps us review your report faster.</p>
-                  <p className="mt-1 text-xs font-medium text-violet-700">Clear screenshots, photos, or documents are very helpful.</p>
+                  <p className="text-sm font-black text-[#302820]">Evidence helps us review your report faster.</p>
+                  <p className="mt-1 text-xs font-medium text-[#756a60]">Clear screenshots, photos, or documents are very helpful.</p>
                 </div>
               </div>
             </ReportStep>
 
-            <ReportStep icon={Mail} step="4" title="Contact Information" description="We may contact you for more details if needed." tone="bg-emerald-50 text-emerald-600">
+            <ReportStep icon={Mail} step="4" title="Contact Information" description="We may contact you for more details if needed." tone="bg-[#f3efea] text-[#8b735b]">
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                <input type="text" value={reportForm.contact} onChange={(e) => setReportForm((f) => ({ ...f, contact: e.target.value }))} placeholder={user?.email || "Enter your email address"} className="h-14 w-full rounded-lg border border-slate-200 bg-white pl-12 pr-4 text-sm font-bold text-slate-800 outline-none transition focus:border-orange-300 focus:ring-2 focus:ring-orange-100" />
+                <input type="text" value={reportForm.contact} onChange={(e) => setReportForm((f) => ({ ...f, contact: e.target.value }))} placeholder={user?.email || "Enter your email address"} className="h-12 w-full rounded-xl border border-[#e8ded1] bg-white pl-12 pr-4 text-base font-semibold text-[#302820] outline-none transition focus:border-[#8b735b] focus:ring-2 focus:ring-[#8b735b]/10" />
               </div>
             </ReportStep>
 
-            <div className="grid gap-4 border-t border-slate-100 bg-slate-50/70 p-5 lg:grid-cols-[220px_1fr_260px] lg:items-center">
-              <Button variant="outline" onClick={resetReport} className="h-12 rounded-lg border-slate-200 font-black text-slate-600 hover:bg-white">
+            <div className="grid gap-4 border-t border-[#e8ded1] bg-[#faf8f5] p-5 lg:grid-cols-[220px_1fr_260px] lg:items-center">
+              <Button variant="outline" onClick={resetReport} className="h-12 rounded-lg border-[#e8ded1] bg-white font-black text-[#756a60] hover:bg-[#f3efea] hover:text-[#8b735b]">
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Clear Form
               </Button>
-              <div className="flex items-center justify-center gap-3 text-center text-sm font-medium text-slate-500">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm"><LockKeyhole className="h-4 w-4" /></span>
-                <span><strong className="font-black text-slate-700">Your information is secure.</strong> We only use this information for this report.</span>
+              <div className="flex items-center justify-center gap-3 text-center text-sm font-medium text-[#756a60]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#8b735b] shadow-sm"><LockKeyhole className="h-4 w-4" /></span>
+                <span><strong className="font-black text-[#302820]">Your information is secure.</strong> We only use this information for this report.</span>
               </div>
-              <Button onClick={() => void handleReportSubmit()} disabled={isSubmittingReport || !reportForm.apartment || !reportForm.details.trim()} className="h-12 rounded-lg bg-orange-500 font-black text-white shadow-lg shadow-orange-200 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50">
+              <Button onClick={() => void handleReportSubmit()} disabled={isSubmittingReport || !reportForm.apartment || !reportForm.details.trim()} className="h-12 rounded-lg bg-[#8b735b] font-black text-white shadow-sm hover:bg-[#75614e] disabled:cursor-not-allowed disabled:opacity-50">
                 <Send className="mr-2 h-4 w-4" />
                 {isSubmittingReport ? "Submitting..." : "Submit Report"}
               </Button>
@@ -1121,41 +1172,44 @@ export function StudentEmployeeDashboard() {
 
   // ── Section: Help ────────────────────────────────────────────────────────
   const renderHelp = () => (
-    <div className="space-y-6">
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <HelpCircle className="h-4 w-4 text-amber-600" />
-          <h2 className="text-xs font-black text-amber-600 uppercase tracking-widest">Help & Support</h2>
+    <div className="help-page mx-auto max-w-6xl space-y-6">
+      <header className="help-hero relative flex min-h-[170px] items-center overflow-hidden rounded-2xl border border-[#e8ded1] bg-gradient-to-r from-[#faf8f5] to-[#fffdfb] p-6 md:px-8">
+        <div className="relative z-10 max-w-[58%] max-md:max-w-full">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e8ded1] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b735b] shadow-sm">
+            <HelpCircle className="h-4 w-4" />
+            Guidance &amp; Support
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">Help</h1>
+          <p className="mt-3 text-base font-medium text-[#756a60]">Find answers and guidance for using AptFindr.</p>
         </div>
-        <h1 className="text-3xl font-black text-slate-900">How can we help?</h1>
-        <p className="text-slate-600 font-medium mt-1">Guides, safety reminders, and support for using RentIloilo.</p>
-      </div>
+        <div className="pointer-events-none absolute inset-y-0 right-3 hidden w-[43%] items-end text-[#b9a58f] md:flex"><HelpLineArt /></div>
+      </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
           { icon: Search, title: "Browse apartments", desc: "Search, filter, and compare available places.", action: () => navigate("/browse") },
-          { icon: Heart, title: "Review favorites", desc: "Return to apartments you saved earlier.", action: () => setActiveSection("favorites") },
+          { icon: Heart, title: "Review favorites", desc: "Return to apartments you saved earlier.", action: () => navigate("/favorites") },
           { icon: AlertTriangle, title: "Report listing issue", desc: "Flag wrong details, scams, or unavailable units.", action: () => setActiveSection("report") },
         ].map(({ icon: Icon, title, desc, action }) => (
           <button
             key={title}
             onClick={action}
-            className="text-left p-5 rounded-2xl bg-white/90 border border-amber-100 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+            className="help-shortcut rounded-xl border border-[#e8ded1] bg-white p-5 text-left shadow-[0_2px_10px_rgba(48,40,32,0.04)] transition-all hover:-translate-y-0.5 hover:border-[#d7c9b8] hover:shadow-[0_7px_18px_rgba(48,40,32,0.08)]"
           >
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-3">
-              <Icon className="h-5 w-5 text-white" />
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-[#e8ded1] bg-[#faf8f5]">
+              <Icon className="h-5 w-5 text-[#8b735b]" />
             </div>
-            <p className="font-black text-slate-900">{title}</p>
-            <p className="text-sm text-slate-500 font-medium mt-1">{desc}</p>
+            <p className="font-black text-[#302820]">{title}</p>
+            <p className="mt-1 text-sm font-medium leading-6 text-[#756a60]">{desc}</p>
           </button>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Card className="border-amber-100 shadow-lg bg-white/90 rounded-2xl">
+        <Card className="help-guide-card rounded-xl border-[#e8ded1] bg-white shadow-[0_2px_10px_rgba(48,40,32,0.04)]">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-slate-900 font-black">
-              <BookOpen className="h-5 w-5 text-amber-600" />
+            <CardTitle className="flex items-center gap-2 font-black text-[#302820]">
+              <BookOpen className="h-5 w-5 text-[#8b735b]" />
               Renter Guide
             </CardTitle>
             <CardDescription>Put these inside Help so users know what to do next.</CardDescription>
@@ -1167,18 +1221,18 @@ export function StudentEmployeeDashboard() {
               ["Listing details", "Check rent, available date, amenities, address, photos, and landlord verification before contacting."],
               ["Saved preferences", "Update Settings > Search to make Browse open with your preferred filters."],
             ].map(([title, desc]) => (
-              <div key={title} className="p-3 rounded-xl bg-amber-50/60 border border-amber-100">
-                <p className="font-black text-sm text-slate-900">{title}</p>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">{desc}</p>
+              <div key={title} className="rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-4">
+                <p className="text-base font-bold text-[#302820]">{title}</p>
+                <p className="mt-1 text-sm font-medium leading-6 text-[#756a60]">{desc}</p>
               </div>
             ))}
           </CardContent>
         </Card>
 
-        <Card className="border-amber-100 shadow-lg bg-white/90 rounded-2xl">
+        <Card className="help-guide-card rounded-xl border-[#e8ded1] bg-white shadow-[0_2px_10px_rgba(48,40,32,0.04)]">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-slate-900 font-black">
-              <Shield className="h-5 w-5 text-amber-600" />
+            <CardTitle className="flex items-center gap-2 font-black text-[#302820]">
+              <Shield className="h-5 w-5 text-[#8b735b]" />
               Safety & Support
             </CardTitle>
             <CardDescription>Keep renter support focused on trust and listing accuracy.</CardDescription>
@@ -1190,11 +1244,11 @@ export function StudentEmployeeDashboard() {
               ["Report problems", "Use Report a Problem for fake listings, wrong photos, wrong prices, or unavailable units."],
               ["Account help", "Use the form below for login, profile, favorites, or general app issues."],
             ].map(([title, desc]) => (
-              <div key={title} className="flex gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+              <div key={title} className="flex gap-3 rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-4">
+                <CheckCircle className="mt-1 h-4 w-4 shrink-0 text-[#8b735b]" />
                 <div>
-                  <p className="font-black text-sm text-slate-900">{title}</p>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">{desc}</p>
+                  <p className="text-base font-bold text-[#302820]">{title}</p>
+                  <p className="mt-1 text-sm font-medium leading-6 text-[#756a60]">{desc}</p>
                 </div>
               </div>
             ))}
@@ -1202,10 +1256,10 @@ export function StudentEmployeeDashboard() {
         </Card>
       </div>
 
-      <Card className="border-amber-100 shadow-lg bg-white/90 rounded-2xl">
+      <Card className="help-support-card rounded-xl border-[#e8ded1] bg-white shadow-[0_2px_10px_rgba(48,40,32,0.04)]">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-slate-900 font-black">
-            <MessageCircle className="h-5 w-5 text-amber-600" />
+          <CardTitle className="flex items-center gap-2 font-black text-[#302820]">
+            <MessageCircle className="h-5 w-5 text-[#8b735b]" />
             Contact Support
           </CardTitle>
           <CardDescription>Submitted requests are securely sent to the support team.</CardDescription>
@@ -1218,7 +1272,7 @@ export function StudentEmployeeDashboard() {
               <p className="text-sm text-slate-500 font-medium mt-1">Our team will review your concern and contact you using the details provided.</p>
               <Button
                 onClick={() => setSupportSubmitted(false)}
-                className="mt-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold"
+                className="mt-4 rounded-lg bg-[#8b735b] font-bold text-white hover:bg-[#75614e]"
               >
                 Send Another Request
               </Button>
@@ -1227,11 +1281,11 @@ export function StudentEmployeeDashboard() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-black text-slate-500 uppercase tracking-widest">Topic</Label>
+                  <Label className="text-sm font-semibold text-[#302820]">Topic</Label>
                   <select
                     value={supportForm.topic}
                     onChange={(e) => setSupportForm((f) => ({ ...f, topic: e.target.value }))}
-                    className="w-full rounded-xl border border-amber-200 bg-amber-50/30 px-3 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className="h-12 w-full rounded-xl border border-[#e8ded1] bg-white px-4 text-base font-semibold text-[#302820] focus:border-[#8b735b] focus:outline-none focus:ring-2 focus:ring-[#8b735b]/10"
                   >
                     <option value="">Choose a topic...</option>
                     <option value="Account or login">Account or login</option>
@@ -1242,18 +1296,18 @@ export function StudentEmployeeDashboard() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-black text-slate-500 uppercase tracking-widest">Contact</Label>
+                  <Label className="text-sm font-semibold text-[#302820]">Contact</Label>
                   <Input
                     value={supportForm.contact}
                     onChange={(e) => setSupportForm((f) => ({ ...f, contact: e.target.value }))}
                     placeholder="Email or phone number"
-                    className="rounded-xl border-amber-200 bg-amber-50/30"
+                    className="h-12 rounded-xl border-[#e8ded1] bg-white text-base focus-visible:border-[#8b735b] focus-visible:ring-[#8b735b]/10"
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-black text-slate-500 uppercase tracking-widest">Message</Label>
+                  <Label className="text-sm font-semibold text-[#302820]">Message</Label>
                   <span className="text-xs text-slate-400 font-medium">{supportForm.message.length}/500</span>
                 </div>
                 <textarea
@@ -1262,13 +1316,13 @@ export function StudentEmployeeDashboard() {
                   value={supportForm.message}
                   onChange={(e) => setSupportForm((f) => ({ ...f, message: e.target.value }))}
                   placeholder="Tell us what happened or what you need help with..."
-                  className="w-full rounded-xl border border-amber-200 bg-amber-50/30 px-3 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+                  className="w-full resize-none rounded-xl border border-[#e8ded1] bg-white px-4 py-3 text-base font-medium text-[#302820] focus:border-[#8b735b] focus:outline-none focus:ring-2 focus:ring-[#8b735b]/10"
                 />
               </div>
               <Button
                 onClick={() => void handleSupportSubmit()}
                 disabled={isSubmittingSupport}
-                className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold shadow-md"
+                className="h-12 w-full rounded-lg bg-[#8b735b] font-bold text-white shadow-sm hover:bg-[#75614e]"
               >
                 <Send className="h-4 w-4 mr-2" />
                 {isSubmittingSupport ? "Sending..." : "Send Support Request"}
@@ -1363,7 +1417,7 @@ export function StudentEmployeeDashboard() {
       ? renderDashboardLoading()
       : (sectionMap[activeSection] ?? renderOverview)();
   return (
-    <div className="app-shell fixed inset-0 z-50 overflow-hidden bg-[#f8fafc]">
+    <div className="tenant-browse app-shell fixed inset-0 z-50 overflow-hidden bg-white">
       <div className="app-shell-frame relative z-10 flex h-full">
         <aside className="app-shell-sidebar hidden lg:flex flex-col w-64 shrink-0 h-full bg-[#07142f] shadow-2xl shadow-slate-900/40">
           {SidebarContent()}
@@ -1391,7 +1445,7 @@ export function StudentEmployeeDashboard() {
         <button
           aria-label="Open navigation"
           onClick={() => setSidebarOpen(true)}
-          className="app-sidebar-trigger fixed top-4 left-4 z-30 lg:hidden h-10 w-10 rounded-lg bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-300/40 hover:bg-orange-600 transition-all"
+          className="app-sidebar-trigger fixed left-4 top-4 z-30 flex h-10 w-10 items-center justify-center rounded-lg bg-[#8b735b] text-white shadow-md transition hover:bg-[#75604d] lg:hidden"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -1424,18 +1478,18 @@ function ReportStep({
   children: ReactNode;
 }) {
   return (
-    <section className="grid gap-5 border-b border-slate-100 p-5 last:border-b-0 lg:grid-cols-[360px_1fr] lg:p-8">
+    <section className="report-step grid gap-5 border-b border-[#e8ded1] p-5 last:border-b-0 lg:grid-cols-[320px_1fr] lg:p-6">
       <div className="flex gap-5">
-        <div className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-lg ${tone}`}>
-          <Icon className="h-9 w-9" />
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${tone}`}>
+          <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
           <div className="mb-2 flex items-center gap-3">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-xs font-black text-white">{step}</span>
-            <h3 className="font-black text-slate-950">{title}</h3>
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#8b735b] text-xs font-black text-white">{step}</span>
+            <h3 className="text-base font-black text-[#302820]">{title}</h3>
             {note && <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black uppercase text-slate-500">{note}</span>}
           </div>
-          <p className="text-sm font-medium leading-6 text-slate-500">{description}</p>
+          <p className="text-sm font-medium leading-6 text-[#756a60]">{description}</p>
         </div>
       </div>
       <div className="min-w-0">{children}</div>

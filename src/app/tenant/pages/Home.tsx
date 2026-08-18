@@ -65,7 +65,7 @@ import {
   type TenantPreferenceSortOption,
 } from "@/app/shared/services/dashboardSupabaseService";
 import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
-import { getImageUrl } from "@/app/shared/utils/images";
+import { getApartmentImageUrl, getImageUrl } from "@/app/shared/utils/images";
 import {
   getAvailableRoomCount,
   isTenantVisibleApartment,
@@ -80,6 +80,7 @@ import { findNearbyApartments, formatDistance, parseNearbySearchIntent } from "@
 import { toast } from "sonner";
 import { LandlordBrowse } from "@/app/landlord/pages/LandlordBrowse";
 import { TenantMobileNavigation } from "@/app/tenant/components/TenantMobileNavigation";
+import { TenantSidebar } from "@/app/tenant/components/TenantSidebar";
 
 type SortOption = TenantPreferenceSortOption;
 type BrowseApartment = Apartment & { distanceMeters?: number };
@@ -149,6 +150,18 @@ const compareOptionalNumber = (left: number | null, right: number | null, direct
   if (right === null) return -1;
   return direction === "asc" ? left - right : right - left;
 };
+
+function ApartmentLineArt() {
+  return (
+    <svg aria-hidden="true" className="tenant-architecture" viewBox="0 0 520 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g className="tenant-architecture-lines" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 194H510M38 194v-29l18-17 18 17v29m-27 0v-20h18v20M104 194V87h58v107M96 87l38-47 37 47M119 194v-82h29v82M126 58V25l17-17 18 17v62M135 43h9v19h-9M191 194V110h91v84M203 110l34-36 37 36M210 132h23v25h-23m34-25h23v25h-23M298 194V71h65v123M291 71l39-42 41 42M316 93h29v28h-29m0 18h29v31h-29M385 194V99h74v95M377 99l38-38 51 38M401 122h19v27h-19m26-27h19v27h-19" />
+        <path d="M16 194c8-20 8-42 0-62m0 34c-12-7-14-16-13-24m13 13c11-8 14-18 13-28M481 194c8-24 8-49 0-73m0 38c-12-8-15-18-14-29m14 18c12-9 15-20 14-33M76 194c3-15 3-28 0-42m0 21c-8-5-9-11-9-18m9 10c7-5 9-12 8-18" />
+        <path d="M3 105c5-5 10-5 15 0 5-5 10-5 15 0m347-61c5-5 10-5 15 0 5-5 10-5 15 0m68 24c5-5 10-5 15 0 5-5 10-5 15 0" />
+      </g>
+    </svg>
+  );
+}
 
 function BrowseContent() {
   const { user } = useAuth();
@@ -559,14 +572,14 @@ function TenantBrowse() {
     <Link
       to={href}
       aria-current={active ? "page" : undefined}
-      className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold transition ${
-        active ? "bg-orange-500 text-white shadow-lg shadow-orange-950/25" : "text-white/65 hover:bg-white/10 hover:text-white"
+      className={`app-sidebar-nav-item flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition ${
+        active ? "bg-[#f3efeA] text-[#8b735b]" : "text-[#302820] hover:bg-[#faf8f5] hover:text-[#8b735b]"
       }`}
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span className="min-w-0 flex-1">{label}</span>
       {badge !== undefined && badge > 0 && (
-        <span className="app-sidebar-badge flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-black text-white">
+        <span className="app-sidebar-badge flex min-w-5 items-center justify-center rounded-full bg-[#8b735b] px-1.5 py-0.5 text-[10px] font-bold text-white">
           {badge}
         </span>
       )}
@@ -575,7 +588,7 @@ function TenantBrowse() {
 
   const renderFilterTrigger = (floating = false) => (
     <DialogTrigger asChild>
-      <Button type="button" className={floating ? "h-14 w-14 rounded-full bg-orange-500 p-0 text-white shadow-xl hover:bg-orange-600" : "h-12 rounded-lg border border-slate-200 bg-white px-5 font-black text-slate-800 shadow-sm hover:bg-slate-50"} variant={floating ? "default" : "outline"}>
+      <Button type="button" className={floating ? "h-14 w-14 rounded-full bg-[#8B735B] p-0 text-white shadow-lg hover:bg-[#75614E]" : "h-12 rounded-lg border border-[#E8DED1] bg-white px-5 font-black text-[#302820] shadow-sm hover:bg-[#FAF8F5]"} variant={floating ? "default" : "outline"}>
         <SlidersHorizontal className={floating ? "h-5 w-5" : "mr-2 h-4 w-4"} />
         {!floating && `Preferences${activeFilterCount ? ` (${activeFilterCount})` : ""}`}
       </Button>
@@ -585,55 +598,50 @@ function TenantBrowse() {
   const renderFilterContent = () => (
       <DialogContent
         onClick={(event) => event.stopPropagation()}
-        className="max-h-[92vh] overflow-y-auto rounded-lg border-slate-200 bg-white p-0 shadow-[0_30px_90px_rgba(15,23,42,0.22)] sm:max-w-4xl"
+        className="tenant-preferences max-h-[92vh] overflow-y-auto rounded-2xl border-[#E8DED1] bg-white p-0 shadow-[0_20px_50px_rgba(48,40,32,0.10)] sm:max-w-2xl"
       >
-        <div className="space-y-6 p-6 sm:p-8" onClick={(event) => event.stopPropagation()}>
-          <DialogHeader className="pr-10 text-left">
+        <div onClick={(event) => event.stopPropagation()}>
+          <DialogHeader className="border-b border-[#E8DED1] px-6 py-5 pr-12 text-left sm:px-7">
             <div className="flex items-start gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600">
-                <SlidersHorizontal className="h-8 w-8" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#E8DED1] bg-[#FAF8F5] text-[#8B735B]">
+                <SlidersHorizontal className="h-5 w-5" />
               </div>
               <div>
-                <DialogTitle className="text-3xl font-black tracking-tight text-slate-950">Apartment Preferences</DialogTitle>
-                <DialogDescription className="mt-2 max-w-xl text-base font-semibold leading-7 text-slate-500">
-                  Personalize Suggested and Recommended apartments without hiding listings from Browse All.
+                <p className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-[#8B735B]">Personalize your search</p>
+                <DialogTitle className="text-[28px] font-bold tracking-tight text-[#302820]">Preferences</DialogTitle>
+                <DialogDescription className="mt-1 max-w-xl text-sm font-medium leading-6 text-[#756A60]">
+                  Adjust what matters most when browsing apartments and receiving recommendations.
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
-          <section className="overflow-hidden rounded-lg border border-orange-100 bg-gradient-to-r from-orange-50 via-white to-orange-50 p-5 shadow-sm">
+          <div className="space-y-0 px-6 sm:px-7">
+          <section className="border-b border-[#E8DED1] py-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white text-orange-500 shadow-sm">
-                <HomeIcon className="h-10 w-10" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F3EFEA] text-[#8B735B]">
+                <HomeIcon className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-xl font-black text-slate-950">Improve your recommendations</h3>
-                <p className="mt-2 max-w-xl text-sm font-semibold leading-6 text-slate-500">
+                <h3 className="text-lg font-semibold text-[#302820]">Improve your recommendations</h3>
+                <p className="mt-1 max-w-xl text-sm font-medium leading-6 text-[#756A60]">
                   Browse All stays complete. These signals only change recommendation relevance and ordering.
                 </p>
-              </div>
-              <div className="hidden h-24 w-44 shrink-0 items-end justify-center rounded-lg bg-white/65 sm:flex">
-                <div className="grid grid-cols-3 items-end gap-1.5">
-                  <span className="h-10 w-7 rounded-t-md bg-orange-200" />
-                  <span className="h-16 w-8 rounded-t-md bg-orange-400" />
-                  <span className="h-12 w-7 rounded-t-md bg-emerald-300" />
-                </div>
               </div>
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <Label htmlFor="preferred-area" className="text-sm font-black text-slate-950">Preferred location</Label>
-            <input id="preferred-area" value={savedPreferences.preferredArea} onChange={(event) => setSavedPreferences((current) => ({ ...current, preferredArea: event.target.value }))} placeholder="Barangay, street, school, or workplace" className="mt-3 h-12 w-full rounded-lg border border-slate-200 px-4 outline-none focus:border-orange-300" />
+          <section className="border-b border-[#E8DED1] py-5">
+            <Label htmlFor="preferred-area" className="text-base font-semibold text-[#302820]">Preferred location</Label>
+            <input id="preferred-area" value={savedPreferences.preferredArea} onChange={(event) => setSavedPreferences((current) => ({ ...current, preferredArea: event.target.value }))} placeholder="Barangay, street, school, or workplace" className="mt-2 h-12 w-full rounded-xl border border-[#E8DED1] px-4 text-base text-[#302820] outline-none focus:border-[#8B735B] focus:ring-2 focus:ring-[#8B735B]/10" />
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="border-b border-[#E8DED1] py-5">
             <div className="mb-5 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#F3EFEA] text-[#8B735B]">
                 <Tag className="h-5 w-5" />
               </div>
-              <h3 className="text-xl font-black text-slate-950">Price Range</h3>
+              <h3 className="text-lg font-semibold text-[#302820]">Price Range</h3>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
@@ -656,8 +664,8 @@ function TenantBrowse() {
                           event.stopPropagation();
                           applyPriceRange(chip.value);
                         }}
-                        className={`min-h-12 rounded-lg border px-3 text-sm font-black transition ${
-                          active ? "border-violet-500 bg-violet-50 text-violet-700 shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:bg-orange-50"
+                        className={`min-h-11 rounded-lg border px-3 text-sm font-semibold transition ${
+                          active ? "border-[#8B735B] bg-[#F3EFEA] text-[#8B735B]" : "border-[#E8DED1] bg-white text-[#756A60] hover:bg-[#FAF8F5] hover:text-[#8B735B]"
                         }`}
                       >
                         {chip.label}
@@ -669,12 +677,12 @@ function TenantBrowse() {
             )}
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="border-b border-[#E8DED1] py-5">
             <div className="mb-5 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#F3EFEA] text-[#8B735B]">
                 <Bed className="h-5 w-5" />
               </div>
-              <h3 className="text-xl font-black text-slate-950">Bedrooms</h3>
+              <h3 className="text-lg font-semibold text-[#302820]">Bedrooms</h3>
             </div>
             <input
               type="text"
@@ -682,52 +690,53 @@ function TenantBrowse() {
               placeholder="Any beds"
               onClick={(event) => event.stopPropagation()}
               onChange={(event) => setBedrooms(event.target.value.trim() || "any")}
-              className="h-14 w-full rounded-lg border border-slate-200 bg-white px-4 text-base font-bold text-slate-800 outline-none transition placeholder:text-slate-500 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
+              className="h-12 w-full rounded-xl border border-[#E8DED1] bg-white px-4 text-base font-semibold text-[#302820] outline-none transition placeholder:text-[#8B8178] focus:border-[#8B735B] focus:ring-2 focus:ring-[#8B735B]/10"
             />
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="py-5">
             <div className="mb-5 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#F3EFEA] text-[#8B735B]">
                 <Sofa className="h-5 w-5" />
               </div>
-              <h3 className="text-xl font-black text-slate-950">Amenities</h3>
+              <h3 className="text-lg font-semibold text-[#302820]">Amenities</h3>
             </div>
             <div className="space-y-3">
-              <AmenityToggle icon={PawPrint} label="Pet Friendly" checked={petFriendly} onChange={setPetFriendly} tone="bg-violet-50 text-violet-600" />
-              <AmenityToggle icon={Car} label="Parking" checked={parking} onChange={setParking} tone="bg-blue-50 text-blue-600" />
-              <AmenityToggle icon={Sofa} label="Fully Furnished" checked={furnished} onChange={setFurnished} tone="bg-orange-50 text-orange-600" />
-              <AmenityToggle icon={Sofa} label="Wi-Fi" checked={savedPreferences.wifi} onChange={(wifi) => setSavedPreferences((current) => ({ ...current, wifi }))} tone="bg-cyan-50 text-cyan-600" />
-              <AmenityToggle icon={Sofa} label="Air Conditioning" checked={savedPreferences.ac} onChange={(ac) => setSavedPreferences((current) => ({ ...current, ac }))} tone="bg-sky-50 text-sky-600" />
-              <AmenityToggle icon={Sofa} label="Laundry Area" checked={savedPreferences.laundryArea} onChange={(laundryArea) => setSavedPreferences((current) => ({ ...current, laundryArea }))} tone="bg-indigo-50 text-indigo-600" />
+              <AmenityToggle icon={PawPrint} label="Pet Friendly" checked={petFriendly} onChange={setPetFriendly} tone="bg-[#F3EFEA] text-[#8B735B]" />
+              <AmenityToggle icon={Car} label="Parking" checked={parking} onChange={setParking} tone="bg-[#F3EFEA] text-[#8B735B]" />
+              <AmenityToggle icon={Sofa} label="Fully Furnished" checked={furnished} onChange={setFurnished} tone="bg-[#F3EFEA] text-[#8B735B]" />
+              <AmenityToggle icon={Sofa} label="Wi-Fi" checked={savedPreferences.wifi} onChange={(wifi) => setSavedPreferences((current) => ({ ...current, wifi }))} tone="bg-[#F3EFEA] text-[#8B735B]" />
+              <AmenityToggle icon={Sofa} label="Air Conditioning" checked={savedPreferences.ac} onChange={(ac) => setSavedPreferences((current) => ({ ...current, ac }))} tone="bg-[#F3EFEA] text-[#8B735B]" />
+              <AmenityToggle icon={Sofa} label="Laundry Area" checked={savedPreferences.laundryArea} onChange={(laundryArea) => setSavedPreferences((current) => ({ ...current, laundryArea }))} tone="bg-[#F3EFEA] text-[#8B735B]" />
             </div>
           </section>
+          </div>
 
-          <div className="grid gap-3">
-            <Button onClick={saveBrowsePreferences} className="h-14 rounded-lg bg-orange-500 text-base font-black text-white shadow-lg shadow-orange-200 hover:bg-orange-600">
+          <div className="grid gap-3 border-t border-[#E8DED1] bg-[#FAF8F5] px-6 py-5 sm:px-7">
+            <Button onClick={saveBrowsePreferences} className="h-12 rounded-[10px] bg-[#8B735B] text-base font-semibold text-white shadow-sm hover:bg-[#75614E]">
               <Bookmark className="mr-2 h-5 w-5" />
               Save Recommendation Preferences
             </Button>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Button variant="outline" onClick={restoreSavedPreferences} className="h-12 rounded-lg border-slate-200 font-black text-slate-700 hover:bg-slate-50">
+              <Button variant="outline" onClick={restoreSavedPreferences} className="h-11 rounded-[10px] border-[#E8DED1] bg-white font-semibold text-[#756A60] hover:bg-[#F3EFEA] hover:text-[#8B735B]">
                 <Clock className="mr-2 h-5 w-5" />
                 Restore Saved Preferences
               </Button>
-              <Button variant="outline" onClick={resetPreferences} className="h-12 rounded-lg border-orange-300 font-black text-orange-600 hover:bg-orange-50">
+              <Button variant="outline" onClick={resetPreferences} className="h-11 rounded-[10px] border-[#E8DED1] bg-white font-semibold text-[#756A60] hover:bg-[#F3EFEA] hover:text-[#8B735B]">
                 <RotateCcw className="mr-2 h-5 w-5" />
                 Reset Preferences
               </Button>
-              <Button variant="outline" onClick={() => setPreferencesOpen(false)} className="h-12 rounded-lg border-slate-200 font-black text-slate-700 hover:bg-slate-50">
+              <Button variant="outline" onClick={() => setPreferencesOpen(false)} className="h-11 rounded-[10px] border-[#E8DED1] bg-white font-semibold text-[#756A60] hover:bg-[#F3EFEA] hover:text-[#8B735B]">
                 Cancel
               </Button>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 rounded-lg border border-orange-100 bg-orange-50 p-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-orange-600 shadow-sm">
+          <div className="mx-6 mb-5 flex items-center gap-3 rounded-xl border border-[#E8DED1] bg-white p-4 sm:mx-7">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F3EFEA] text-[#8B735B]">
               <ShieldCheck className="h-5 w-5" />
             </div>
-            <p className="text-sm font-semibold leading-6 text-slate-600">Your preferences are private and stay connected to your tenant account.</p>
+            <p className="text-sm font-medium leading-6 text-[#756A60]">Your preferences are private and stay connected to your tenant account.</p>
           </div>
         </div>
       </DialogContent>
@@ -739,14 +748,14 @@ function TenantBrowse() {
     const locationText = formatApartmentLocation(apartment);
     const favorite = isFavorite(apartment.id);
     const favoriteUpdating = updatingFavoriteIds.includes(apartment.id);
-    const imageUrl = apartment.image || apartment.images?.[0];
+    const imageUrl = getApartmentImageUrl(apartment);
     const viewCount = getViewCount(apartment.id);
 
     return (
       <article className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(15,23,42,0.12)]">
         <div className="relative aspect-[4/3] bg-slate-100">
           {imageUrl ? (
-            <ImageWithFallback src={getImageUrl(imageUrl)} alt={apartment.title} className="h-full w-full object-cover" />
+            <ImageWithFallback src={imageUrl} alt={apartment.title} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <Building2 className="h-12 w-12 text-slate-300" />
@@ -756,7 +765,7 @@ function TenantBrowse() {
             {activeNearbySearch && apartment.distanceMeters !== undefined && <Badge className="rounded-md bg-slate-950 text-white">{formatDistance(apartment.distanceMeters)}</Badge>}
             <Badge className={`rounded-md ${STATUS_CLASS[status] ?? STATUS_CLASS.available}`}>{STATUS_LABEL[status] ?? "Available"}</Badge>
             {isVerifiedListing(apartment) && <VerifiedBadge label="Verified Landlord" className="bg-white/95 shadow-lg backdrop-blur-sm" />}
-            {apartment.petFriendly && <Badge className="rounded-md bg-violet-500 text-white">Pet Friendly</Badge>}
+            {apartment.petFriendly && <Badge className="rounded-md border border-[#e8ded1] bg-[#f3efeA] text-[#756a60]">Pet Friendly</Badge>}
           </div>
           <button
             type="button"
@@ -799,59 +808,10 @@ function TenantBrowse() {
 
   return (
     <Dialog open={preferencesOpen} onOpenChange={setPreferencesOpen}>
-      <div className="fixed inset-0 z-50 overflow-hidden bg-[#f8fafc]">
+      <div className="tenant-browse fixed inset-0 z-50 overflow-hidden bg-white">
       <TenantMobileNavigation active="apartments" />
       <div className="flex h-full">
-        <aside className="app-sidebar hidden h-full w-64 shrink-0 flex-col bg-[#07142f] shadow-2xl shadow-slate-900/40 lg:flex">
-          <div className="app-sidebar-brand px-5 pb-5 pt-6">
-            <Link to="/browse" className="flex items-center gap-2.5">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-950/30">
-                <HomeIcon className="h-6 w-6 fill-white/20 text-white" />
-              </div>
-              <div>
-                <span className="text-lg font-black tracking-tight text-white">Rent<span className="text-orange-500">Iloilo</span></span>
-                <p className="-mt-0.5 text-xs font-medium text-white/50">{portalLabel}</p>
-              </div>
-            </Link>
-          </div>
-
-          <div className="px-4 pb-5">
-            <div className="app-sidebar-profile flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.07] px-3 py-3 shadow-inner shadow-white/5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-lime-300 to-orange-500 text-sm font-black text-white shadow">
-                {user?.avatar ? <img src={user.avatar} alt="Profile" className="h-full w-full object-cover" /> : user?.name?.[0]?.toUpperCase() ?? "U"}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-white">{displayName || "Welcome"}</p>
-                <p className="truncate text-xs text-white/40">{user?.email ?? ""}</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-white/40" />
-            </div>
-          </div>
-
-          <nav className="space-y-1 px-3 py-3">
-            <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-widest text-white/35">Main</p>
-            <SidebarLink icon={Search} label="Apartments" href="/browse" active />
-            <SidebarLink icon={Heart} label="My Favorites" href="/favorites" badge={userFavorites.length} />
-            <SidebarLink icon={Sparkles} label="Suggested" href="/dashboard?section=suggested" />
-            <SidebarLink icon={TrendingUp} label="Popular" href="/dashboard?section=popular" />
-          </nav>
-
-          <nav className="space-y-1 border-t border-white/10 px-3 py-4">
-            <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-widest text-white/35">Account</p>
-            <SidebarLink icon={Settings} label="Settings" href="/dashboard?section=settings" />
-            <SidebarLink icon={TriangleAlert} label="Report a Problem" href="/dashboard?section=report" />
-            <SidebarLink icon={HelpCircle} label="Help" href="/dashboard?section=help" />
-          </nav>
-
-          <div className="mt-auto border-t border-white/10 px-4 py-4">
-            <LogoutConfirmation onConfirm={handleLogout}>
-              <button className="app-sidebar-logout flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500/10 hover:text-red-300">
-                <LogOut className="h-4 w-4" />
-                Log Out
-              </button>
-            </LogoutConfirmation>
-          </div>
-        </aside>
+        <div className="hidden h-full w-64 shrink-0 lg:block"><TenantSidebar active="apartments" /></div>
 
         <main className="app-shell-main min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div className="app-shell-content app-shell-content-mobile-nav mx-auto max-w-[1500px] px-4 py-6 md:px-8 lg:px-10">
@@ -873,11 +833,10 @@ function TenantBrowse() {
                   <Sparkles className="h-4 w-4" />
                   Find Your Next Home
                 </div>
-                <h1 className="text-4xl font-black tracking-tight text-slate-950 md:text-6xl">Available <span className="text-orange-600">Apartments</span></h1>
+                <h1 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">Available Apartments</h1>
                 <p className="mt-4 text-lg font-medium text-slate-600">{activeNearbySearch ? `${filteredApartments.length} apartments within 500 m of ${activeNearbySearch.target} · nearest first` : `${filteredApartments.length} ${filteredApartments.length === 1 ? "apartment" : "apartments"} found in La Paz`}</p>
               </div>
-              <div className="pointer-events-none absolute bottom-0 right-10 hidden h-32 w-72 rounded-t-lg bg-white/70 md:block" />
-              <div className="pointer-events-none absolute bottom-10 right-24 hidden h-16 w-36 rounded-lg bg-orange-200 md:block" />
+              <div className="pointer-events-none absolute bottom-0 right-4 hidden w-[43%] text-[#b9a58f] md:block"><ApartmentLineArt /></div>
             </section>
 
             <section className="mt-6 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-[0_14px_35px_rgba(15,23,42,0.07)] xl:flex-row xl:items-center xl:justify-between">
@@ -999,7 +958,7 @@ function Metric({ icon: Icon, value, label }: { icon: ComponentType<{ className?
 
 function SortButton({ icon: Icon, label, active, onClick }: { icon: ComponentType<{ className?: string }>; label: string; active: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`inline-flex h-12 items-center gap-2 rounded-lg px-5 text-sm font-black transition ${active ? "bg-orange-500 text-white shadow-lg shadow-orange-200" : "text-slate-700 hover:bg-slate-50"}`}>
+    <button onClick={onClick} className={`inline-flex h-12 items-center gap-2 rounded-lg px-5 text-sm font-bold transition ${active ? "bg-[#8b735b] text-white shadow-sm" : "text-[#302820] hover:bg-[#faf8f5]"}`}>
       <Icon className="h-4 w-4" />
       {label}
     </button>
@@ -1017,14 +976,14 @@ function PriceField({
 }) {
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-black text-slate-950">{label}</Label>
-      <div className="flex h-14 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 shadow-sm focus-within:border-orange-300 focus-within:ring-2 focus-within:ring-orange-100">
+      <Label className="text-sm font-semibold text-[#302820]">{label}</Label>
+      <div className="flex h-12 items-center gap-3 rounded-xl border border-[#E8DED1] bg-white px-4 focus-within:border-[#8B735B] focus-within:ring-2 focus-within:ring-[#8B735B]/10">
         <span className="text-base font-black text-slate-500">₱</span>
         <input
           type="number"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="min-w-0 flex-1 bg-transparent text-lg font-black text-slate-800 outline-none"
+          className="min-w-0 flex-1 bg-transparent text-base font-semibold text-[#302820] outline-none"
         />
       </div>
     </div>
@@ -1045,12 +1004,12 @@ function AmenityToggle({
   tone: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+    <div className="flex min-h-14 items-center justify-between gap-4 border-b border-[#EEE7DF] py-2.5 last:border-b-0">
       <div className="flex items-center gap-3">
         <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${tone}`}>
           <Icon className="h-5 w-5" />
         </div>
-        <span className="text-base font-bold text-slate-800">{label}</span>
+        <span className="text-base font-semibold text-[#302820]">{label}</span>
       </div>
       <Switch checked={checked} onCheckedChange={onChange} />
     </div>

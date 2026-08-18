@@ -15,6 +15,16 @@ export async function fetchApartmentRatings(apartmentId?: string): Promise<Apart
   return (data ?? []) as ApartmentRatingRow[];
 }
 
+export async function fetchRatingsForApartments(apartmentIds: string[]): Promise<ApartmentRatingRow[]> {
+  if (apartmentIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from("apartment_ratings")
+    .select("id, apartment_id, tenant_id, rating, created_at, updated_at")
+    .in("apartment_id", apartmentIds);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ApartmentRatingRow[];
+}
+
 export function summarizeApartmentRatings(ratings: ApartmentRatingRow[]): {
   byApartment: Map<string, ApartmentRatingStats>;
   platformAverage: number;

@@ -70,10 +70,10 @@ export function TenantMobileNavigation({ active = "apartments" }: TenantMobileNa
   };
 
   const navItemClass = (key: TenantNavSection) =>
-    `flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold transition ${
+    `app-sidebar-nav-item flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition ${
       active === key
-        ? "bg-white text-orange-600 shadow-lg shadow-orange-950/20 ring-1 ring-orange-200"
-        : "text-white/65 hover:bg-white/10 hover:text-white"
+        ? "bg-[#f3efeA] text-[#8b735b]"
+        : "text-[#302820] hover:bg-[#faf8f5] hover:text-[#8b735b]"
     }`;
 
   const NavLink = ({
@@ -93,7 +93,7 @@ export function TenantMobileNavigation({ active = "apartments" }: TenantMobileNa
       <Icon className="h-4 w-4 shrink-0" />
       <span className="min-w-0 flex-1">{label}</span>
       {badge !== undefined && badge > 0 && (
-        <span className="app-sidebar-badge flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-black text-white">
+        <span className="app-sidebar-badge flex min-w-5 items-center justify-center rounded-full bg-[#8b735b] px-1.5 py-0.5 text-[10px] font-bold text-white">
           {badge}
         </span>
       )}
@@ -106,7 +106,7 @@ export function TenantMobileNavigation({ active = "apartments" }: TenantMobileNa
       <button
         aria-label="Open navigation"
         onClick={() => setOpen(true)}
-        className="app-sidebar-trigger fixed left-4 top-4 z-[90] flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500 text-white shadow-lg shadow-orange-300/40 transition hover:bg-orange-600 lg:hidden"
+        className="app-sidebar-trigger fixed left-4 top-4 z-[90] flex h-10 w-10 items-center justify-center rounded-lg bg-[#8b735b] text-white shadow-md transition hover:bg-[#75604d] lg:hidden"
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -118,11 +118,11 @@ export function TenantMobileNavigation({ active = "apartments" }: TenantMobileNa
             className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
-          <aside className="app-sidebar-drawer relative h-full w-64 max-w-[86vw] bg-[#07142f] shadow-2xl">
+          <aside className="app-sidebar-drawer relative h-full w-64 max-w-[86vw] border-r border-[#e8ded1] bg-white shadow-2xl">
             <button
               aria-label="Close navigation"
               onClick={() => setOpen(false)}
-              className="app-sidebar-close absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/60 transition hover:bg-white/20 hover:text-white"
+              className="app-sidebar-close absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-[#e8ded1] bg-white text-[#756a60] transition hover:bg-[#faf8f5] hover:text-[#8b735b]"
             >
               <X className="h-4 w-4" />
             </button>
@@ -130,48 +130,46 @@ export function TenantMobileNavigation({ active = "apartments" }: TenantMobileNa
             <div className="app-sidebar flex h-full w-full flex-col overflow-y-auto">
               <div className="app-sidebar-brand px-5 pb-5 pt-6">
                 <Link to="/browse" onClick={() => setOpen(false)} className="flex items-center gap-2.5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-950/30">
-                    <Home className="h-6 w-6 fill-white/20 text-white" />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#e8ded1] bg-[#faf8f5] text-[#8b735b]">
+                    <Home className="h-6 w-6" />
                   </div>
                   <div>
-                    <span className="text-lg font-black tracking-tight text-white">
-                      Rent<span className="text-orange-500">Iloilo</span>
-                    </span>
-                    <p className="-mt-0.5 text-xs font-medium text-white/50">{portalLabel}</p>
+                    <span className="text-xl font-bold tracking-tight text-[#302820]">AptFindr</span>
+                    <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#756a60]">La Paz, Iloilo City</p>
                   </div>
                 </Link>
               </div>
 
               <div className="px-4 pb-5">
-                <div className="app-sidebar-profile flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.07] px-3 py-3 shadow-inner shadow-white/5">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-lime-300 to-orange-500 text-sm font-black text-white shadow">
+                <div className="app-sidebar-profile flex items-center gap-3 rounded-lg border border-[#e8ded1] bg-[#faf8f5] px-3 py-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#8b735b] text-sm font-bold text-white">
                     {user?.avatar ? <img src={user.avatar} alt="Profile" className="h-full w-full object-cover" /> : user?.name?.[0]?.toUpperCase() ?? "U"}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-white">{displayName || "Welcome"}</p>
-                    <p className="truncate text-xs text-white/40">{user?.email ?? ""}</p>
+                    <p className="truncate text-sm font-bold text-[#302820]">{displayName || "Welcome"}</p>
+                    <p className="truncate text-xs text-[#756a60]">{portalLabel}</p>
                   </div>
                 </div>
               </div>
 
               <nav className="space-y-1 px-3 py-3">
-                <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-widest text-orange-400">Main</p>
+                <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756a60]">Main</p>
                 <NavLink icon={Search} label="Apartments" to="/browse" section="apartments" />
                 <NavLink icon={Heart} label="My Favorites" to="/favorites" section="favorites" badge={favorites.length} />
                 <NavLink icon={Sparkles} label="Suggested" to="/dashboard?section=suggested" section="suggested" />
                 <NavLink icon={TrendingUp} label="Popular" to="/dashboard?section=popular" section="popular" />
               </nav>
 
-              <nav className="space-y-1 border-t border-white/10 px-3 py-4">
-                <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-widest text-white/35">Account</p>
+              <nav className="space-y-1 border-t border-[#e8ded1] px-3 py-4">
+                <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756a60]">Account</p>
                 <NavLink icon={Settings} label="Settings" to="/dashboard?section=settings" section="settings" />
                 <NavLink icon={TriangleAlert} label="Report a Problem" to="/dashboard?section=report" section="report" />
                 <NavLink icon={HelpCircle} label="Help" to="/dashboard?section=help" section="help" />
               </nav>
 
-              <div className="mt-auto border-t border-white/10 px-4 py-4">
+              <div className="mt-auto border-t border-[#e8ded1] px-4 py-4">
                 <LogoutConfirmation onConfirm={handleLogout}>
-                  <button className="app-sidebar-logout flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500/10 hover:text-red-300">
+                  <button className="app-sidebar-logout flex w-full items-center gap-3 rounded-lg border border-[#e8ded1] bg-white px-3 py-3 text-sm font-semibold text-[#756a60] transition hover:border-red-100 hover:bg-red-50 hover:text-red-700">
                     <LogOut className="h-4 w-4" />
                     Log Out
                   </button>

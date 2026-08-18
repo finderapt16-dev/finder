@@ -61,14 +61,30 @@ type UserAlerts = {
   quietEnabled: boolean;
 };
 
-const inputClass = "h-11 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-orange-300 focus:ring-2 focus:ring-orange-100";
-const textareaClass = "min-h-28 w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-orange-300 focus:ring-2 focus:ring-orange-100";
+const inputClass = "h-12 w-full rounded-xl border border-[#e8ded1] bg-white px-4 text-base font-medium text-[#302820] outline-none transition duration-200 placeholder:text-[#8b8178] focus:border-[#8b735b] focus:ring-2 focus:ring-[#8b735b]/10";
+const textareaClass = "min-h-28 w-full resize-none rounded-xl border border-[#e8ded1] bg-white px-4 py-3 text-base font-medium text-[#302820] outline-none transition duration-200 placeholder:text-[#8b8178] focus:border-[#8b735b] focus:ring-2 focus:ring-[#8b735b]/10";
+
+function SettingsLineArt() {
+  return (
+    <svg aria-hidden="true" className="tenant-architecture" viewBox="0 0 520 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g className="tenant-architecture-lines" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 194h484M95 194v-70h268v70M76 124h307M113 194v-43h45v43m171 0v-43h24v43" />
+        <path d="M141 124V48h102v76M156 64h72v45h-72M173 78h38m-30 15h22" />
+        <path d="M272 124V67h99v57M288 83h67m-67 18h67M306 76v14m29 4v14" />
+        <path d="M407 194V80m0 0c0-17 13-29 30-29h20M394 80h26M457 51l18 11-18 11" />
+        <path d="M48 194v-34h39v34M68 160c-1-25-6-46-16-64m16 64c2-28 9-51 23-69m-23 69c-10-18-23-32-39-42m39 26c11-13 24-22 39-27" />
+        <path d="M405 120h66v53h-66zM425 120v-12c0-9 7-16 13-16s13 7 13 16v12M430 145h16M438 139v13" />
+        <path d="m477 31 2.5 6.5L486 40l-6.5 2.5L477 49l-2.5-6.5L468 40l6.5-2.5L477 31Z" />
+      </g>
+    </svg>
+  );
+}
 
 const Toggle = ({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) => (
   <button
     type="button"
     onClick={() => !disabled && onChange(!checked)}
-    className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${checked ? "bg-orange-500" : "bg-slate-200"} ${disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
+    className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${checked ? "bg-[#8b735b]" : "bg-[#e8ded1]"} ${disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
   >
     <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition ${checked ? "translate-x-6" : "translate-x-1"}`} />
   </button>
@@ -76,20 +92,20 @@ const Toggle = ({ checked, onChange, disabled }: { checked: boolean; onChange: (
 
 const Field = ({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) => (
   <div className="space-y-1.5">
-    <label className="block text-xs font-black uppercase tracking-wide text-slate-500">{label}</label>
+    <label className="block text-xs font-black uppercase tracking-wide text-[#756a60]">{label}</label>
     {children}
-    {hint && <p className="text-xs font-medium text-slate-400">{hint}</p>}
+    {hint && <p className="text-xs font-medium text-[#8b8178]">{hint}</p>}
   </div>
 );
 
-const CardTitle = ({ icon: Icon, title, subtitle, tone = "bg-orange-50 text-orange-600" }: { icon: typeof User; title: string; subtitle?: string; tone?: string }) => (
+const CardTitle = ({ icon: Icon, title, subtitle, tone = "bg-[#f3efea] text-[#8b735b]" }: { icon: typeof User; title: string; subtitle?: string; tone?: string }) => (
   <div className="mb-5 flex items-center gap-3">
     <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tone}`}>
       <Icon className="h-5 w-5" />
     </div>
     <div>
-      <h3 className="font-black text-slate-950">{title}</h3>
-      {subtitle && <p className="text-sm font-medium text-slate-500">{subtitle}</p>}
+      <h3 className="font-black text-[#302820]">{title}</h3>
+      {subtitle && <p className="text-sm font-medium text-[#756a60]">{subtitle}</p>}
     </div>
   </div>
 );
@@ -120,10 +136,10 @@ function profileStateFromUser(user: ReturnType<typeof useAuth>["user"]): UserSet
 }
 
 const AlertRow = ({ label, hint, pushVal, onPush }: { label: string; hint?: string; pushVal: boolean; onPush: (v: boolean) => void }) => (
-  <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-4 last:border-0">
+  <div className="flex items-start justify-between gap-4 border-b border-[#eee7df] py-4 last:border-0">
     <div className="min-w-0 flex-1">
-      <p className="text-sm font-bold text-slate-800">{label}</p>
-      {hint && <p className="mt-0.5 text-xs font-medium text-slate-400">{hint}</p>}
+      <p className="text-sm font-bold text-[#302820]">{label}</p>
+      {hint && <p className="mt-0.5 text-xs font-medium text-[#8b8178]">{hint}</p>}
     </div>
     <Toggle checked={pushVal} onChange={onPush} />
   </div>
@@ -446,30 +462,30 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
 
   const renderProfileTab = () => (
     <div className="space-y-6">
-      <section className="rounded-lg border border-orange-100 bg-gradient-to-r from-orange-50 via-white to-rose-50 p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+      <section className="settings-profile-summary rounded-xl border border-[#e8ded1] bg-gradient-to-r from-[#faf8f5] via-white to-[#f8f4ef] p-6 shadow-[0_8px_24px_rgba(48,40,32,0.06)]">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
           <div className="relative h-28 w-28 shrink-0">
-            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-lime-300 to-orange-500 text-3xl font-black text-white shadow-lg">
+            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-xl bg-[#8b735b] text-3xl font-black text-white shadow-md">
               {profile.avatar ? <img src={profile.avatar} alt="Profile" className="h-full w-full object-cover" /> : (profile.firstName[0] || user?.name?.[0] || "U").toUpperCase()}
             </div>
-            <div className="absolute -bottom-3 -right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white text-orange-500 shadow-lg">
+            <div className="absolute -bottom-3 -right-3 flex h-10 w-10 items-center justify-center rounded-full border border-[#e8ded1] bg-white text-[#8b735b] shadow-md">
               <Camera className="h-4 w-4" />
             </div>
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-2xl font-black text-slate-950">{fullName || "Not provided"}</h2>
-            <Badge className="mt-3 rounded-full bg-orange-50 text-orange-700 ring-1 ring-orange-200">{roleLabel}</Badge>
-            <p className="mt-3 text-sm font-medium text-slate-500">{profile.email || "Not provided"}</p>
+            <h2 className="text-2xl font-black text-[#302820]">{fullName || "Not provided"}</h2>
+            <Badge className="mt-3 rounded-full bg-[#f3efea] text-[#8b735b] ring-1 ring-[#e8ded1]">{roleLabel}</Badge>
+            <p className="mt-3 text-sm font-medium text-[#756a60]">{profile.email || "Not provided"}</p>
             {!profile.avatar && <p className="mt-1 text-xs font-semibold text-slate-400">No profile photo uploaded</p>}
           </div>
           <div className="flex flex-col gap-3 lg:w-56">
-            <label className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-orange-500 to-rose-500 px-4 text-sm font-black text-white shadow-lg transition hover:from-orange-600 hover:to-rose-600">
+            <label className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#8b735b] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[#75614e]">
               <Upload className="h-4 w-4" />
               Upload Photo
               <input type="file" accept="image/*" onChange={handleAvatarUpload} className="sr-only" />
             </label>
-            <button type="button" onClick={handleRemoveAvatar} className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50">
-              <Trash2 className="h-4 w-4 text-rose-500" />
+            <button type="button" onClick={handleRemoveAvatar} className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-[#e8ded1] bg-white px-4 text-sm font-black text-[#756a60] shadow-sm transition hover:bg-[#faf8f5] hover:text-[#8b735b]">
+              <Trash2 className="h-4 w-4" />
               Remove Photo
             </button>
             <p className="text-center text-xs font-medium text-slate-400">JPG, PNG, or WebP up to 2MB</p>
@@ -478,15 +494,15 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-4 px-2 text-sm font-black text-slate-950">Settings Menu</h3>
+        <aside className="rounded-xl border border-[#e8ded1] bg-white p-4 shadow-sm">
+          <h3 className="mb-4 px-2 text-sm font-black text-[#302820]">Settings Menu</h3>
           <MenuButton icon={User} label="Personal Information" active={settingsMenu === "personal"} onClick={() => setSettingsMenu("personal")} />
           <MenuButton icon={BriefcaseBusiness} label={roleProfileLabel} active={settingsMenu === "employment"} onClick={() => setSettingsMenu("employment")} />
-          <div className="mt-8 rounded-lg border border-slate-100 bg-slate-50 p-4">
-            <HelpCircle className="mb-3 h-7 w-7 text-orange-500" />
-            <p className="font-black text-slate-950">Need help?</p>
-            <p className="mt-1 text-xs font-medium leading-5 text-slate-500">If you need assistance, please visit our Help Center.</p>
-            <Button variant="outline" onClick={() => navigate("/dashboard?section=help")} className="mt-4 w-full rounded-lg border-rose-200 font-black text-rose-600 hover:bg-rose-50">
+          <div className="mt-8 rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-4">
+            <HelpCircle className="mb-3 h-7 w-7 text-[#8b735b]" />
+            <p className="font-black text-[#302820]">Need help?</p>
+            <p className="mt-1 text-xs font-medium leading-5 text-[#756a60]">If you need assistance, please visit our Help Center.</p>
+            <Button variant="outline" onClick={() => navigate("/dashboard?section=help")} className="mt-4 w-full rounded-lg border-[#e8ded1] font-black text-[#8b735b] hover:bg-[#f3efea]">
               Go to Help Center
             </Button>
           </div>
@@ -526,7 +542,7 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
           )}
 
           {settingsMenu === "employment" && (
-            <DisclosureCard icon={BriefcaseBusiness} title={roleProfileLabel} subtitle={roleProfileSubtitle} tone="bg-violet-50 text-violet-600">
+            <DisclosureCard icon={BriefcaseBusiness} title={roleProfileLabel} subtitle={roleProfileSubtitle} tone="bg-[#f3efea] text-[#8b735b]">
               {tenantType === "student" ? (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="School">
@@ -670,7 +686,7 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
   const renderSecurityTab = () => (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <CardTitle icon={Lock} title="Password" subtitle={security.passwordLastChanged ? `Last changed: ${new Date(security.passwordLastChanged).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })}` : "Password change date not provided."} tone="bg-blue-50 text-blue-600" />
+        <CardTitle icon={Lock} title="Password" subtitle={security.passwordLastChanged ? `Last changed: ${new Date(security.passwordLastChanged).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })}` : "Password change date not provided."} tone="bg-[#f3efea] text-[#8b735b]" />
         <div className="space-y-4">
           <Field label="Current Password">
             <PasswordField id="current" value={passwordForm.current} visible={visiblePasswords.current} onChange={(value) => setPasswordForm((p) => ({ ...p, current: value }))} placeholder="Current password" />
@@ -681,11 +697,11 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
           <Field label="Confirm New Password">
             <PasswordField id="confirm" value={passwordForm.confirm} visible={visiblePasswords.confirm} onChange={(value) => setPasswordForm((p) => ({ ...p, confirm: value }))} placeholder="Repeat new password" />
           </Field>
-          <Button onClick={handlePasswordChange} className="rounded-lg bg-orange-500 font-black text-white hover:bg-orange-600">Update Password</Button>
+          <Button onClick={handlePasswordChange} className="rounded-lg bg-[#8b735b] font-black text-white hover:bg-[#75614e]">Update Password</Button>
         </div>
       </section>
 
-      <section className="rounded-lg border border-red-100 bg-red-50 p-6 shadow-sm">
+      <section className="settings-danger-zone rounded-lg border border-red-100 bg-red-50 p-6 shadow-sm">
         <CardTitle icon={Trash2} title="Danger Zone" subtitle="Irreversible account actions." tone="bg-white text-red-600" />
         <p className="text-sm font-medium text-slate-600">Once you delete your account, there is no going back. Please be certain.</p>
         <Button variant="destructive" onClick={handleDeleteAccount} className="mt-4 rounded-lg font-black">
@@ -697,37 +713,37 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
   );
 
   return (
-    <div className={embedded ? "pb-6" : "min-h-screen bg-[#f8fafc] pb-12"}>
+    <div className={embedded ? "tenant-settings pb-6" : "min-h-screen bg-[#f8fafc] pb-12"}>
       <div className={embedded ? "" : "mx-auto max-w-7xl px-4 py-8"}>
         {!embedded && (
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 font-bold text-slate-600 hover:bg-orange-50 hover:text-orange-600">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 font-bold text-[#756a60] hover:bg-[#faf8f5] hover:text-[#8b735b]">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
         )}
 
         <div className="mx-auto max-w-6xl space-y-6">
-          <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600 shadow-sm">
-                <SettingsIcon className="h-8 w-8" />
+          <header className="settings-hero relative flex min-h-[170px] items-center overflow-hidden rounded-2xl border border-[#e8ded1] bg-gradient-to-r from-[#faf8f5] to-[#fffdfb] p-6 md:px-8">
+            <div className="relative z-10 max-w-[58%] max-md:max-w-full">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e8ded1] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b735b] shadow-sm">
+                <SettingsIcon className="h-4 w-4" />
+                Account Management
               </div>
-              <div>
-                <h1 className="text-4xl font-black tracking-tight text-slate-950">Settings</h1>
-                <p className="mt-1 text-sm font-medium text-slate-500">Manage your account, preferences, and security settings.</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button className="relative flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm">
+              <h1 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">Settings</h1>
+              <p className="mt-3 text-base font-medium text-[#756a60]">Manage your profile, preferences, security, and account options.</p>
+              <div className="mt-4 flex gap-2">
+              <button className="relative flex h-11 w-11 items-center justify-center rounded-lg border border-[#e8ded1] bg-white text-[#756a60] transition hover:bg-[#faf8f5] hover:text-[#8b735b]">
                 <Bell className="h-5 w-5" />
               </button>
-              <button onClick={() => navigate("/dashboard?section=help")} className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm">
+              <button onClick={() => navigate("/dashboard?section=help")} className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#e8ded1] bg-white text-[#756a60] transition hover:bg-[#faf8f5] hover:text-[#8b735b]">
                 <HelpCircle className="h-5 w-5" />
               </button>
+              </div>
             </div>
+            <div className="pointer-events-none absolute inset-y-0 right-3 hidden w-[43%] items-end text-[#b9a58f] md:flex"><SettingsLineArt /></div>
           </header>
 
-          <nav className="grid rounded-lg border border-slate-200 bg-white p-1 shadow-sm sm:grid-cols-3">
+          <nav className="grid rounded-xl border border-[#e8ded1] bg-white p-1 shadow-sm sm:grid-cols-3">
             <TabButton icon={User} label="Profile" active={settingsTab === "profile"} onClick={() => setSettingsTab("profile")} />
             <TabButton icon={Bell} label="Alerts" active={settingsTab === "alerts"} onClick={() => setSettingsTab("alerts")} />
             <TabButton icon={Shield} label="Security" active={settingsTab === "security"} onClick={() => setSettingsTab("security")} />
@@ -744,7 +760,7 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
 
 function TabButton({ icon: Icon, label, active, onClick }: { icon: typeof User; label: string; active: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`flex h-14 items-center justify-center gap-2 rounded-md text-sm font-black transition ${active ? "bg-orange-50 text-orange-600 ring-1 ring-orange-100" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}`}>
+    <button onClick={onClick} className={`flex h-14 items-center justify-center gap-2 rounded-lg text-sm font-black transition ${active ? "bg-[#f3efea] text-[#8b735b] ring-1 ring-[#e8ded1]" : "text-[#756a60] hover:bg-[#faf8f5] hover:text-[#8b735b]"}`}>
       <Icon className="h-4 w-4" />
       {label}
     </button>
@@ -753,7 +769,7 @@ function TabButton({ icon: Icon, label, active, onClick }: { icon: typeof User; 
 
 function MenuButton({ icon: Icon, label, active, onClick }: { icon: typeof User; label: string; active: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`mb-2 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-bold transition ${active ? "bg-orange-50 text-orange-600" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
+    <button onClick={onClick} className={`mb-2 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-bold transition ${active ? "bg-[#f3efea] text-[#8b735b]" : "text-[#756a60] hover:bg-[#faf8f5] hover:text-[#8b735b]"}`}>
       <Icon className="h-4 w-4" />
       {label}
     </button>
@@ -762,14 +778,14 @@ function MenuButton({ icon: Icon, label, active, onClick }: { icon: typeof User;
 
 function DisclosureCard({ icon: Icon, title, subtitle, tone, children }: { icon: typeof User; title: string; subtitle: string; tone: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-xl border border-[#e8ded1] bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center gap-4">
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tone}`}>
+        <div className={`settings-card-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tone}`}>
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="font-black text-slate-950">{title}</h3>
-          <p className="text-sm font-medium text-slate-500">{subtitle}</p>
+          <h3 className="font-black text-[#302820]">{title}</h3>
+          <p className="text-sm font-medium text-[#756a60]">{subtitle}</p>
         </div>
         <ChevronRight className="h-5 w-5 text-slate-400" />
       </div>
@@ -780,15 +796,15 @@ function DisclosureCard({ icon: Icon, title, subtitle, tone, children }: { icon:
 
 function SaveBar({ onSave }: { onSave: () => void }) {
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-orange-100 bg-orange-50 p-5 shadow-sm sm:flex-row sm:items-center">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-600 shadow-sm">
+    <section className="settings-save-bar flex flex-col gap-4 rounded-xl border border-[#e8ded1] bg-[#faf8f5] p-5 shadow-sm sm:flex-row sm:items-center">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white text-[#8b735b] shadow-sm ring-1 ring-[#e8ded1]">
         <Shield className="h-6 w-6" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-black text-slate-950">Your changes are saved securely.</p>
-        <p className="text-sm font-medium text-slate-500">Make sure to save your changes before leaving.</p>
+        <p className="font-black text-[#302820]">Your changes are saved securely.</p>
+        <p className="text-sm font-medium text-[#756a60]">Make sure to save your changes before leaving.</p>
       </div>
-      <Button onClick={onSave} className="rounded-lg bg-gradient-to-r from-orange-500 to-rose-500 px-8 font-black text-white hover:from-orange-600 hover:to-rose-600">
+      <Button onClick={onSave} className="rounded-lg bg-[#8b735b] px-8 font-black text-white hover:bg-[#75614e]">
         <Check className="mr-2 h-4 w-4" />
         Save Changes
       </Button>

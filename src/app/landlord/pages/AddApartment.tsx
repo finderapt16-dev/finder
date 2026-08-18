@@ -1,4 +1,5 @@
 import { LocationPicker } from "@/app/shared/components/common/LocationPicker";
+import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
 import { MultiImageUploader, type UploadedImage } from "@/app/shared/components/common/MultiImageUploader";
 import { Alert, AlertDescription, AlertTitle } from "@/app/shared/components/ui/alert";
 import { Button } from "@/app/shared/components/ui/button";
@@ -41,19 +42,24 @@ import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
+  Bell,
   Building2,
   Camera,
   Check,
   Cloud, CloudUpload,
   FileText,
   Home,
+  HelpCircle,
   ListChecks,
   MapPin,
+  Menu,
   Plus,
   RotateCcw,
+  Settings,
   ShieldCheck,
-  Sparkles,
   Trash2,
+  TrendingUp,
+  LogOut,
   Upload, X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -193,7 +199,8 @@ const INITIAL_VERIFICATION_DATA = {
 
 export function AddApartment() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { refreshApartments } = useApartmentsContext();
 
   // ── Wizard State ───────────────────────────────────────────────────────
@@ -829,31 +836,32 @@ export function AddApartment() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 pb-20 relative overflow-hidden">
-      <div className="absolute top-20 right-0 w-96 h-96 bg-orange-300/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-300/20 rounded-full blur-3xl" />
-
-      <div className="container mx-auto px-4 py-8 relative z-10">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(-1)}
-          className="mb-6 text-slate-600 hover:text-amber-600 font-bold"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-
-        <div className="text-center mb-8">
-          <div className="inline-block mb-3 px-4 py-1.5 bg-white/70 backdrop-blur-md border border-amber-200/50 rounded-full">
-            <span className="text-xs font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent flex items-center gap-2 uppercase">
-              <Sparkles className="h-3.5 w-3.5" /> Management
-            </span>
+    <div className="app-shell landlord-shell landlord-add-property fixed inset-0 z-50 overflow-hidden bg-[#FCFAF7]">
+      <div className="app-shell-frame flex h-full">
+        <aside className="app-shell-sidebar hidden h-full w-60 shrink-0 flex-col border-r border-[#E8DED1] bg-white lg:flex">
+          <div className="app-sidebar flex h-full flex-col overflow-y-auto">
+            <div className="app-sidebar-brand px-5 pb-5 pt-6"><div className="flex items-center gap-2.5"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#E8DED1] bg-[#FAF8F5] text-[#8B735B]"><Home className="h-6 w-6" /></span><div><span className="block text-xl font-bold tracking-tight text-[#302820]">AptFindr</span><p className="text-xs font-medium text-[#756A60]">Landlord Portal</p></div></div></div>
+            <div className="px-4 pb-5"><div className="app-sidebar-profile flex items-center gap-3 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] px-3 py-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#8B735B] text-sm font-bold text-white">{user?.avatar ? <img src={user.avatar} alt="Profile" className="h-full w-full object-cover" /> : user?.name?.[0]?.toUpperCase() || ""}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-[#302820]">{user?.name || "Name unavailable"}</p><p className="truncate text-xs text-[#756A60]">{user?.email || ""}</p></div></div></div>
+            <nav className="space-y-1 px-3 py-3"><p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]">Main<span className="h-px w-5 bg-[#8B735B]/45" /></p>{[{ label: "My Properties", icon: Building2, path: "/dashboard?section=overview" }, { label: "Activity", icon: TrendingUp, path: "/dashboard?section=activity" }, { label: "Notifications", icon: Bell, path: "/dashboard?section=notifications" }].map(({ label, icon: Icon, path }) => <button key={label} onClick={() => navigate(path)} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] transition-all hover:bg-[#FAF8F5] hover:text-[#8B735B]"><Icon className="h-4 w-4" />{label}</button>)}</nav>
+            <nav className="space-y-1 border-t border-[#E8DED1] px-3 py-4"><p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]">Market<span className="h-px w-5 bg-[#8B735B]/45" /></p><button onClick={() => navigate("/browse")} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] transition-all hover:bg-[#FAF8F5] hover:text-[#8B735B]"><TrendingUp className="h-4 w-4" />Market Overview</button></nav>
+            <nav className="space-y-1 border-t border-[#E8DED1] px-3 py-4"><p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]">Manage<span className="h-px w-5 bg-[#8B735B]/45" /></p><button type="button" aria-current="page" className="app-sidebar-nav-item relative flex w-full items-center gap-3 rounded-lg bg-[#F3EFEA] px-3 py-3 text-sm font-semibold text-[#8B735B] transition-all"><Plus className="h-4 w-4" />Add Property</button></nav>
+            <nav className="space-y-1 border-t border-[#E8DED1] px-3 py-4"><p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]">Account<span className="h-px w-5 bg-[#8B735B]/45" /></p><button onClick={() => navigate("/dashboard?section=settings")} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] transition-all hover:bg-[#FAF8F5] hover:text-[#8B735B]"><Settings className="h-4 w-4" />Settings</button><button onClick={() => navigate("/dashboard?section=help")} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] transition-all hover:bg-[#FAF8F5] hover:text-[#8B735B]"><HelpCircle className="h-4 w-4" />Help &amp; Support</button></nav>
+            <div className="mt-auto border-t border-[#E8DED1] px-4 py-4"><LogoutConfirmation onConfirm={() => { logout?.(); navigate("/"); }}><button className="app-sidebar-logout flex w-full items-center gap-3 rounded-lg border border-[#E8DED1] bg-white px-3 py-3 text-sm font-semibold text-[#756A60] transition hover:border-red-100 hover:bg-red-50 hover:text-red-700"><LogOut className="h-4 w-4" />Log Out</button></LogoutConfirmation></div>
           </div>
-          <h1 className="text-3xl font-black text-slate-900 mb-2">
-            List Your <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Apartment</span>
-          </h1>
-          <p className="text-slate-600 font-medium">Step {currentStep} of {totalSteps}</p>
-          <div className="mt-3 flex min-h-8 flex-wrap items-center justify-center gap-2">
+        </aside>
+        {sidebarOpen && <div className="app-sidebar-overlay fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />}
+        <aside className={`app-sidebar-drawer fixed left-0 top-0 z-50 h-full w-64 border-r border-[#E8DED1] bg-white shadow-2xl transition-transform lg:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+          <div className="app-sidebar flex h-full flex-col overflow-y-auto p-3"><button type="button" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} className="ml-auto flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#756A60]"><X className="h-4 w-4" /></button><div className="app-sidebar-brand px-2 pb-5 pt-2"><div className="flex items-center gap-2.5"><span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#E8DED1] bg-[#FAF8F5] text-[#8B735B]"><Home className="h-6 w-6" /></span><div><span className="block text-xl font-bold text-[#302820]">AptFindr</span><p className="text-xs text-[#756A60]">Landlord Portal</p></div></div></div><nav className="space-y-1">{[{ label: "My Properties", icon: Building2, path: "/dashboard?section=overview" }, { label: "Activity", icon: TrendingUp, path: "/dashboard?section=activity" }, { label: "Notifications", icon: Bell, path: "/dashboard?section=notifications" }, { label: "Market Overview", icon: TrendingUp, path: "/browse" }].map(({ label, icon: Icon, path }) => <button key={label} onClick={() => navigate(path)} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] hover:bg-[#FAF8F5] hover:text-[#8B735B]"><Icon className="h-4 w-4" />{label}</button>)}<button type="button" aria-current="page" className="app-sidebar-nav-item relative flex w-full items-center gap-3 rounded-lg bg-[#F3EFEA] px-3 py-3 text-sm font-semibold text-[#8B735B]"><Plus className="h-4 w-4" />Add Property</button><button onClick={() => navigate("/dashboard?section=settings")} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] hover:bg-[#FAF8F5]"><Settings className="h-4 w-4" />Settings</button><button onClick={() => navigate("/dashboard?section=help")} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] hover:bg-[#FAF8F5]"><HelpCircle className="h-4 w-4" />Help &amp; Support</button></nav></div>
+        </aside>
+        <button type="button" aria-label="Open navigation" onClick={() => setSidebarOpen(true)} className="app-sidebar-trigger fixed left-4 top-4 z-30 flex h-10 w-10 items-center justify-center rounded-lg bg-[#8B735B] text-white shadow-lg hover:bg-[#756A60] lg:hidden"><Menu className="h-5 w-5" /></button>
+
+        <main className="app-shell-main min-w-0 flex-1 overflow-y-auto">
+      <div className="app-shell-content app-shell-content-mobile-nav mx-auto max-w-[1200px] px-4 py-6 pt-16 md:px-8 lg:pt-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-black text-[#302820]">Add Property</h1>
+          <p className="mt-1 text-sm font-medium text-[#756A60]">Create a new apartment listing and add its room details.</p>
+          <p className="mt-3 text-sm font-semibold text-[#8B735B]">Step {currentStep} of {totalSteps}</p>
+          <div className="mt-3 flex min-h-8 flex-wrap items-center gap-2">
             {draftStatus !== "idle" && (
               <span className={`inline-flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs font-bold shadow-sm ${
                 draftStatus === "error" ? "border-red-200 text-red-600" : "border-amber-200 text-amber-700"
@@ -1397,6 +1405,8 @@ export function AddApartment() {
             </form>
           </CardContent>
         </Card>
+      </div>
+        </main>
       </div>
 
       {pendingDraft && (

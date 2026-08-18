@@ -1,3 +1,5 @@
+import type { Apartment } from '../data/apartments';
+
 export const imageMap: Record<string, string> = {
   'modern-loft-apartment': 'https://images.unsplash.com/photo-1686325504321-736f32991021?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBsb2Z0JTIwYXBhcnRtZW50fGVufDF8fHx8MTc3MjE5MDYzMnww&ixlib=rb-4.1.0&q=80&w=1080',
   'cozy-studio-apartment': 'https://images.unsplash.com/photo-1507138451611-3001135909fa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3p5JTIwc3R1ZGlvJTIwYXBhcnRtZW50fGVufDF8fHx8MTc3MjE2MzQ1OXww&ixlib=rb-4.1.0&q=80&w=1080',
@@ -19,11 +21,25 @@ export const imageMap: Record<string, string> = {
 };
 
 export function getImageUrl(key: string): string {
-  if (!key) return '';
-  if (/^(https?:|data:image\/|blob:)/i.test(key)) {
-    return key;
+  const normalizedKey = key?.trim();
+  if (!normalizedKey) return '';
+  if (/^(https?:|data:image\/|blob:)/i.test(normalizedKey)) {
+    return normalizedKey;
   }
 
-  return imageMap[key] || '';
+  return imageMap[normalizedKey] || '';
+}
+
+export function getApartmentImageUrl(
+  apartment: Pick<Apartment, 'image' | 'images'>,
+): string {
+  const candidates = [apartment.image, ...(apartment.images ?? [])];
+
+  for (const candidate of candidates) {
+    const resolvedUrl = getImageUrl(candidate ?? '');
+    if (resolvedUrl) return resolvedUrl;
+  }
+
+  return '';
 }
 

@@ -29,7 +29,6 @@ import { Badge } from "@/app/shared/components/ui/badge";
 import { Button } from "@/app/shared/components/ui/button";
 import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
-import { getTenantType } from "@/app/shared/services/authService";
 import { listFavoriteApartments, type Apartment } from "@/app/shared/data/apartments";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
@@ -58,6 +57,17 @@ const STATUS_CLASS: Record<string, string> = {
 type FavoriteFilter = "all" | "available" | "unavailable";
 type FavoriteSort = "newest" | "price-low" | "price-high" | "name";
 type ViewMode = "grid" | "list";
+
+function FavoriteHomeLineArt() {
+  return (
+    <svg aria-hidden="true" className="tenant-architecture" viewBox="0 0 520 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g className="tenant-architecture-lines" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M24 194h472M74 194V95l72-59 72 59v99M102 194v-65h87v65M126 108h38M264 194V78h145v116M250 78l87-55 89 55M291 106h34v32h-34m57-32h34v32h-34M309 194v-35h57v35M454 194c7-20 7-41 0-62m0 32c-11-7-14-16-13-24m13 13c11-8 14-17 13-27" />
+        <path d="M236 115c-22-18-51 13 0 48 51-35 22-66 0-48Z" />
+      </g>
+    </svg>
+  );
+}
 
 export function Favorites() {
   const { user, logout } = useAuth();
@@ -132,8 +142,6 @@ export function Favorites() {
 
   const favoriteCount = favoriteApartments.length;
   const displayName = user?.name?.trim();
-  const tenantType = getTenantType(user);
-  const portalLabel = tenantType === "student" ? "Student Portal" : tenantType === "employee" ? "Employee Portal" : "Tenant Portal";
 
   const removeFavorite = async (apartmentId: string) => {
     if (!user?.id) return;
@@ -179,14 +187,14 @@ export function Favorites() {
     <Link
       to={href}
       aria-current={active ? "page" : undefined}
-      className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold transition ${
-        active ? "bg-white text-orange-600 shadow-lg shadow-orange-950/20 ring-1 ring-orange-200" : "text-white/65 hover:bg-white/10 hover:text-white"
+      className={`app-sidebar-nav-item flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition ${
+        active ? "bg-[#f3efeA] text-[#8b735b]" : "text-[#302820] hover:bg-[#faf8f5] hover:text-[#8b735b]"
       }`}
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span className="min-w-0 flex-1">{label}</span>
       {badge !== undefined && badge > 0 && (
-        <span className="app-sidebar-badge flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-black text-white">
+        <span className="app-sidebar-badge flex min-w-5 items-center justify-center rounded-full bg-[#8b735b] px-1.5 py-0.5 text-[10px] font-bold text-white">
           {badge}
         </span>
       )}
@@ -200,7 +208,7 @@ export function Favorites() {
     const location = formatApartmentLocation(apartment);
 
     return (
-      <article className={`overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)] ${viewMode === "list" ? "grid lg:grid-cols-[minmax(280px,0.9fr)_1fr]" : ""}`}>
+      <article className={`overflow-hidden rounded-xl border border-[#e8ded1] bg-white shadow-[0_2px_12px_rgba(48,40,32,0.06)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(48,40,32,0.10)] ${viewMode === "list" ? "grid lg:grid-cols-[minmax(280px,0.9fr)_1fr]" : ""}`}>
         <div className="relative bg-slate-100">
           <div className={viewMode === "list" ? "aspect-[4/3] lg:h-full lg:aspect-auto" : "aspect-[4/3]"}>
             {images[0] ? (
@@ -213,47 +221,38 @@ export function Favorites() {
           </div>
           <div className="absolute left-4 top-4 flex flex-col gap-2">
             {apartment.landlordVerified === true && <VerifiedBadge label="Verified Landlord" className="bg-white/95 shadow-lg backdrop-blur-sm" />}
-            {apartment.petFriendly && <Badge className="rounded-full bg-emerald-600 text-white">Pet Friendly</Badge>}
+            {apartment.petFriendly && <Badge className="rounded-full border border-[#e8ded1] bg-[#f3efeA] text-[#756a60]">Pet Friendly</Badge>}
             <Badge className={`rounded-full ${STATUS_CLASS[status] ?? STATUS_CLASS.available}`}>{STATUS_LABEL[status] ?? "Available"}</Badge>
           </div>
           <button
             onClick={() => void removeFavorite(apartment.id)}
             disabled={removingId === apartment.id}
-            className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-rose-500 shadow-lg transition hover:scale-105 disabled:opacity-60"
+            className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full border border-[#e8ded1] bg-white text-[#8b735b] shadow-sm transition hover:bg-[#faf8f5] disabled:opacity-60"
             aria-label="Remove from favorites"
           >
             <Heart className="h-6 w-6 fill-current" />
           </button>
-          {images.length > 1 && (
-            <div className="absolute inset-x-4 bottom-4 grid grid-cols-4 gap-2">
-              {images.slice(1, 5).map((image, index) => (
-                <div key={`${image}-${index}`} className="aspect-[4/3] overflow-hidden rounded-md bg-white/80 shadow">
-                  <img src={getImageUrl(image)} alt={`${apartment.title} ${index + 2}`} className="h-full w-full object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         <div className="flex flex-col p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <h2 className="text-2xl font-black text-slate-950">{apartment.title}</h2>
-              <div className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-500">
-                <MapPin className="h-4 w-4 text-rose-500" />
+              <h2 className="text-xl font-bold text-[#302820]">{apartment.title}</h2>
+              <div className="mt-2 flex items-center gap-2 text-sm font-medium text-[#756a60]">
+                <MapPin className="h-4 w-4 text-[#8b735b]" />
                 <span>{location}</span>
               </div>
             </div>
             <div className="shrink-0 sm:text-right">
-              <p className="text-sm font-black text-orange-600">View room prices</p>
+              <p className="text-sm font-bold text-[#8b735b]">View room prices</p>
             </div>
           </div>
 
           <div className="my-5 grid grid-cols-2 gap-3 border-y border-slate-100 py-4 sm:grid-cols-4">
-            <InfoPill icon={Bookmark} value={availableRooms.toLocaleString()} label={availableRooms === 1 ? "Room" : "Rooms"} tone="text-orange-600 bg-orange-50" />
-            <InfoPill icon={Bed} value={apartment.rooms?.length ? apartment.rooms.length.toLocaleString() : apartment.bedrooms.toLocaleString()} label={apartment.rooms?.length ? "Room count" : "Beds"} tone="text-rose-600 bg-rose-50" />
-            <InfoPill icon={Bath} value={apartment.bathrooms.toLocaleString()} label={apartment.bathrooms === 1 ? "Bath" : "Baths"} tone="text-purple-600 bg-purple-50" />
-            <InfoPill icon={Square} value={Number(apartment.sqft || 0).toLocaleString()} label="Sqft" tone="text-sky-600 bg-sky-50" />
+            <InfoPill icon={Bookmark} value={availableRooms.toLocaleString()} label={availableRooms === 1 ? "Room" : "Rooms"} tone="text-[#8b735b] bg-[#faf8f5]" />
+            <InfoPill icon={Bed} value={apartment.rooms?.length ? apartment.rooms.length.toLocaleString() : apartment.bedrooms.toLocaleString()} label={apartment.rooms?.length ? "Room count" : "Beds"} tone="text-[#8b735b] bg-[#faf8f5]" />
+            <InfoPill icon={Bath} value={apartment.bathrooms.toLocaleString()} label={apartment.bathrooms === 1 ? "Bath" : "Baths"} tone="text-[#8b735b] bg-[#faf8f5]" />
+            <InfoPill icon={Square} value={Number(apartment.sqft || 0).toLocaleString()} label="Sqft" tone="text-[#8b735b] bg-[#faf8f5]" />
           </div>
 
           {apartment.description && (
@@ -261,7 +260,7 @@ export function Favorites() {
           )}
 
           <div className="mt-auto flex flex-col gap-3 pt-6 sm:flex-row">
-            <Button asChild variant="outline" className="h-12 flex-1 rounded-lg border-slate-200 font-black text-slate-700 hover:bg-slate-50">
+            <Button asChild variant="outline" className="h-12 flex-1 rounded-lg border-[#e8ded1] font-bold text-[#8b735b] hover:bg-[#faf8f5]">
               <Link to={`/apartment/${apartment.id}`} state={{ returnTo: "/favorites", backLabel: "Back to Favorites" }}>
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
@@ -271,7 +270,7 @@ export function Favorites() {
               variant="outline"
               disabled={removingId === apartment.id}
               onClick={() => void removeFavorite(apartment.id)}
-              className="h-12 flex-1 rounded-lg border-red-200 bg-red-50 font-black text-red-600 hover:bg-red-100"
+              className="h-12 flex-1 rounded-lg border-[#e8ded1] bg-white font-bold text-[#756a60] hover:border-red-100 hover:bg-red-50 hover:text-red-700"
             >
               <Trash2 className="mr-2 h-4 w-4" />
               {removingId === apartment.id ? "Removing..." : "Remove"}
@@ -283,54 +282,54 @@ export function Favorites() {
   };
 
   return (
-    <div className="app-shell fixed inset-0 z-50 overflow-hidden bg-[#f8fafc]">
+    <div className="tenant-browse app-shell fixed inset-0 z-50 overflow-hidden bg-white">
       <TenantMobileNavigation active="favorites" />
       <div className="app-shell-frame flex h-full">
-        <aside className="app-shell-sidebar hidden h-full w-64 shrink-0 flex-col bg-[#07142f] shadow-2xl shadow-slate-900/40 lg:flex">
+        <aside className="app-shell-sidebar hidden h-full w-64 shrink-0 flex-col border-r border-[#e8ded1] bg-white lg:flex">
           <div className="app-sidebar flex h-full w-full flex-col overflow-y-auto">
           <div className="app-sidebar-brand px-5 pb-5 pt-6">
             <Link to="/browse" className="flex items-center gap-2.5">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-950/30">
-                <Home className="h-6 w-6 fill-white/20 text-white" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#e8ded1] bg-[#faf8f5] text-[#8b735b]">
+                <Home className="h-6 w-6" />
               </div>
               <div>
-                <span className="text-lg font-black tracking-tight text-white">Rent<span className="text-orange-500">Iloilo</span></span>
-                <p className="-mt-0.5 text-xs font-medium text-white/50">{portalLabel}</p>
+                <span className="text-xl font-bold tracking-tight text-[#302820]">AptFindr</span>
+                <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#756a60]">La Paz, Iloilo City</p>
               </div>
             </Link>
           </div>
 
           <div className="px-4 pb-5">
-            <div className="app-sidebar-profile flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.07] px-3 py-3 shadow-inner shadow-white/5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-lime-300 to-orange-500 text-sm font-black text-white shadow">
+            <div className="app-sidebar-profile flex items-center gap-3 rounded-lg border border-[#e8ded1] bg-[#faf8f5] px-3 py-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#8b735b] text-sm font-bold text-white">
                 {user?.avatar ? <img src={user.avatar} alt="Profile" className="h-full w-full object-cover" /> : user?.name?.[0]?.toUpperCase() ?? "U"}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-white">{displayName || "Welcome"}</p>
-                <p className="truncate text-xs text-white/40">{user?.email ?? ""}</p>
+                <p className="truncate text-sm font-bold text-[#302820]">{displayName || "Welcome"}</p>
+                <p className="truncate text-xs text-[#756a60]">{user?.email ?? ""}</p>
               </div>
-              <ChevronRight className="h-4 w-4 text-white/40" />
+              <ChevronRight className="h-4 w-4 text-[#756a60]" />
             </div>
           </div>
 
           <nav className="space-y-1 px-3 py-3">
-            <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-widest text-white/35">Main</p>
+            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756a60]">Main</p>
             <SidebarLink icon={Search} label="Apartments" href="/browse" />
             <SidebarLink icon={Heart} label="My Favorites" href="/favorites" active badge={favoriteCount} />
             <SidebarLink icon={Sparkles} label="Suggested" href="/dashboard?section=suggested" />
             <SidebarLink icon={TrendingUp} label="Popular" href="/dashboard?section=popular" />
           </nav>
 
-          <nav className="space-y-1 border-t border-white/10 px-3 py-4">
-            <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-widest text-white/35">Account</p>
+          <nav className="space-y-1 border-t border-[#e8ded1] px-3 py-4">
+            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756a60]">Account</p>
             <SidebarLink icon={Settings} label="Settings" href="/dashboard?section=settings" />
             <SidebarLink icon={TriangleAlert} label="Report a Problem" href="/dashboard?section=report" />
             <SidebarLink icon={HelpCircle} label="Help" href="/dashboard?section=help" />
           </nav>
 
-          <div className="mt-auto border-t border-white/10 px-4 py-4">
+          <div className="mt-auto border-t border-[#e8ded1] px-4 py-4">
             <LogoutConfirmation onConfirm={handleLogout}>
-              <button className="app-sidebar-logout flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500/10 hover:text-red-300">
+              <button className="app-sidebar-logout flex w-full items-center gap-3 rounded-lg border border-[#e8ded1] bg-white px-3 py-3 text-sm font-semibold text-[#756a60] transition hover:border-red-100 hover:bg-red-50 hover:text-red-700">
                 <LogOut className="h-4 w-4" />
                 Log Out
               </button>
@@ -341,79 +340,57 @@ export function Favorites() {
 
         <main className="app-shell-main min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div className="app-shell-content app-shell-content-mobile-nav mx-auto max-w-7xl px-4 py-6 md:px-8 lg:px-10 lg:py-8">
-            <section className="relative overflow-hidden rounded-lg border border-orange-100 bg-white px-6 py-8 shadow-[0_22px_60px_rgba(15,23,42,0.08)] md:px-9">
-              <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-rose-100 bg-rose-50 text-rose-500 shadow-sm">
-                  <Heart className="h-8 w-8 fill-current" />
+            <section className="tenant-favorites-hero relative flex min-h-[160px] items-center overflow-hidden rounded-xl border border-[#e8ded1] bg-gradient-to-r from-[#faf8f5] to-[#fffdfb] p-6 md:px-7">
+              <div className="relative z-10 max-w-[58%] max-md:max-w-full">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e8ded1] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b735b] shadow-sm">
+                  <Heart className="h-4 w-4" />
+                  Saved Apartments
                 </div>
-                <div>
-                  <h1 className="text-4xl font-black tracking-tight text-slate-950 md:text-5xl">Your Favorites</h1>
-                  <p className="mt-2 text-lg font-medium text-slate-600">Apartments you've saved for later</p>
-                </div>
+                <h1 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">Your Favorites</h1>
+                <p className="mt-3 text-base font-medium text-[#756a60]">
+                  {favoriteCount > 0 ? `${favoriteCount.toLocaleString()} ${favoriteCount === 1 ? "apartment" : "apartments"} saved for later` : "Save apartments you like and return to them anytime."}
+                </p>
               </div>
-              <div className="pointer-events-none absolute bottom-0 right-8 hidden h-28 w-72 rounded-t-lg bg-orange-50 md:block" />
-              <div className="pointer-events-none absolute bottom-8 right-20 hidden h-16 w-36 rounded-lg bg-orange-100 md:block" />
+              <div className="pointer-events-none absolute bottom-0 right-4 hidden w-[42%] text-[#b9a58f] md:block"><FavoriteHomeLineArt /></div>
             </section>
 
-            <section className="mt-6 grid gap-5 rounded-lg border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)] md:grid-cols-2">
-              <div className="flex items-center gap-5">
-                <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-500">
-                  <Heart className="h-8 w-8 fill-current" />
-                </span>
-                <div>
-                  <p className="text-sm font-bold text-slate-600">Total Favorites</p>
-                  <p className="mt-1 text-4xl font-black text-rose-500">{favoriteCount.toLocaleString()}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-500">{favoriteCount === 1 ? "apartment saved" : "apartments saved"}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-5 border-t border-slate-100 pt-5 md:border-l md:border-t-0 md:pl-8 md:pt-0">
-                <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
-                  <Bookmark className="h-8 w-8 fill-current" />
-                </span>
-                <div>
-                  <p className="text-sm font-bold text-slate-600">Save for later</p>
-                  <p className="mt-2 max-w-sm text-base font-medium leading-7 text-slate-600">Compare and revisit real listings you saved from Browse and Apartment Details.</p>
-                </div>
-              </div>
-            </section>
-
-            <section className="mt-6 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-[0_14px_35px_rgba(15,23,42,0.07)] lg:flex-row lg:items-center lg:justify-between">
-              <select value={filter} onChange={(event) => setFilter(event.target.value as FavoriteFilter)} className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100">
+            <section className="mt-5 flex flex-col gap-3 rounded-xl border border-[#e8ded1] bg-white p-2 shadow-[0_2px_10px_rgba(48,40,32,0.035)] sm:p-2.5 lg:flex-row lg:items-center lg:justify-between">
+              <select value={filter} onChange={(event) => setFilter(event.target.value as FavoriteFilter)} className="h-12 rounded-lg border border-[#e8ded1] bg-white px-4 text-sm font-bold text-[#302820] outline-none focus:border-[#8b735b] focus:ring-2 focus:ring-[#8b735b]/15">
                 <option value="all">All Favorites ({favoriteCount})</option>
                 <option value="available">Available Only</option>
                 <option value="unavailable">Unavailable</option>
               </select>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <select value={sort} onChange={(event) => setSort(event.target.value as FavoriteSort)} className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100">
+                <select value={sort} onChange={(event) => setSort(event.target.value as FavoriteSort)} className="h-12 rounded-lg border border-[#e8ded1] bg-white px-4 text-sm font-bold text-[#302820] outline-none focus:border-[#8b735b] focus:ring-2 focus:ring-[#8b735b]/15">
                   <option value="newest">Newest Added</option>
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
                   <option value="name">Name</option>
                 </select>
-                <div className="grid h-12 grid-cols-2 rounded-lg border border-slate-200 bg-white p-1">
-                  <button onClick={() => setViewMode("grid")} className={`flex h-10 w-12 items-center justify-center rounded-md transition ${viewMode === "grid" ? "bg-orange-50 text-orange-600" : "text-slate-500 hover:bg-slate-50"}`} aria-label="Grid view">
+                <div className="grid h-12 grid-cols-2 rounded-lg border border-[#e8ded1] bg-white p-1">
+                  <button onClick={() => setViewMode("grid")} className={`flex h-10 w-12 items-center justify-center rounded-md transition ${viewMode === "grid" ? "bg-[#f3efeA] text-[#8b735b]" : "text-[#756a60] hover:bg-[#faf8f5]"}`} aria-label="Grid view">
                     <Grid2X2 className="h-5 w-5" />
                   </button>
-                  <button onClick={() => setViewMode("list")} className={`flex h-10 w-12 items-center justify-center rounded-md transition ${viewMode === "list" ? "bg-orange-50 text-orange-600" : "text-slate-500 hover:bg-slate-50"}`} aria-label="List view">
+                  <button onClick={() => setViewMode("list")} className={`flex h-10 w-12 items-center justify-center rounded-md transition ${viewMode === "list" ? "bg-[#f3efeA] text-[#8b735b]" : "text-[#756a60] hover:bg-[#faf8f5]"}`} aria-label="List view">
                     <List className="h-5 w-5" />
                   </button>
                 </div>
               </div>
             </section>
 
-            <section className="mt-6">
+            <section className="mt-5">
               {isLoading ? (
                 <div className="flex min-h-72 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-500 shadow-sm">
                   Loading favorites...
                 </div>
               ) : favoriteCount === 0 ? (
-                <div className="flex min-h-96 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
-                  <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-lg bg-rose-50 text-rose-500">
-                    <Heart className="h-10 w-10" />
+                <div className="flex min-h-[230px] flex-col items-center justify-center rounded-xl border border-[#e8ded1] bg-white p-6 text-center shadow-[0_2px_10px_rgba(48,40,32,0.035)]">
+                  <div className="mb-4 flex h-[52px] w-[52px] items-center justify-center rounded-xl border border-[#e8ded1] bg-[#faf8f5] text-[#8b735b]">
+                    <Heart className="h-7 w-7" />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-950">No favorites yet</h2>
-                  <p className="mt-2 max-w-md text-sm font-medium leading-6 text-slate-500">Browse apartments to save listings.</p>
-                  <Button onClick={() => navigate("/browse")} className="mt-6 rounded-lg bg-orange-500 px-6 font-black text-white hover:bg-orange-600">
+                  <h2 className="text-[22px] font-bold text-[#302820]">No favorites yet</h2>
+                  <p className="mt-2 max-w-md text-base font-medium leading-6 text-[#756a60]">Save apartments you like and they'll appear here.</p>
+                  <Button onClick={() => navigate("/browse")} className="mt-5 h-11 rounded-[10px] bg-[#8b735b] px-5 font-bold text-white transition-colors duration-200 hover:bg-[#75604d]">
                     Browse Apartments
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -433,19 +410,19 @@ export function Favorites() {
               )}
             </section>
 
-            <section className="my-8 flex flex-col gap-4 rounded-lg border border-orange-100 bg-orange-50 p-6 shadow-[0_16px_35px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-orange-600 shadow-sm">
+            {favoriteCount > 0 && <section className="my-6 flex flex-col gap-4 rounded-xl border border-[#e8ded1] bg-[#faf8f5] p-5 sm:flex-row sm:items-center">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#e8ded1] bg-white text-[#8b735b]">
                 <Building2 className="h-7 w-7" />
               </span>
               <div className="min-w-0 flex-1">
-                <h2 className="text-xl font-black text-slate-950">Explore more apartments</h2>
-                <p className="mt-1 text-sm font-medium text-slate-600">Find more places you'll love and add to your favorites.</p>
+                <h2 className="text-xl font-bold text-[#302820]">Explore more apartments</h2>
+                <p className="mt-1 text-sm font-medium text-[#756a60]">Find more places you'll love and add to your favorites.</p>
               </div>
-              <Button onClick={() => navigate("/browse")} className="rounded-lg bg-orange-500 px-6 font-black text-white hover:bg-orange-600">
+              <Button onClick={() => navigate("/browse")} className="rounded-lg bg-[#8b735b] px-6 font-bold text-white hover:bg-[#75604d]">
                 Browse Apartments
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
-            </section>
+            </section>}
           </div>
         </main>
       </div>

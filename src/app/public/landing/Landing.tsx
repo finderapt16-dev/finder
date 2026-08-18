@@ -2,6 +2,8 @@ import { AppLogo } from "@/app/shared/components/common/AppLogo";
 import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
 import { LandingListingsSection } from "@/app/shared/components/landing/LandingApartmentPreview";
 import { Button } from "@/app/shared/components/ui/button";
+import apartmentCategoriesIllustration from "@/assets/landing/apartment-categories-illustration.png";
+import locationMapIllustration from "@/assets/landing/location-map-illustration.png";
 import {
   Sheet,
   SheetContent,
@@ -263,7 +265,7 @@ export function Landing() {
       {/* ─── Hero ────────────────────────────────────────────── */}
       <section className="order-1 bg-white pt-16">
         <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-12">
-          <div className="grid grid-cols-1 items-stretch lg:grid-cols-[47%_53%] xl:grid-cols-[44%_56%]">
+          <div className="grid grid-cols-1 items-stretch lg:grid-cols-[minmax(0,45fr)_minmax(0,55fr)] lg:gap-10">
           <motion.div className="relative z-20 min-w-0 py-10 text-left sm:py-12 lg:py-14 xl:py-16" initial="hidden" animate="show" variants={stagger}>
 
             <motion.div variants={fadeUp} className="mb-4 inline-flex max-w-full items-center gap-2 border-0 bg-transparent px-0 py-1 sm:mb-5">
@@ -290,35 +292,35 @@ export function Landing() {
             </motion.p>
 
             {/* ── Search panel ── */}
-            <motion.div variants={fadeUp} className="relative z-20 w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.08)] lg:w-[calc(100%+120px)] lg:max-w-[820px] xl:w-[calc(100%+200px)] xl:max-w-[880px]">
+            <motion.div variants={fadeUp} className="relative z-20 w-full max-w-[600px] min-w-0 overflow-hidden rounded-[14px] border border-[#E8DED1] bg-white shadow-[0_2px_10px_rgba(48,40,32,0.04)]">
               <form className="min-w-0" onSubmit={handleLandingSearch}>
                 {/* Main search bar */}
-                <div className="flex flex-col items-stretch gap-2 p-3 sm:flex-row sm:items-center sm:gap-3">
-                  <div className="relative min-w-0 flex-1">
+                <div className="grid grid-cols-2 items-center gap-1.5 p-1.5 sm:flex">
+                  <div className="relative col-span-2 min-w-0 flex-1">
                     <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8B735B]" />
                     <input
                       value={landingSearch}
                       onChange={(e) => setLandingSearch(e.target.value)}
                       placeholder="Search by area, address, or apartment name..."
-                      className="h-12 min-w-0 w-full rounded-xl border border-transparent bg-white py-3 pl-12 pr-4 text-base font-medium text-slate-800 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      className="h-11 min-w-0 w-full rounded-[10px] border border-transparent bg-white py-2.5 pl-12 pr-4 text-base font-medium text-[#302820] placeholder:text-[#8B8178] focus:border-[#E8DED1] focus:outline-none focus:ring-2 focus:ring-[#8B735B]/10"
                     />
                   </div>
                   <button type="button" onClick={() => setShowFilters(!showFilters)}
-                    className={`relative flex h-12 w-full items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-all sm:w-auto ${
+                    className={`relative flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border px-3 text-sm font-semibold transition-all sm:w-[88px] ${
                       showFilters || activeFiltersCount > 0
                         ? "border-[#8B735B] bg-[#FAF8F5] text-[#8B735B]"
-                        : "bg-white border-slate-200 text-slate-600 hover:border-slate-400"
+                        : "border-[#E8DED1] bg-white text-[#756A60] hover:bg-[#FAF8F5] hover:text-[#8B735B]"
                     }`}>
                     <SlidersHorizontal className="h-4 w-4" />
                     Filters
                     {activeFiltersCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 h-5 w-5 bg-amber-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                      <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#8B735B] text-xs font-bold text-white">
                         {activeFiltersCount}
                       </span>
                     )}
                   </button>
                   <Button type="submit"
-                    className="h-12 w-full whitespace-nowrap rounded-xl bg-slate-950 px-6 text-base font-bold text-white shadow-none hover:bg-slate-800 sm:w-auto">
+                    className="h-11 w-full whitespace-nowrap rounded-[10px] bg-[#8B735B] px-4 text-[15px] font-bold text-white shadow-none hover:bg-[#75614E] sm:w-[88px]">
                     Search
                   </Button>
                 </div>
@@ -333,13 +335,13 @@ export function Landing() {
                       transition={{ duration: 0.25 }}
                       className="overflow-hidden"
                     >
-                      <div className="grid grid-cols-1 gap-3 border-t border-slate-100 px-3 pb-3 pt-3 sm:grid-cols-2 md:grid-cols-4">
+                      <div className="grid grid-cols-1 gap-3 border-t border-[#E8DED1] px-3 pb-3 pt-3 sm:grid-cols-2 md:grid-cols-4">
                         <div>
                           <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">
                             <DollarSign className="inline h-3 w-3 mr-1" />Budget
                           </label>
                           <select value={budget} onChange={(e) => setBudget(e.target.value)}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                            className="w-full rounded-lg border border-[#E8DED1] bg-white px-3 py-2.5 text-sm text-[#302820] focus:border-[#8B735B] focus:outline-none focus:ring-2 focus:ring-[#8B735B]/10">
                             <option value="">Any budget</option>
                             <option value="0-3000">Under ₱3,000</option>
                             <option value="3000-5000">₱3,000–5,000</option>
@@ -352,7 +354,7 @@ export function Landing() {
                             <Building2 className="inline h-3 w-3 mr-1" />Type
                           </label>
                           <select value={roomType} onChange={(e) => setRoomType(e.target.value)}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                            className="w-full rounded-lg border border-[#E8DED1] bg-white px-3 py-2.5 text-sm text-[#302820] focus:border-[#8B735B] focus:outline-none focus:ring-2 focus:ring-[#8B735B]/10">
                             <option value="">All types</option>
                             <option value="apartment">Apartment</option>
                             <option value="studio">Studio</option>
@@ -365,7 +367,7 @@ export function Landing() {
                             <BedDouble className="inline h-3 w-3 mr-1" />Rooms
                           </label>
                           <select value={rooms} onChange={(e) => setRooms(e.target.value)}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                            className="w-full rounded-lg border border-[#E8DED1] bg-white px-3 py-2.5 text-sm text-[#302820] focus:border-[#8B735B] focus:outline-none focus:ring-2 focus:ring-[#8B735B]/10">
                             <option value="">Any</option>
                             <option value="1">1 Room</option>
                             <option value="2">2 Rooms</option>
@@ -378,7 +380,7 @@ export function Landing() {
                             <CalendarCheck className="inline h-3 w-3 mr-1" />Available
                           </label>
                           <select value={availability} onChange={(e) => setAvailability(e.target.value)}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                            className="w-full rounded-lg border border-[#E8DED1] bg-white px-3 py-2.5 text-sm text-[#302820] focus:border-[#8B735B] focus:outline-none focus:ring-2 focus:ring-[#8B735B]/10">
                             <option value="">Any time</option>
                             <option value="now">Available now</option>
                             <option value="soon">Available soon</option>
@@ -391,12 +393,12 @@ export function Landing() {
               </form>
             </motion.div>
 
-            <motion.div variants={fadeUp} className="mt-3 flex max-w-[880px] flex-wrap items-center justify-start gap-2 text-xs text-slate-600 sm:gap-2.5">
-              <span className="font-semibold text-slate-400">Popular:</span>
+            <motion.div variants={fadeUp} className="mt-2.5 flex max-w-[600px] flex-wrap items-center justify-start gap-1.5 text-xs text-[#756A60] sm:gap-2">
+              <span className="font-semibold text-[#8B8178]">Popular:</span>
               {["Divinagracia", "Sto. Rosario", "Near CPU", "Near schools"].map((s) => (
                 <button key={s} type="button"
                   onClick={() => { setLandingSearch(s); }}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium transition-colors hover:border-slate-400">
+                  className="rounded-md border border-[#E8DED1] bg-white px-2.5 py-1 text-xs font-medium transition-colors hover:bg-[#FAF8F5] hover:text-[#8B735B]">
                   {s}
                 </button>
               ))}
@@ -416,7 +418,7 @@ export function Landing() {
       {/* ─── Stats bar ───────────────────────────────────────── */}
       <section className="landing-feature-row order-2 mt-8 border-t border-slate-200 bg-white py-7 lg:mt-9">
         <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-12">
-          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-4 md:gap-6">
+          <div className="landing-open-features mx-auto grid max-w-5xl grid-cols-2 border-y border-[#E8DED1] md:grid-cols-4">
             {[
               { label: "Search & Filters", value: "Browse", icon: Building2 },
               { label: "Room Availability", value: "Check", icon: BedDouble },
@@ -424,13 +426,13 @@ export function Landing() {
               { label: "Map Locations", value: "Compare", icon: TrendingUp },
             ].map(({ label, value, icon: Icon }, i) => (
               <AnimatedSection key={label} delay={i * 0.06}>
-                <div className="flex items-center gap-3 text-slate-900">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
+                <div className="flex items-center gap-3 px-3 py-5 text-[#302820]">
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center text-[#8B735B]">
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
                     <div className="text-2xl font-black leading-none">{value}</div>
-                    <div className="mt-0.5 text-xs font-medium text-slate-500">{label}</div>
+                    <div className="mt-0.5 text-xs font-medium text-[#756A60]">{label}</div>
                   </div>
                 </div>
               </AnimatedSection>
@@ -440,27 +442,32 @@ export function Landing() {
       </section>
 
       {/* ─── Categories ──────────────────────────────────────── */}
-      <section className="landing-category-section order-4 bg-[#FAF8F5] pb-14 pt-8 md:pb-20 md:pt-10">
+      <section className="landing-category-section order-4 border-t border-[#E8DED1] bg-white py-14 md:py-20">
         <div className="container mx-auto px-4 lg:px-8">
-          <AnimatedSection className="text-center mb-12">
-            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">Browse by Type</p>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Apartment Categories</h2>
-            <p className="text-slate-500 max-w-lg mx-auto">Explore listings by housing type and room features.</p>
-          </AnimatedSection>
+          <div className="mb-10 grid items-center gap-5 md:grid-cols-[.75fr_1.25fr] md:gap-8">
+            <AnimatedSection>
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-[#8B735B]">Browse by Type</p>
+              <h2 className="mb-3 text-3xl font-black text-[#302820] md:text-4xl">Apartment Categories</h2>
+              <p className="max-w-lg text-base text-[#756A60]">Explore listings by housing type and room features.</p>
+            </AnimatedSection>
+            <AnimatedSection className="flex min-h-56 items-center justify-center md:min-h-72" delay={0.08}>
+              <img src={apartmentCategoriesIllustration} alt="" className="landing-dimensional-art h-auto w-full object-contain" />
+            </AnimatedSection>
+          </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-5xl mx-auto">
+          <div className="landing-category-nav mx-auto grid max-w-6xl grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             {categories.map(({ icon: Icon, label }, i) => (
               <AnimatedSection key={label} delay={i * 0.07}>
-                <Link to="/browse" onClick={handleProtectedAction}>
+                <Link to="/browse" onClick={handleProtectedAction} className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#8B735B]/30">
                   <motion.div
-                    whileHover={{ y: -6, scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="group cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 text-center transition-all hover:-translate-y-0.5 hover:border-slate-400"
+                    whileTap={{ scale: 0.99 }}
+                    className="group flex min-h-36 cursor-pointer flex-col items-center justify-center px-4 py-6 text-center"
                   >
-                    <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 transition-transform group-hover:scale-105">
-                      <Icon className="h-7 w-7 text-slate-800" />
+                    <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-[#E8DED1] bg-[#F7F3EE] text-[#8B735B] transition-colors duration-200 group-hover:bg-[#F3EFEA] group-hover:text-[#75614E]">
+                      <Icon className="h-6 w-6" strokeWidth={1.8} />
                     </div>
-                    <p className="font-bold text-slate-800 text-sm leading-tight">{label}</p>
+                    <p className="text-[15px] font-semibold leading-tight text-[#302820] transition-colors duration-200 group-hover:text-[#8B735B]">{label}</p>
+                    <span className="mt-4 h-[2px] w-6 bg-[#9B8065] transition-all duration-200 group-hover:w-8" />
                   </motion.div>
                 </Link>
               </AnimatedSection>
@@ -475,32 +482,37 @@ export function Landing() {
       </div>
 
       {/* ─── Browse by Location ───────────────────────────────── */}
-      <section className="order-5 border-y border-slate-100 bg-slate-50/60 py-14 md:py-20">
+      <section className="landing-location-section order-5 border-y border-[#E8DED1] bg-[#FAF8F5] py-14 md:py-20">
         <div className="container mx-auto px-4 lg:px-8">
-          <AnimatedSection className="text-center mb-12">
-            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">Explore the area</p>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Browse by Location</h2>
-            <p className="text-slate-500 max-w-lg mx-auto">Apartments across barangays within La Paz, Iloilo City</p>
-          </AnimatedSection>
+          <div className="grid items-center gap-x-8 gap-y-6 md:grid-cols-[.9fr_1.1fr] lg:gap-x-12">
+            <AnimatedSection className="order-1 md:col-start-2 md:row-start-1">
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-[#8B735B]">Explore the area</p>
+              <h2 className="mb-3 text-3xl font-black text-[#302820] md:text-4xl">Browse by Location</h2>
+              <p className="max-w-lg text-base text-[#756A60]">Apartments across barangays within La Paz, Iloilo City</p>
+            </AnimatedSection>
+            <AnimatedSection className="order-2 flex items-center justify-center md:col-start-1 md:row-span-2 md:row-start-1" delay={0.08}>
+              <img src={locationMapIllustration} alt="" className="landing-dimensional-art h-auto w-full object-contain" />
+            </AnimatedSection>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-            {barangays.map(({ name, count, emoji }, i) => (
-              <AnimatedSection key={name} delay={i * 0.07}>
-                <Link to="/browse" onClick={handleProtectedAction}>
-                  <motion.div
-                    whileHover={{ y: -5 }}
-                    className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:border-slate-400"
-                  >
-                    <span className="text-3xl">{emoji}</span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold leading-snug text-slate-800 transition-colors group-hover:text-slate-950">{name}</p>
-                      <p className="mt-0.5 text-xs font-semibold text-slate-500">{count}</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-amber-400 ml-auto flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </motion.div>
-                </Link>
-              </AnimatedSection>
-            ))}
+            <div className="landing-location-directory order-3 grid grid-cols-1 border-t border-[#E8DED1] sm:grid-cols-2 md:col-start-2 md:row-start-2 xl:grid-cols-3">
+              {barangays.map(({ name, count }, i) => (
+                <AnimatedSection key={name} delay={i * 0.07}>
+                  <Link to="/browse" onClick={handleProtectedAction}>
+                    <motion.div
+                      whileHover={{ x: 2 }}
+                      className="group flex min-h-24 cursor-pointer items-center gap-3 border-b border-[#E8DED1] px-3 py-5 transition-colors hover:bg-white/60"
+                    >
+                      <MapPin className="h-5 w-5 shrink-0 text-[#8B735B]" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold leading-snug text-[#302820] transition-colors group-hover:text-[#8B735B]">{name}</p>
+                        <p className="mt-1 text-xs font-medium text-[#756A60]">{count}</p>
+                      </div>
+                      <ArrowRight className="ml-auto h-4 w-4 flex-shrink-0 text-[#8B735B] transition-transform group-hover:translate-x-1" />
+                    </motion.div>
+                  </Link>
+                </AnimatedSection>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -514,7 +526,7 @@ export function Landing() {
             <p className="mx-auto max-w-xl text-slate-500">Tools for renters, landlords, and platform administrators.</p>
           </AnimatedSection>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
+          <div className="landing-user-directory mx-auto grid max-w-6xl grid-cols-1 border-y border-[#E8DED1] sm:grid-cols-2 lg:grid-cols-4">
             {[
               { icon: GraduationCap, role: "Students", desc: "Search by location and budget, compare rooms, save favorites, and review listing information.", gradient: "from-amber-500 to-amber-600" },
               { icon: Briefcase, role: "Employees", desc: "Compare rental prices, amenities, availability, and locations near work.", gradient: "from-orange-500 to-orange-600" },
@@ -523,11 +535,11 @@ export function Landing() {
             ].map(({ icon: Icon, role, desc }, i) => (
               <AnimatedSection key={role} delay={i * 0.08}>
                 <motion.div
-                  whileHover={{ y: -8 }}
-                  className="h-full rounded-2xl border border-slate-200 bg-white p-6"
+                  whileHover={{ y: -2 }}
+                  className="h-full p-6"
                 >
-                  <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
-                    <Icon className="h-6 w-6 text-slate-800" />
+                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center text-[#8B735B]">
+                    <Icon className="h-6 w-6" />
                   </div>
                   <h3 className="mb-2 text-lg font-black text-slate-950">{role}</h3>
                   <p className="text-sm leading-relaxed text-slate-500">{desc}</p>
@@ -547,7 +559,7 @@ export function Landing() {
             <p className="text-slate-500 max-w-xl mx-auto">Review listings and manage properties using recorded platform information.</p>
           </AnimatedSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl mx-auto">
+          <div className="landing-information-grid mx-auto grid max-w-6xl grid-cols-1 border-y border-[#E8DED1] md:grid-cols-2 lg:grid-cols-3">
             {[
               { icon: BadgeCheck, title: "Landlord Verification Status", desc: "Review the verification status shown for landlords before exploring a listing.", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
               { icon: ShieldCheck, title: "Verification Information", desc: "Landlords submit required information for administrative review through the platform.", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
@@ -558,11 +570,11 @@ export function Landing() {
             ].map(({ icon: Icon, title, desc }, i) => (
               <AnimatedSection key={title} delay={i * 0.07}>
                 <motion.div
-                  whileHover={{ y: -6 }}
-                  className="h-full rounded-2xl border border-slate-200 bg-white p-6"
+                  whileHover={{ x: 2 }}
+                  className="h-full p-6"
                 >
-                  <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
-                    <Icon className="h-5 w-5 text-slate-800" />
+                  <div className="mb-4 inline-flex h-9 w-9 items-center justify-center text-[#8B735B]">
+                    <Icon className="h-5 w-5" />
                   </div>
                   <h3 className="font-black text-slate-900 mb-2">{title}</h3>
                   <p className="text-slate-600 text-sm leading-relaxed">{desc}</p>
@@ -592,12 +604,12 @@ export function Landing() {
               { icon: CheckCircle2, title: "Review your options", desc: "Use listing details, availability, verification status, and personalized suggestions to compare rentals." },
             ].map(({ icon: Icon, title, desc }, i) => (
               <AnimatedSection key={title} delay={i * 0.12}>
-                <motion.div whileHover={{ y: -3 }} className="relative bg-transparent p-8 text-center">
-                  <div className="mx-auto mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white">
-                    <Icon className="h-7 w-7 text-slate-900" />
+                <motion.div whileHover={{ y: -2 }} className="relative bg-transparent px-6 py-8 text-center">
+                  <div className="mx-auto mb-5 inline-flex h-12 w-12 items-center justify-center text-[#8B735B]">
+                    <Icon className="h-7 w-7" />
                   </div>
-                  <div className="absolute left-1/2 top-0 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-xs font-black text-slate-600">
-                    {i + 1}
+                  <div className="absolute left-1/2 top-0 -translate-x-1/2 bg-[#FAF8F5] px-3 text-xs font-black tracking-[0.18em] text-[#8B735B]">
+                    0{i + 1}
                   </div>
                   <h3 className="text-lg font-black text-slate-900 mb-2">{title}</h3>
                   <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
@@ -618,17 +630,17 @@ export function Landing() {
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {communityCards.map(({ role, icon: Icon, name, quote, color, iconBg, iconColor }, i) => (
+            {communityCards.map(({ role, icon: Icon, name, quote }, i) => (
               <AnimatedSection key={role} delay={i * 0.09}>
-                <motion.div whileHover={{ y: -6 }} className={`bg-white border-2 ${color} rounded-2xl p-6 shadow-sm h-full flex flex-col`}>
-                  <div className={`inline-flex h-10 w-10 ${iconBg} rounded-xl items-center justify-center mb-4`}>
-                    <Icon className={`h-5 w-5 ${iconColor}`} />
+                <motion.div whileHover={{ y: -2 }} className="flex h-full flex-col rounded-xl border border-[#E8DED1] bg-white p-6 shadow-[0_2px_10px_rgba(48,40,32,0.03)]">
+                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center text-[#8B735B]">
+                    <Icon className="h-5 w-5" />
                   </div>
                   <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">{role}</p>
                   <p className="font-bold text-slate-800 text-sm mb-3">{name}</p>
                   <p className="text-slate-500 text-sm leading-relaxed flex-1 italic">"{quote}"</p>
                   <div className="flex gap-0.5 mt-4">
-                    {[...Array(5)].map((_, j) => <Star key={j} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />)}
+                      {[...Array(5)].map((_, j) => <Star key={j} className="h-3.5 w-3.5 fill-[#8B735B] text-[#8B735B]" />)}
                   </div>
                 </motion.div>
               </AnimatedSection>

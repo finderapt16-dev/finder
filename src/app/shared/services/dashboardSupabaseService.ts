@@ -2011,6 +2011,20 @@ export async function fetchApartmentFavorites(apartmentId: string): Promise<Dash
   return data.map((row) => toFavoriteRow(row as DashboardRow));
 }
 
+export async function fetchFavoritesForApartments(apartmentIds: string[]): Promise<DashboardFavoriteRow[]> {
+  if (apartmentIds.length === 0) return [];
+  const { data, error } = await supabase.from("favorites").select("*").in("apartment_id", apartmentIds);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => toFavoriteRow(row as DashboardRow));
+}
+
+export async function fetchViewActivityForApartments(apartmentIds: string[]): Promise<DashboardApartmentViewRow[]> {
+  if (apartmentIds.length === 0) return [];
+  const { data, error } = await supabase.from("apartment_views").select("*").in("apartment_id", apartmentIds);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => toApartmentViewRow(row as DashboardRow));
+}
+
 export async function fetchApartmentViews(): Promise<DashboardApartmentViewRow[]> {
   const { data: countData, error: countError } = await supabase.rpc("get_apartment_view_counts");
 

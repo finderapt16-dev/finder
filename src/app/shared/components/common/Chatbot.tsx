@@ -328,7 +328,7 @@ export function Chatbot({ userRole }: ChatbotProps) {
         <Button
           onClick={() => setIsOpen(true)}
           aria-label="Open apartment assistant chat"
-          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full border-0 bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg hover:from-amber-600 hover:to-orange-700"
+          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full border-0 bg-[#8b735b] text-white shadow-[0_8px_24px_rgba(48,40,32,0.18)] hover:bg-[#75604d]"
         >
           <MessageCircle className="h-6 w-6" />
         </Button>
@@ -336,7 +336,7 @@ export function Chatbot({ userRole }: ChatbotProps) {
 
       {isOpen && (
         <div className="fixed bottom-6 right-6 z-50 mx-6 flex h-[min(640px,calc(100vh-3rem))] w-full max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-amber-100 bg-white shadow-2xl sm:mx-0 sm:w-[400px]">
-          <div className="flex items-center justify-between bg-gradient-to-r from-amber-500 to-orange-600 p-4 text-white">
+          <div className="flex items-center justify-between bg-[#8b735b] p-4 text-white">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
                 <Bot className="h-5 w-5" />

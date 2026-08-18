@@ -114,11 +114,8 @@ export function ApartmentsProvider({ children }: { children: ReactNode }): React
         scheduleRefresh,
       )
       .subscribe();
-    const refreshOnFocus = () => void refreshApartments();
-    window.addEventListener('focus', refreshOnFocus);
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer);
-      window.removeEventListener('focus', refreshOnFocus);
       void supabase.removeChannel(channel);
     };
   }, [refreshApartments]);

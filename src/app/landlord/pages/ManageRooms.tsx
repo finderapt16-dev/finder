@@ -10,14 +10,12 @@ import {
   Edit3,
   HelpCircle,
   Home,
-  LayoutDashboard,
   ListPlus,
   LogOut,
   MapPin,
   Menu,
   MoreVertical,
   Plus,
-  Search,
   Settings,
   Tag,
   Trash2,
@@ -28,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
+import { LandlordSidebar } from "@/app/landlord/components/LandlordSidebar";
 import { motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
@@ -137,32 +136,6 @@ const compressRoomImage = async (source: File | Blob): Promise<Blob> => {
     return source;
   }
 };
-
-const navGroups = [
-  {
-    label: "Main",
-    items: [
-      { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard?section=overview" },
-      { label: "My Properties", icon: Building2, href: "/dashboard?section=properties", active: true },
-      { label: "Activity", icon: TrendingUp, href: "/dashboard?section=activity" },
-      { label: "Notifications", icon: Bell, href: "/dashboard?section=notifications" },
-    ],
-  },
-  {
-    label: "Manage",
-    items: [
-      { label: "Add Property", icon: ListPlus, href: "/add-apartment" },
-      { label: "Browse All", icon: Search, href: "/browse" },
-    ],
-  },
-  {
-    label: "Account",
-    items: [
-      { label: "Settings", icon: Settings, href: "/dashboard?section=settings" },
-      { label: "Help", icon: HelpCircle, href: "/dashboard?section=help" },
-    ],
-  },
-];
 
 export function ManageRooms() {
   const { id } = useParams();
@@ -366,7 +339,7 @@ export function ManageRooms() {
           <DoorOpen className="mx-auto mb-4 h-12 w-12 text-orange-500" />
           <h1 className="mb-2 text-2xl font-bold text-slate-950">Property Not Available</h1>
           <p className="mb-6 text-sm text-slate-500">This property could not be found or is not assigned to your account.</p>
-          <Button onClick={() => navigate("/dashboard?section=properties")}>Back to My Properties</Button>
+          <Button onClick={() => navigate("/dashboard?section=overview")}>Back to My Properties</Button>
         </div>
       </div>
     );
@@ -378,65 +351,36 @@ export function ManageRooms() {
     : property.isPublished
       ? getStatusOption("available")
       : { label: "Unpublished", className: "border-slate-200 bg-slate-100 text-slate-600" };
-  const initials = (user.name || user.email || "L").split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
-
-  const sidebar = (
-    <aside className="app-sidebar flex h-full w-[250px] flex-col bg-[#07172b] px-4 py-5 text-white">
-      <button onClick={() => navigate("/dashboard?section=overview")} className="app-sidebar-brand mb-6 flex items-center gap-3 px-2 pb-4 text-left">
-        <span className="grid h-11 w-11 place-items-center rounded-lg bg-orange-500"><Home className="h-6 w-6" /></span>
-        <span><strong className="block text-xl">Rent<span className="text-orange-500">Iloilo</span></strong><small className="text-slate-400">Landlord Portal</small></span>
-      </button>
-      <div className="app-sidebar-profile mb-6 rounded-lg border border-white/10 bg-white/[0.06] p-3">
-        <div className="flex items-center gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-orange-500 font-bold">{initials}</span>
-          <div className="min-w-0"><p className="truncate text-sm font-bold">{user.name || "Landlord"}</p><p className="truncate text-xs text-slate-400">{user.email}</p><p className="mt-1 text-xs text-emerald-400">Online</p></div>
-        </div>
-      </div>
-      <nav className="min-h-0 flex-1 overflow-y-auto">
-        {navGroups.map((group) => (
-          <div key={group.label} className="mb-5">
-            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{group.label}</p>
-            <div className="space-y-1">
-              {group.items.map(({ label, icon: Icon, href, active }) => (
-                <button key={label} aria-current={active ? "page" : undefined} onClick={() => { navigate(href); setSidebarOpen(false); }} className={`flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-semibold transition ${active ? "bg-orange-500 text-white shadow-lg shadow-orange-950/20" : "text-slate-300 hover:bg-white/[0.07] hover:text-white"}`}>
-                  <Icon className="h-[18px] w-[18px]" /><span>{label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </nav>
-      <LogoutConfirmation onConfirm={handleLogout}><button className="app-sidebar-logout mt-3 flex h-11 items-center justify-center gap-2 rounded-lg border border-rose-500/30 text-sm font-bold text-rose-400 hover:bg-rose-500/10"><LogOut className="h-4 w-4" />Log Out</button></LogoutConfirmation>
-    </aside>
-  );
+  const sidebar = <LandlordSidebar user={user} verified={Boolean((user as any).verified || (user as any).isVerified)} activeSection="overview" onSectionChange={(section) => navigate(`/dashboard?section=${section}`)} onClose={() => setSidebarOpen(false)} onLogout={handleLogout} />;
 
   const summaryCards = [
-    { label: "Total Rooms", helper: "All rooms in this property", value: roomCounts.total, icon: DoorOpen, iconClass: "bg-orange-50 text-orange-600", border: "border-orange-100" },
-    { label: "Available", helper: "Ready for tenants", value: roomCounts.available, icon: CheckCircle2, iconClass: "bg-emerald-50 text-emerald-600", border: "border-emerald-100" },
-    { label: "Occupied", helper: "Currently rented", value: roomCounts.occupied, icon: BedDouble, iconClass: "bg-rose-50 text-rose-600", border: "border-rose-100" },
-    { label: "Maintenance", helper: "Temporarily unavailable", value: roomCounts.maintenance, icon: Wrench, iconClass: "bg-violet-50 text-violet-600", border: "border-violet-100" },
+    { label: "Total Rooms", helper: "All rooms in this property", value: roomCounts.total, icon: DoorOpen, iconClass: "bg-[#FAF8F5] text-[#8B735B]", border: "border-[#E8DED1]" },
+    { label: "Available", helper: "Ready for tenants", value: roomCounts.available, icon: CheckCircle2, iconClass: "bg-[#FAF8F5] text-emerald-600", border: "border-[#E8DED1]" },
+    { label: "Occupied", helper: "Currently rented", value: roomCounts.occupied, icon: BedDouble, iconClass: "bg-[#FAF8F5] text-[#756A60]", border: "border-[#E8DED1]" },
+    { label: "Maintenance", helper: "Temporarily unavailable", value: roomCounts.maintenance, icon: Wrench, iconClass: "bg-[#FAF8F5] text-amber-700", border: "border-[#E8DED1]" },
   ];
 
   return (
-    <div className="app-shell min-h-screen bg-[#f7f8fa] text-slate-950">
-      <div className="app-shell-fixed-sidebar fixed inset-y-0 left-0 z-40 hidden lg:block">{sidebar}</div>
-      {sidebarOpen && <div className="app-sidebar-overlay fixed inset-0 z-50 lg:hidden"><button aria-label="Close navigation" className="absolute inset-0" onClick={() => setSidebarOpen(false)} /><div className="app-sidebar-drawer relative h-full w-[250px]">{sidebar}<button aria-label="Close navigation" onClick={() => setSidebarOpen(false)} className="app-sidebar-close absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-md bg-white/10"><X className="h-4 w-4" /></button></div></div>}
+    <div className="app-shell landlord-shell landlord-manage-rooms min-h-screen bg-[#FCFAF7] text-[#302820]">
+      <div className="app-shell-fixed-sidebar fixed inset-y-0 left-0 z-40 hidden w-60 lg:block">{sidebar}</div>
+      {sidebarOpen && <div className="app-sidebar-overlay fixed inset-0 z-50 lg:hidden"><button aria-label="Close navigation" className="absolute inset-0" onClick={() => setSidebarOpen(false)} /><div className="app-sidebar-drawer relative h-full w-60">{sidebar}<button aria-label="Close navigation" onClick={() => setSidebarOpen(false)} className="app-sidebar-close absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-md bg-[#FAF8F5] text-[#756A60]"><X className="h-4 w-4" /></button></div></div>}
 
-      <main className="app-shell-page-main min-h-screen lg:ml-[250px]">
+      <main className="app-shell-page-main min-h-screen lg:ml-60">
         <div className="app-shell-content mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
           <div className="mb-5 flex items-center justify-between lg:hidden">
             <button aria-label="Open navigation" onClick={() => setSidebarOpen(true)} className="app-sidebar-trigger grid h-10 w-10 place-items-center rounded-lg border bg-white"><Menu className="h-5 w-5" /></button>
             <span className="font-bold">Room Management</span>
           </div>
 
-          <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 border-b border-orange-100 pb-6">
+          <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative mb-6 overflow-hidden border-b border-[#E8DED1] pb-6">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-              <button onClick={() => navigate("/dashboard?section=properties")} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-orange-600"><ArrowLeft className="h-4 w-4" />Back to My Properties</button>
-              <Button onClick={openAddForm} className="h-11 rounded-lg bg-orange-500 px-5 font-bold text-white shadow-md shadow-orange-200 hover:bg-orange-600"><Plus className="mr-2 h-4 w-4" />Add Room</Button>
+              <button onClick={() => navigate("/dashboard?section=overview")} className="relative z-10 inline-flex items-center gap-2 text-sm font-semibold text-[#756A60] hover:text-[#8B735B]"><ArrowLeft className="h-4 w-4" />Back to My Properties</button>
+              <Button onClick={openAddForm} className="relative z-10 h-11 rounded-lg bg-[#8B735B] px-5 font-bold text-white shadow-sm hover:bg-[#756A60]"><Plus className="mr-2 h-4 w-4" />Add Room</Button>
             </div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-orange-600">Room Management</p>
+            <p className="relative z-10 mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#8B735B]">Room Management</p>
             <div className="flex flex-wrap items-center gap-3"><h1 className="text-3xl font-bold sm:text-4xl">{property.title}</h1><Badge className={`${propertyStatus.className} border px-3 py-1`}>{propertyStatus.label}</Badge></div>
-            <p className="mt-3 flex items-start gap-2 text-sm text-slate-500"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />{address || "Address not provided"}</p>
+            <p className="relative z-10 mt-3 flex items-start gap-2 text-sm text-[#756A60]"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#8B735B]" />{address || "Address not provided"}</p>
+            <svg aria-hidden="true" viewBox="0 0 300 120" className="absolute bottom-0 right-4 hidden h-28 w-72 text-[#B59B7D] opacity-70 xl:block" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M18 105h265M52 105V38h92v67M72 60h24v45m19-45h16v19h-16M159 105V49h76v56M178 70h22v35m20-63v63M43 38h111M151 49h92"/><path d="M77 94h12m42-15h12M251 105V72h20v33M258 72V52h7v20" opacity=".7"/></svg>
           </motion.header>
 
           <motion.section initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.06 } } }} className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -521,7 +465,7 @@ export function ManageRooms() {
             </motion.section>
           )}
 
-          <section className="mt-6 flex items-start gap-4 rounded-lg border border-violet-100 bg-violet-50 p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-white text-violet-600"><Wrench className="h-5 w-5" /></span><div><h2 className="font-bold">Room Status Guide</h2><p className="mt-1 text-sm leading-6 text-slate-600">Keep room availability current so tenants, administrators, and your property dashboard all show the same status. Maintenance rooms remain unavailable until you mark them available.</p></div></section>
+          <section className="mt-6 flex items-start gap-4 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-white text-[#8B735B]"><Wrench className="h-5 w-5" /></span><div><h2 className="font-bold text-[#302820]">Room Status Guide</h2><p className="mt-1 text-sm leading-6 text-[#756A60]">Keep room availability updated so tenants always see accurate room information. Maintenance rooms remain unavailable until you mark them available.</p></div></section>
         </div>
       </main>
     </div>
