@@ -86,6 +86,7 @@ import {
   FileText,
   Flag,
   History,
+  Home,
   LayoutDashboard,
   LayoutGrid, List,
   Lock,
@@ -254,10 +255,12 @@ function SectionHeading({
   title,
   description,
   action,
+  actionLabel = "View all",
 }: {
   title: string;
   description: string;
   action?: () => void;
+  actionLabel?: string;
 }) {
   return (
     <div className="mb-4 flex items-start justify-between gap-3">
@@ -265,7 +268,7 @@ function SectionHeading({
         <h2 className="font-black text-slate-900">{title}</h2>
         <p className="text-xs text-slate-500">{description}</p>
       </div>
-      {action && <button onClick={action} className="shrink-0 text-xs font-bold text-amber-600 hover:text-amber-700">View all</button>}
+      {action && <button onClick={action} className="shrink-0 text-xs font-bold text-amber-600 hover:text-amber-700">{actionLabel}</button>}
     </div>
   );
 }
@@ -1432,36 +1435,86 @@ export function AdminDashboard() {
       </div>
     </div>
   );
+
+  const PortalSidebarContent = () => {
+    const navItemClass = (section: string) =>
+      `app-sidebar-nav-item relative flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition-colors ${
+        activeSection === section
+          ? "bg-[#F3EFEA] text-[#8B735B] before:absolute before:bottom-2 before:left-0 before:top-2 before:w-0.5 before:rounded-full before:bg-[#8B735B]"
+          : "text-[#302820] hover:bg-[#FAF8F5] hover:text-[#8B735B]"
+      }`;
+    const countBadge = "app-sidebar-badge ml-auto flex h-5 min-w-[22px] items-center justify-center rounded-full border border-[#D8C5B1] bg-white px-1.5 text-[10px] font-bold text-[#8B735B]";
+
+    return (
+      <div className="app-sidebar flex h-full min-w-0 select-none flex-col overflow-x-hidden overflow-y-auto">
+        <div className="app-sidebar-brand px-5 pb-5 pt-6">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#E8DED1] bg-[#FAF8F5] text-[#8B735B]">
+              <Home className="h-6 w-6" />
+            </span>
+            <span><strong className="block text-xl font-bold tracking-tight text-[#302820]">AptFindr</strong><small className="text-xs font-medium text-[#756A60]">Admin Portal</small></span>
+          </div>
+        </div>
+        <div className="px-4 pb-5">
+          <div className="app-sidebar-profile flex items-center gap-3 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] px-3 py-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#8B735B] text-sm font-bold text-white">{user?.name?.[0]?.toUpperCase() ?? "A"}</div>
+            <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-[#302820]">{user?.name ?? "Admin"}</p><p className="mt-0.5 truncate text-xs text-[#756A60]">{user?.email ?? ""}</p></div>
+            <Shield className="h-4 w-4 shrink-0 text-[#8B735B]" aria-label="Administrator account" />
+          </div>
+        </div>
+        <nav className="space-y-1 px-3 py-3">
+          <p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]"><span>Main</span><span className="h-px w-5 bg-[#8B735B]/45" /></p>
+          {NAV_MAIN.map(({ icon: Icon, label, section }) => {
+            const count = label === "Reports" ? pendingReports : label === "Appeals" ? activeAppealsCount : label === "Landlords" ? pendingCount : label === "Notifications" ? unreadNotifsCount : 0;
+            return (
+              <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => { setActiveSection(section); setSidebarOpen(false); }} className={navItemClass(section)}>
+                <Icon className="h-4 w-4 shrink-0" /><span className="flex-1 text-left">{label}</span>
+                {count > 0 && <span className={countBadge}>{count}</span>}
+              </button>
+            );
+          })}
+        </nav>
+        <nav className="space-y-1 border-t border-[#E8DED1] px-3 py-4">
+          <p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]"><span>Account</span><span className="h-px w-5 bg-[#8B735B]/45" /></p>
+          {NAV_ACCOUNT.map(({ icon: Icon, label, section }) => (
+            <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => { setActiveSection(section); setSidebarOpen(false); }} className={navItemClass(section)}>
+              <Icon className="h-4 w-4 shrink-0" /><span className="flex-1 text-left">{label}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="flex-1" />
+        <div className="mt-2 border-t border-[#E8DED1] px-4 py-4">
+          <LogoutConfirmation onConfirm={handleLogout}>
+            <button className="app-sidebar-logout flex w-full items-center gap-3 rounded-lg border border-[#E8DED1] bg-white px-3 py-3 text-sm font-semibold text-[#756A60] transition hover:border-red-100 hover:bg-red-50 hover:text-red-700">
+              <LogOut className="h-4 w-4 shrink-0" /><span>Log Out</span>
+            </button>
+          </LogoutConfirmation>
+        </div>
+      </div>
+    );
+  };
  // ── Section: Notifications ────────────────────────────────────────────────
   const renderOverview = () => {
-    const currentDate = new Date().toLocaleDateString("en-PH", {
-      weekday: "short", month: "short", day: "numeric", year: "numeric",
-    });
-    const pendingAppealCount = appeals.filter((appeal) => appeal.status === "pending").length;
-    const publishedApartmentCount = allApartments.filter((apartment) =>
-      apartment.isPublished === true || apartment.is_published === true
-    ).length;
+    const pendingAppealCount = appeals.filter((appeal) => ["pending", "under_review", "needs_information"].includes(String(appeal.status ?? "").toLowerCase())).length;
     const pendingReviewCount = allApartments.filter((apartment) =>
       String(apartment.approval_status ?? "").toLowerCase() === "pending"
     ).length;
-    const pendingLandlords = landlords.filter((landlord) => !(landlord.isVerified ?? landlord.is_verified));
-    const tasks = [
-      pendingReports > 0 ? { section: "reports", icon: Flag, label: "Review reports", count: pendingReports, tone: "bg-rose-50 text-rose-600 border-rose-100" } : null,
-      pendingCount > 0 ? { section: "landlords", icon: ShieldAlert, label: "Verify landlords", count: pendingCount, tone: "bg-amber-50 text-amber-700 border-amber-100" } : null,
-      pendingAppealCount > 0 ? { section: "appeals", icon: FileText, label: "Review appeals", count: pendingAppealCount, tone: "bg-blue-50 text-blue-600 border-blue-100" } : null,
-      pendingReviewCount > 0 ? { section: "apartments", icon: Building2, label: "Review apartments", count: pendingReviewCount, tone: "bg-emerald-50 text-emerald-600 border-emerald-100" } : null,
-    ].filter(Boolean) as Array<{ section: string; icon: typeof Flag; label: string; count: number; tone: string }>;
+    const pendingLandlords = landlords.filter((landlord) => {
+      if (landlord.isVerified ?? landlord.is_verified) return false;
+      const statuses = [landlord.landlord_status, landlord.verification_status, landlord.status].map((value) => String(value ?? "").toLowerCase());
+      return !statuses.includes("rejected");
+    });
     const getReportApartment = (report: DashboardReportRow) => allApartments.find((apartment) =>
       apartment.id === (report.apartmentId ?? report.apartment_id)
     );
     const getReportTitle = (report: DashboardReportRow) =>
       report.apartment_title ?? report.apartment ?? getReportApartment(report)?.title ?? "Apartment listing";
-    const recentReports = [...reports]
-      .sort((left, right) => new Date(right.submittedAt ?? right.submitted_at ?? 0).getTime() - new Date(left.submittedAt ?? left.submitted_at ?? 0).getTime())
-      .slice(0, 4);
-    const recentApartments = [...allApartments]
-      .sort((left, right) => new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime())
-      .slice(0, 4);
+    const priorityTasks = [
+      ...pendingLandlords.map((landlord) => ({ id: `landlord-${landlord.id}`, section: "landlords", icon: ShieldAlert, type: "Landlord Verification", context: `${landlord.name || "Unnamed landlord"} submitted verification information.`, timestamp: activityTimestamp(landlord.created_at as string | undefined), action: "Review" })),
+      ...allApartments.filter((apartment) => String(apartment.approval_status ?? "").toLowerCase() === "pending").map((apartment) => ({ id: `apartment-${apartment.id}`, section: "apartments", icon: Building2, type: "Apartment Review", context: `${apartment.title || "Untitled apartment"} is waiting for review.`, timestamp: activityTimestamp(apartment.createdAt ?? apartment.created_at), action: "Review" })),
+      ...reports.filter((report) => report.status === "pending").map((report) => ({ id: `report-${report.id}`, section: "reports", icon: Flag, type: "Report Review", context: `${getReportTitle(report)} has an unresolved report.`, timestamp: activityTimestamp(report.submittedAt ?? report.submitted_at), action: "View" })),
+      ...appeals.filter((appeal) => ["pending", "under_review", "needs_information"].includes(String(appeal.status ?? "").toLowerCase())).map((appeal) => ({ id: `appeal-${appeal.id}`, section: "appeals", icon: FileText, type: "Appeal Review", context: `${landlords.find((landlord) => landlord.id === appeal.landlord_id)?.name || "Landlord"} has an appeal waiting for review.`, timestamp: activityTimestamp(appeal.submitted_at ?? appeal.created_at), action: "Review" })),
+    ].sort((left, right) => new Date(left.timestamp ?? 0).getTime() - new Date(right.timestamp ?? 0).getTime()).slice(0, 6);
     const getNotificationActivityMeta = (notification: DashboardNotificationRow) => {
       const category = getNotificationCategory(notification);
       if (category === "reports") return { icon: Flag, tone: "bg-rose-50 text-rose-600", section: "reports" };
@@ -1524,7 +1577,7 @@ export function AdminDashboard() {
       }),
     ].filter((item) => item.timestamp)
       .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())
-      .slice(0, 6);
+      .slice(0, 5);
     const itemMotion = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
     return (
@@ -1534,22 +1587,16 @@ export function AdminDashboard() {
         variants={{ show: { transition: { staggerChildren: 0.055 } } }}
         className="mx-auto max-w-[1500px] space-y-5 text-slate-900"
       >
-        <motion.header variants={itemMotion} className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 xl:flex-row xl:items-center xl:justify-between">
+        <motion.header variants={itemMotion} className="flex flex-col gap-4 pb-1 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <p className="mb-1 text-xs font-bold uppercase text-amber-600">Administration workspace</p>
-            <h1 className="text-2xl font-black text-slate-950 md:text-3xl">Welcome back, {user?.name || "Admin"}</h1>
-            <p className="mt-1 text-sm text-slate-500">Review platform activity and resolve the items that need attention.</p>
+            <h1 className="text-2xl font-black text-[#302820] md:text-3xl">Admin Dashboard</h1>
+            <p className="mt-1 text-sm text-[#756A60]">Monitor platform activity and manage items that require administrative attention.</p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <form onSubmit={(event) => { event.preventDefault(); setActiveSection("apartments"); }} className="relative min-w-0 sm:w-[300px]">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input value={aptSearch} onChange={(event) => setAptSearch(event.target.value)} placeholder="Search apartments or locations" className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-sm font-medium shadow-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100" />
-            </form>
+          <div className="flex items-center gap-2">
             <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-amber-300 hover:text-amber-600">
               <Bell className="h-4 w-4" />
               {unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}
             </button>
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm"><Calendar className="h-4 w-4 text-amber-600" />{currentDate}</div>
             <button onClick={() => setActiveSection("admininfo")} className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 shadow-sm transition hover:border-amber-300">
               {user?.avatar ? <img src={user.avatar} alt="" className="h-7 w-7 rounded-md object-cover" /> : <span className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-900 text-xs font-black text-white">{user?.name?.[0]?.toUpperCase() ?? "A"}</span>}
               <span className="hidden max-w-28 truncate text-xs font-bold text-slate-700 md:block">{user?.name || "Admin"}</span>
@@ -1557,41 +1604,42 @@ export function AdminDashboard() {
           </div>
         </motion.header>
 
-        <motion.section variants={itemMotion} className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <motion.section variants={itemMotion} className="rounded-xl border border-[#E8DED1] bg-white p-4 sm:p-5">
+          <SectionHeading title="Needs Attention" description="Items currently requiring administrative action." />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
-            { label: "Pending Reports", value: pendingReports, icon: Flag, section: "reports", tone: "bg-rose-50 text-rose-600" },
-            { label: "Pending Verifications", value: pendingCount, icon: ShieldAlert, section: "landlords", tone: "bg-amber-50 text-amber-700" },
-            { label: "Active Appeals", value: pendingAppealCount, icon: FileText, section: "appeals", tone: "bg-blue-50 text-blue-600" },
-            { label: "Published Apartments", value: publishedApartmentCount, icon: Building2, section: "apartments", tone: "bg-emerald-50 text-emerald-600" },
-          ].map(({ label, value, icon: Icon, section, tone }) => (
-            <motion.button key={label} whileHover={{ y: -3 }} onClick={() => setActiveSection(section)} className="group flex min-h-[108px] items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition-shadow hover:shadow-lg">
-              <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tone}`}><Icon className="h-5 w-5" /></span>
-              <span className="min-w-0 flex-1"><span className="block text-2xl font-black text-slate-950">{value}</span><span className="block text-xs font-semibold text-slate-500">{label}</span></span>
-              <ChevronRight className="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-amber-500" />
+            { label: "Pending Verifications", value: pendingCount, suffix: "Pending", action: "View Landlords", icon: ShieldAlert, section: "landlords" },
+            { label: "Pending Apartment Reviews", value: pendingReviewCount, suffix: "Pending", action: "View Apartments", icon: Building2, section: "apartments" },
+            { label: "Open Reports", value: pendingReports, suffix: "Open", action: "View Reports", icon: Flag, section: "reports" },
+            { label: "Pending Appeals", value: pendingAppealCount, suffix: "Pending", action: "View Appeals", icon: FileText, section: "appeals" },
+          ].map(({ label, value, suffix, action, icon: Icon, section }) => (
+            <motion.button key={label} whileHover={{ y: -2 }} onClick={() => setActiveSection(section)} className="group rounded-xl border border-[#E8DED1] bg-white p-4 text-left transition hover:border-[#DCC9B4] hover:shadow-sm">
+              <span className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><Icon className="h-5 w-5" /></span><span className="min-w-0"><span className="block text-sm font-bold text-[#302820]">{label}</span><span className="mt-1 flex items-baseline gap-2"><strong className="text-2xl text-[#302820]">{value}</strong><small className="font-semibold text-[#756A60]">{suffix}</small></span></span></span>
+              <span className="mt-3 flex items-center justify-between border-t border-[#EEE6DC] pt-3 text-xs font-bold text-[#8B735B]">{action}<ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
             </motion.button>
           ))}
+          </div>
         </motion.section>
 
         <AdminAnalyticsOverview />
 
-        <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
           <motion.section variants={itemMotion} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <SectionHeading title="Your Tasks" description="Items currently waiting for administrative action." />
-            {tasks.length === 0 ? <OverviewEmpty icon={CheckCircle2} text="No pending administrative tasks." /> : (
-              <div className="space-y-2">
-                {tasks.map(({ section, icon: Icon, label, count, tone }) => (
-                  <button key={section} onClick={() => setActiveSection(section)} className="group flex w-full items-center gap-3 rounded-lg border border-slate-100 p-3 text-left transition hover:border-amber-200 hover:bg-amber-50/30">
-                    <span className={`flex h-9 w-9 items-center justify-center rounded-lg border ${tone}`}><Icon className="h-4 w-4" /></span>
-                    <span className="flex-1"><span className="block text-sm font-bold text-slate-800">{label}</span><span className="text-xs text-slate-500">{count} {count === 1 ? "item" : "items"} awaiting review</span></span>
-                    <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-amber-600" />
-                  </button>
+            <SectionHeading title="Priority Tasks" description="Administrative actions currently waiting for review." />
+            {priorityTasks.length === 0 ? <div className="py-10 text-center"><CheckCircle2 className="mx-auto h-8 w-8 text-emerald-600" /><h3 className="mt-3 font-black text-[#302820]">You're all caught up</h3><p className="mt-1 text-xs text-[#756A60]">No administrative actions are currently waiting for review.</p></div> : (
+              <div className="divide-y divide-[#EEE6DC]">
+                {priorityTasks.map(({ id, section, icon: Icon, type, context, timestamp, action }) => (
+                  <div key={id} className="grid gap-2 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                    <span className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FAF8F5] text-[#8B735B]"><Icon className="h-4 w-4" /></span><span className="min-w-0"><strong className="block text-xs text-[#302820]">{type}</strong><span className="block truncate text-xs text-[#756A60]">{context}</span><time className="text-[10px] text-slate-400">{formatOptionalDate(timestamp, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time></span></span>
+                    <button onClick={() => setActiveSection(section)} className="h-8 rounded-md border border-[#DCC9B4] px-4 text-xs font-bold text-[#8B735B] hover:bg-[#FAF8F5]">{action}</button>
+                  </div>
                 ))}
               </div>
             )}
           </motion.section>
 
           <motion.section variants={itemMotion} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <SectionHeading title="Recent Activity" description="Latest events from live platform data." />
+            <SectionHeading title="Recent Activity" description="Latest platform and administrative activities." action={() => setActiveSection("history")} actionLabel="View History" />
             {activity.length === 0 ? <OverviewEmpty icon={Clock} text="No recent activities." /> : (
               <div className="divide-y divide-slate-100">
                 {activity.map(({ id, timestamp, title, detail, icon: Icon, tone, section }) => (
@@ -1606,47 +1654,6 @@ export function AdminDashboard() {
           </motion.section>
         </div>
 
-        <div className={`grid gap-5 ${recentReports.length > 0 ? "xl:grid-cols-3" : "xl:grid-cols-2"}`}>
-          <motion.section variants={itemMotion} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <SectionHeading title="Verification Queue" description="Landlords awaiting review." action={() => setActiveSection("landlords")} />
-            {pendingLandlords.length === 0 ? <OverviewEmpty icon={Shield} text="No pending verifications." /> : (
-              <div className="divide-y divide-slate-100">{pendingLandlords.slice(0, 4).map((landlord) => (
-                <div key={landlord.id} className="flex items-center gap-3 py-3">
-                  {landlord.avatar_url ? <img src={landlord.avatar_url} alt="" className="h-9 w-9 rounded-lg object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-xs font-black text-amber-700">{landlord.name?.[0]?.toUpperCase() ?? "L"}</span>}
-                  <span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-slate-800">{landlord.name || "Unnamed landlord"}</span><span className="text-[10px] text-slate-400">{formatOptionalDate(landlord.created_at as string | undefined, { month: "short", day: "numeric", year: "numeric" })}</span></span>
-                  <button onClick={() => setSelectedLandlord(landlord)} className="rounded-md border border-amber-200 px-2.5 py-1.5 text-[10px] font-black text-amber-700 transition hover:bg-amber-50">Review</button>
-                </div>
-              ))}</div>
-            )}
-          </motion.section>
-
-          {recentReports.length > 0 && <motion.section variants={itemMotion} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <SectionHeading title="Recent Reports" description="Latest tenant submissions." action={() => setActiveSection("reports")} />
-            <div className="divide-y divide-slate-100">{recentReports.map((report) => {
-              const apartment = getReportApartment(report);
-              const severity = SEVERITY_LABEL[report.severity ?? "low"] ?? SEVERITY_LABEL.low;
-              return <button key={report.id} onClick={() => setSelectedReport(report)} className="flex w-full items-center gap-3 py-3 text-left">
-                <span className="flex h-10 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100">{apartment?.image ? <ImageWithFallback src={apartment.image} alt={apartment.title} className="h-full w-full object-cover" /> : <Building2 className="h-4 w-4 text-slate-300" />}</span>
-                <span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-slate-800">{getReportTitle(report)}</span><span className="block truncate text-[10px] text-slate-500">{report.issueType ?? report.issue_type ?? report.details ?? "Problem reported"}</span><span className="mt-0.5 block text-[9px] text-slate-400">{formatOptionalDate(report.submittedAt ?? report.submitted_at, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span></span>
-                <span className={`rounded-md border px-1.5 py-1 text-[9px] font-black ${severity.class}`}>{severity.label}</span>
-              </button>;
-            })}</div>
-          </motion.section>}
-
-          <motion.section variants={itemMotion} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <SectionHeading title="Recently Added" description="Newest apartment records." action={() => setActiveSection("apartments")} />
-            {recentApartments.length === 0 ? <OverviewEmpty icon={Building2} text="No apartments have been added yet." /> : (
-              <div className="divide-y divide-slate-100">{recentApartments.map((apartment) => {
-                const isPublished = apartment.isPublished === true || apartment.is_published === true;
-                return <button key={apartment.id} onClick={() => setSelectedApt(apartment)} className="flex w-full items-center gap-3 py-3 text-left">
-                  <span className="flex h-10 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100">{apartment.image ? <ImageWithFallback src={apartment.image} alt={apartment.title} className="h-full w-full object-cover" /> : <Building2 className="h-4 w-4 text-slate-300" />}</span>
-                  <span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-slate-800">{apartment.title}</span><span className="block text-[10px] font-semibold text-slate-500">Prices are listed per room</span><span className="mt-0.5 block text-[9px] text-slate-400">{formatOptionalDate(apartment.createdAt, { month: "short", day: "numeric", year: "numeric" })}</span></span>
-                  <span className={`rounded-md px-1.5 py-1 text-[9px] font-black ${isPublished ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{isPublished ? "Published" : "Unpublished"}</span>
-                </button>;
-              })}</div>
-            )}
-          </motion.section>
-        </div>
       </motion.div>
     );
   };
@@ -3524,19 +3531,19 @@ export function AdminDashboard() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="app-shell fixed inset-0 z-50 overflow-hidden bg-slate-50">
+    <div className="admin-portal-shell app-shell fixed inset-0 z-50 overflow-hidden bg-slate-50">
       <div className="app-shell-frame relative z-10 flex h-full">
-        <aside className="app-shell-sidebar hidden lg:flex h-full w-60 shrink-0 flex-col bg-slate-950 shadow-xl">
-          {SidebarContent()}
+        <aside className="app-shell-sidebar hidden h-full w-60 shrink-0 flex-col bg-[#FFFEFC] lg:flex">
+          {PortalSidebarContent()}
         </aside>
         {sidebarOpen && <div className="app-sidebar-overlay fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />}
-        <aside className={`app-sidebar-drawer fixed left-0 top-0 z-50 h-full w-64 bg-slate-950 shadow-2xl transition-transform duration-300 ease-in-out lg:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-          <button aria-label="Close navigation" onClick={() => setSidebarOpen(false)} className="app-sidebar-close absolute top-4 right-4 h-8 w-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all z-10">
+        <aside className={`app-sidebar-drawer fixed left-0 top-0 z-50 h-full w-64 bg-[#FFFEFC] shadow-2xl transition-transform duration-300 ease-in-out lg:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+          <button aria-label="Close navigation" onClick={() => setSidebarOpen(false)} className="app-sidebar-close absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-[#E8DED1] bg-white text-[#756A60] transition-colors hover:bg-[#FAF8F5] hover:text-[#302820]">
             <X className="h-4 w-4" />
           </button>
-          {SidebarContent()}
+          {PortalSidebarContent()}
         </aside>
-        <button aria-label="Open navigation" onClick={() => setSidebarOpen(true)} className="app-sidebar-trigger fixed top-4 left-4 z-30 lg:hidden h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-amber-300/40 hover:from-amber-400 hover:to-orange-500 transition-all">
+        <button aria-label="Open navigation" onClick={() => setSidebarOpen(true)} className="app-sidebar-trigger fixed left-4 top-4 z-30 flex h-10 w-10 items-center justify-center rounded-xl bg-[#8B735B] text-white shadow-md transition-colors hover:bg-[#6F4E37] lg:hidden">
           <Menu className="h-5 w-5" />
         </button>
         <div className="app-shell-main flex-1 min-w-0 h-full overflow-y-auto">

@@ -56,7 +56,7 @@ export function ApartmentCard({ apartment, detailState, ratingStats, ratingsLoad
 
   return (
     <Link to={`/apartment/${apartment.id}`} state={detailState}>
-      <Card className="overflow-hidden transition-all duration-300 hover:shadow-2xl hover:transform hover:-translate-y-2 border-2 hover:border-amber-200 animate-fade-in">
+      <Card className="overflow-hidden transition-all duration-300 hover:shadow-2xl hover:transform hover:-translate-y-2 border-2 hover:border-[#E8DED1] animate-fade-in">
         <div className="relative aspect-[4/3] overflow-hidden group">
           {imageUrl ? <ImageWithFallback src={imageUrl} alt={apartment.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" /> : <div className="flex h-full items-center justify-center bg-slate-100 text-sm font-semibold text-slate-500">Image unavailable</div>}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -65,7 +65,7 @@ export function ApartmentCard({ apartment, detailState, ratingStats, ratingsLoad
               variant="ghost"
               size="icon"
               className={`absolute right-2 top-2 rounded-full bg-white/90 backdrop-blur-md hover:bg-white shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 ${
-                favorite ? "text-pink-500" : ""
+                favorite ? "text-rose-500" : ""
               }`}
               onClick={handleFavoriteClick}
               aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
@@ -85,23 +85,23 @@ export function ApartmentCard({ apartment, detailState, ratingStats, ratingsLoad
             </Badge>
           </div>
         </div>
-        <CardContent className="p-4 bg-gradient-to-br from-white to-amber-50/30">
+        <CardContent className="p-4 bg-gradient-to-br from-white to-[#FAF8F5]/30">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h3 className="font-semibold text-lg mb-1 text-slate-900 group-hover:text-amber-600 transition-colors">{apartment.title}</h3>
+              <h3 className="font-semibold text-lg mb-1 text-slate-900 group-hover:text-[#756A60] transition-colors">{apartment.title}</h3>
               <ApartmentRatingSummary stats={ratingStats} isLoading={ratingsLoading} className="mb-2" />
               <div className="flex items-center text-slate-600 text-sm mb-3">
-                <MapPin className="h-4 w-4 mr-1 text-amber-500" />
+                <MapPin className="h-4 w-4 mr-1 text-[#8B735B]" />
                 <span>{locationText}</span>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm font-bold text-orange-600">View room prices</p>
+              <p className="text-sm font-bold text-[#756A60]">View room prices</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-sm text-slate-600 border-t border-amber-100 pt-3 mt-3">
+          <div className="flex items-center gap-4 text-sm text-slate-600 border-t border-[#F3EFEA] pt-3 mt-3">
             <div className="flex items-center gap-1">
-              <Bed className="h-4 w-4 text-amber-500" />
+              <Bed className="h-4 w-4 text-[#8B735B]" />
               <span>{apartment.bedrooms} bed</span>
             </div>
             <div className="flex items-center gap-1">
@@ -109,7 +109,7 @@ export function ApartmentCard({ apartment, detailState, ratingStats, ratingsLoad
               <span>{apartment.bathrooms} bath</span>
             </div>
             <div className="flex items-center gap-1">
-              <Square className="h-4 w-4 text-pink-500" />
+              <Square className="h-4 w-4 text-[#8B735B]" />
               <span>{apartment.sqft} sqft</span>
             </div>
           </div>

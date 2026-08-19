@@ -264,11 +264,11 @@ export function MultiImageUploader({
           className={`rounded-xl border-2 border-dashed transition-all p-8 text-center cursor-pointer ${
             isDragging
               ? "border-blue-500 bg-blue-50"
-              : "border-amber-200 bg-amber-50 hover:border-amber-300"
+              : "border-[#E8DED1] bg-[#FAF8F5] hover:border-[#DCC9B4]"
           }`}
           onClick={() => !disabled && fileInputRef.current?.click()}
         >
-          <Upload className="h-8 w-8 mx-auto mb-3 text-amber-600" />
+          <Upload className="h-8 w-8 mx-auto mb-3 text-[#756A60]" />
           <p className="font-semibold text-slate-900 mb-1">
             Drag images here or click to browse
           </p>
@@ -288,7 +288,7 @@ export function MultiImageUploader({
                 e.stopPropagation();
                 fileInputRef.current?.click();
               }}
-              className="border-amber-300 text-amber-700 hover:bg-amber-100"
+              className="border-[#DCC9B4] text-[#5F5145] hover:bg-[#F3EFEA]"
               disabled={disabled}
             >
               <ImageIcon className="h-4 w-4 mr-2" />
@@ -324,9 +324,9 @@ export function MultiImageUploader({
       )}
 
       {uploadProgress !== null && (
-        <div className="space-y-2 rounded-lg border border-orange-100 bg-orange-50 p-3" role="status" aria-live="polite">
-          <div className="flex justify-between text-xs font-bold text-orange-800"><span>Uploading room images</span><span>{Math.round(uploadProgress)}%</span></div>
-          <div className="h-2 overflow-hidden rounded-full bg-orange-100"><div className="h-full bg-orange-500 transition-all" style={{ width: `${Math.max(0, Math.min(100, uploadProgress))}%` }} /></div>
+        <div className="space-y-2 rounded-lg border border-[#F3EFEA] bg-[#FAF8F5] p-3" role="status" aria-live="polite">
+          <div className="flex justify-between text-xs font-bold text-[#493D33]"><span>Uploading room images</span><span>{Math.round(uploadProgress)}%</span></div>
+          <div className="h-2 overflow-hidden rounded-full bg-[#F3EFEA]"><div className="h-full bg-[#8B735B] transition-all" style={{ width: `${Math.max(0, Math.min(100, uploadProgress))}%` }} /></div>
         </div>
       )}
 
@@ -363,7 +363,7 @@ export function MultiImageUploader({
         <div className="space-y-4">
           {/* Large Preview */}
           {previewImage && (
-            <Card className="overflow-hidden border-2 border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50">
+            <Card className="overflow-hidden border-2 border-[#F3EFEA] bg-gradient-to-br from-[#FAF8F5] to-[#FAF8F5]">
               <div className="relative bg-slate-900 aspect-video flex items-center justify-center">
                 <img
                   src={previewImage.url}
@@ -423,7 +423,7 @@ export function MultiImageUploader({
                   className={`relative group rounded-lg overflow-hidden border-2 transition-all aspect-square cursor-pointer ${
                     img.isPrimary
                       ? "border-yellow-400 ring-2 ring-yellow-300"
-                      : "border-gray-200 hover:border-amber-300"
+                      : "border-gray-200 hover:border-[#DCC9B4]"
                   }`}
                 >
                   <img

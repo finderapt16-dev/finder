@@ -12,6 +12,9 @@ import {
   SheetTrigger,
 } from "@/app/shared/components/ui/sheet";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
+import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
+import type { Apartment } from "@/app/shared/data/apartments";
+import { isTenantVisibleApartment } from "@/app/shared/utils/listingVisibility";
 import {
   ArrowRight,
   BadgeCheck,
@@ -26,7 +29,7 @@ import {
   GraduationCap,
   Heart,
   Mail,
-  Map,
+  Map as MapIcon,
   MapPin,
   Menu,
   Search,
@@ -41,7 +44,7 @@ import {
   Zap
 } from "lucide-react";
 import { AnimatePresence, motion, useInView } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 /* ─── Animation helpers ──────────────────────────────────── */
@@ -72,22 +75,52 @@ const heroImages = [
 ];
 
 /* ─── Barangay data ─────────────────────────────────────── */
-const barangays = [
-  { name: "Divinagracia", count: "Browse listings", emoji: "🏘️" },
-  { name: "Benedicto", count: "Browse listings", emoji: "🏢" },
-  { name: "Sto. Rosario", count: "Browse listings", emoji: "🏠" },
-  { name: "Rizal", count: "Browse listings", emoji: "🏗️" },
-  { name: "Baldoza", count: "Browse listings", emoji: "🏡" },
-  { name: "Pale Benedicto", count: "Browse listings", emoji: "🏬" },
-];
+const normalizeLocationKey = (value: string) => value
+  .toLocaleLowerCase("en-PH")
+  .replace(/\b(?:barangay|brgy)\.?\s*/g, "")
+  .replace(/\b(?:sto|santo)\.?\s+/g, "sto ")
+  .replace(/[^a-z0-9]+/g, " ")
+  .trim();
+
+const getLocationSearchTerm = (value: string) => normalizeLocationKey(value).replace(/^sto\s+/, "");
+
+const formatLocationName = (value: string) => value
+  .replace(/\b(?:barangay|brgy)\.?\s*/gi, "")
+  .replace(/\s+/g, " ")
+  .trim()
+  .toLocaleLowerCase("en-PH")
+  .replace(/(^|\s)\p{L}/gu, (letter) => letter.toLocaleUpperCase("en-PH"))
+  .replace(/^Sto\s+/i, "Sto. ");
+
+const genericLocationKey = /^(?:la paz|lapaz|iloilo|iloilo city|iloilo province|western visayas|philippines|5000)$/;
+const streetAddressPattern = /^\d|\b(?:street|st\.?|road|rd\.?|avenue|ave\.?|block|blk\.?|lot|house|unit)\b/i;
+
+const getInventoryLocation = (apartment: Apartment): string | null => {
+  const scopeText = [apartment.city, apartment.state, apartment.address, apartment.location].filter(Boolean).join(" ");
+  if (!/\bla\s*paz\b/i.test(scopeText) || !/\biloilo\b/i.test(scopeText)) return null;
+
+  const candidates = [apartment.location, apartment.city]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .flatMap((value) => value.split(","))
+    .concat((apartment.address || "").split(",").reverse());
+
+  for (const candidate of candidates) {
+    const displayName = formatLocationName(candidate);
+    const key = normalizeLocationKey(displayName);
+    if (!key || genericLocationKey.test(key) || streetAddressPattern.test(displayName)) continue;
+    return displayName;
+  }
+
+  return null;
+};
 
 /* ─── Categories ────────────────────────────────────────── */
 const categories = [
-  { icon: Building2, label: "Apartments", color: "from-amber-400 to-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
-  { icon: GraduationCap, label: "Student Housing", color: "from-rose-400 to-rose-600", bg: "bg-rose-50", border: "border-rose-200" },
-  { icon: Users, label: "Family Units", color: "from-pink-400 to-pink-600", bg: "bg-pink-50", border: "border-pink-200" },
-  { icon: Briefcase, label: "Professional Housing", color: "from-orange-400 to-orange-600", bg: "bg-orange-50", border: "border-orange-200" },
-  { icon: BedDouble, label: "Furnished Units", color: "from-amber-500 to-rose-500", bg: "bg-amber-50", border: "border-amber-200" },
+  { icon: Building2, label: "Apartments", color: "from-[#A68B70] to-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#E8DED1]" },
+  { icon: GraduationCap, label: "Student Housing", color: "from-[#A68B70] to-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#E8DED1]" },
+  { icon: Users, label: "Family Units", color: "from-[#A68B70] to-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#E8DED1]" },
+  { icon: Briefcase, label: "Professional Housing", color: "from-[#A68B70] to-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#E8DED1]" },
+  { icon: BedDouble, label: "Furnished Units", color: "from-[#8B735B] to-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#E8DED1]" },
 ];
 
 /* ─── Community users ───────────────────────────────────── */
@@ -97,25 +130,25 @@ const communityCards = [
     icon: GraduationCap,
     name: "Housing near school",
     quote: "Compare prices, available rooms, amenities, and locations before arranging a visit.",
-    color: "border-amber-200",
-    iconBg: "bg-amber-100",
-    iconColor: "text-amber-700",
+    color: "border-[#E8DED1]",
+    iconBg: "bg-[#F3EFEA]",
+    iconColor: "text-[#5F5145]",
   },
   {
     role: "Working Professional",
     icon: Briefcase,
     name: "Housing near work",
     quote: "Use search filters and the map view to review apartments within a preferred area and budget.",
-    color: "border-orange-200",
-    iconBg: "bg-orange-100",
-    iconColor: "text-orange-700",
+    color: "border-[#E8DED1]",
+    iconBg: "bg-[#F3EFEA]",
+    iconColor: "text-[#5F5145]",
   },
   {
     role: "Family",
     icon: Users,
     name: "Housing for a household",
     quote: "Review room details, rental prices, amenities, and landlord verification information in one place.",
-    color: "border-rose-200",
+    color: "border-[#E8DED1]",
     iconBg: "bg-rose-100",
     iconColor: "text-rose-700",
   },
@@ -123,6 +156,7 @@ const communityCards = [
 
 export function Landing() {
   const { user } = useAuth();
+  const { apartments, isLoading: apartmentsLoading } = useApartmentsContext();
   const navigate = useNavigate();
   const [landingSearch, setLandingSearch] = useState("");
   const [heroIndex, setHeroIndex] = useState(0);
@@ -132,6 +166,22 @@ export function Landing() {
   const [rooms, setRooms] = useState("");
   const [availability, setAvailability] = useState("");
   const [scrolled, setScrolled] = useState(false);
+
+  const inventoryLocations = useMemo(() => {
+    const grouped = new Map<string, { name: string; count: number }>();
+
+    apartments.filter(isTenantVisibleApartment).forEach((apartment) => {
+      const name = getInventoryLocation(apartment);
+      if (!name) return;
+      const key = normalizeLocationKey(name);
+      const existing = grouped.get(key);
+      grouped.set(key, existing ? { ...existing, count: existing.count + 1 } : { name, count: 1 });
+    });
+
+    return [...grouped.values()]
+      .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name, "en-PH"))
+      .slice(0, 6);
+  }, [apartments]);
 
   useEffect(() => {
     const timer = setInterval(() => setHeroIndex((i) => (i + 1) % heroImages.length), 5000);
@@ -495,9 +545,9 @@ export function Landing() {
             </AnimatedSection>
 
             <div className="landing-location-directory order-3 grid grid-cols-1 border-t border-[#E8DED1] sm:grid-cols-2 md:col-start-2 md:row-start-2 xl:grid-cols-3">
-              {barangays.map(({ name, count }, i) => (
+              {inventoryLocations.map(({ name, count }, i) => (
                 <AnimatedSection key={name} delay={i * 0.07}>
-                  <Link to="/browse" onClick={handleProtectedAction}>
+                  <Link to={`/browse?search=${encodeURIComponent(getLocationSearchTerm(name))}`} onClick={handleProtectedAction}>
                     <motion.div
                       whileHover={{ x: 2 }}
                       className="group flex min-h-24 cursor-pointer items-center gap-3 border-b border-[#E8DED1] px-3 py-5 transition-colors hover:bg-white/60"
@@ -505,13 +555,18 @@ export function Landing() {
                       <MapPin className="h-5 w-5 shrink-0 text-[#8B735B]" />
                       <div className="min-w-0">
                         <p className="text-sm font-bold leading-snug text-[#302820] transition-colors group-hover:text-[#8B735B]">{name}</p>
-                        <p className="mt-1 text-xs font-medium text-[#756A60]">{count}</p>
+                        <p className="mt-1 text-xs font-medium text-[#756A60]">{count} {count === 1 ? "apartment" : "apartments"}</p>
                       </div>
                       <ArrowRight className="ml-auto h-4 w-4 flex-shrink-0 text-[#8B735B] transition-transform group-hover:translate-x-1" />
                     </motion.div>
                   </Link>
                 </AnimatedSection>
               ))}
+              {!apartmentsLoading && inventoryLocations.length === 0 && (
+                <p className="col-span-full border-b border-[#E8DED1] px-3 py-8 text-sm font-medium text-[#756A60]">
+                  No apartment locations available yet.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -528,10 +583,10 @@ export function Landing() {
 
           <div className="landing-user-directory mx-auto grid max-w-6xl grid-cols-1 border-y border-[#E8DED1] sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { icon: GraduationCap, role: "Students", desc: "Search by location and budget, compare rooms, save favorites, and review listing information.", gradient: "from-amber-500 to-amber-600" },
-              { icon: Briefcase, role: "Employees", desc: "Compare rental prices, amenities, availability, and locations near work.", gradient: "from-orange-500 to-orange-600" },
-              { icon: Building2, role: "Landlords", desc: "Create listings, manage rooms and availability, upload images, and monitor recorded engagement.", gradient: "from-rose-500 to-rose-600" },
-              { icon: UserCog, role: "Administrators", desc: "Review verification information, manage listings and reports, and monitor platform activity.", gradient: "from-pink-500 to-pink-600" },
+              { icon: GraduationCap, role: "Students", desc: "Search by location and budget, compare rooms, save favorites, and review listing information.", gradient: "from-[#8B735B] to-[#756A60]" },
+              { icon: Briefcase, role: "Employees", desc: "Compare rental prices, amenities, availability, and locations near work.", gradient: "from-[#8B735B] to-[#756A60]" },
+              { icon: Building2, role: "Landlords", desc: "Create listings, manage rooms and availability, upload images, and monitor recorded engagement.", gradient: "from-[#8B735B] to-[#756A60]" },
+              { icon: UserCog, role: "Administrators", desc: "Review verification information, manage listings and reports, and monitor platform activity.", gradient: "from-[#8B735B] to-[#756A60]" },
             ].map(({ icon: Icon, role, desc }, i) => (
               <AnimatedSection key={role} delay={i * 0.08}>
                 <motion.div
@@ -561,12 +616,12 @@ export function Landing() {
 
           <div className="landing-information-grid mx-auto grid max-w-6xl grid-cols-1 border-y border-[#E8DED1] md:grid-cols-2 lg:grid-cols-3">
             {[
-              { icon: BadgeCheck, title: "Landlord Verification Status", desc: "Review the verification status shown for landlords before exploring a listing.", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
-              { icon: ShieldCheck, title: "Verification Information", desc: "Landlords submit required information for administrative review through the platform.", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
-              { icon: Flag, title: "Listing Reports", desc: "Users can report inaccurate or concerning listing information for administrator review.", color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-100" },
-              { icon: Map, title: "GIS Map View", desc: "Compare apartment locations in La Paz and review nearby listing options.", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
-              { icon: Bot, title: "Platform Guide", desc: "The built-in assistant explains platform features and helps users navigate available options.", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
-              { icon: TrendingUp, title: "Listing Activity", desc: "Landlords can monitor recorded views and favorites, while renters receive suggestions based on their preferences.", color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-100" },
+              { icon: BadgeCheck, title: "Landlord Verification Status", desc: "Review the verification status shown for landlords before exploring a listing.", color: "text-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#F3EFEA]" },
+              { icon: ShieldCheck, title: "Verification Information", desc: "Landlords submit required information for administrative review through the platform.", color: "text-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#F3EFEA]" },
+              { icon: Flag, title: "Listing Reports", desc: "Users can report inaccurate or concerning listing information for administrator review.", color: "text-rose-600", bg: "bg-[#FAF8F5]", border: "border-rose-100" },
+              { icon: MapIcon, title: "GIS Map View", desc: "Compare apartment locations in La Paz and review nearby listing options.", color: "text-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#F3EFEA]" },
+              { icon: Bot, title: "Platform Guide", desc: "The built-in assistant explains platform features and helps users navigate available options.", color: "text-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#F3EFEA]" },
+              { icon: TrendingUp, title: "Listing Activity", desc: "Landlords can monitor recorded views and favorites, while renters receive suggestions based on their preferences.", color: "text-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#E8DED1]" },
             ].map(({ icon: Icon, title, desc }, i) => (
               <AnimatedSection key={title} delay={i * 0.07}>
                 <motion.div
@@ -699,7 +754,7 @@ export function Landing() {
                 A Progressive Web Application for apartment discovery and listing management in La Paz, Iloilo City. Academic thesis project.
               </p>
               <div className="flex gap-3 mt-5">
-                <a href="mailto:rentiloilo@example.com" className="flex items-center gap-2 text-xs text-slate-500 hover:text-amber-400 transition-colors">
+                <a href="mailto:rentiloilo@example.com" className="flex items-center gap-2 text-xs text-slate-500 hover:text-[#A68B70] transition-colors">
                   <Mail className="h-3.5 w-3.5" />rentiloilo@example.com
                 </a>
               </div>
@@ -740,7 +795,7 @@ export function Landing() {
               <div className="mt-6 border-t border-slate-200 pt-5">
                 <p className="text-xs text-slate-600 font-semibold uppercase tracking-wide mb-2">Coverage Area</p>
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-3.5 w-3.5 text-amber-500" />
+                  <MapPin className="h-3.5 w-3.5 text-[#8B735B]" />
                   <span className="text-xs text-slate-400">La Paz, Iloilo City, Philippines</span>
                 </div>
               </div>

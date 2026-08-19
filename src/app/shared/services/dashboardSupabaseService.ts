@@ -187,6 +187,7 @@ export interface AdminAnalyticsApartmentRow {
     id: string;
     status: string | null;
     is_occupied: boolean;
+    rent: number | null;
   }> | null;
 }
 
@@ -1962,7 +1963,7 @@ export async function fetchAdminAnalyticsData(): Promise<AdminAnalyticsData> {
   const [apartmentsResult, usersResult, viewsResult, favoritesResult, ratingsResult] = await Promise.all([
     supabase
       .from("apartments")
-      .select("id, title, is_published, approval_status, is_archived, deleted_at, status, created_at, published_at, apartment_rooms(id, status, is_occupied)"),
+      .select("id, title, is_published, approval_status, is_archived, deleted_at, status, created_at, published_at, apartment_rooms(id, status, is_occupied, rent)"),
     supabase
       .from("app_users")
       .select("id, role, is_verified, status, verification_status, landlord_status")

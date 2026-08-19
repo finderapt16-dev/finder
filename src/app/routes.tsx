@@ -55,6 +55,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "browse", element: <ProtectedRoute preserveReturnDestination loginMessage={APARTMENT_LOGIN_MESSAGE}><PageLoader><Home /></PageLoader></ProtectedRoute> },
       { path: "apartment/:id", element: <ProtectedRoute preserveReturnDestination loginMessage={APARTMENT_LOGIN_MESSAGE}><PageLoader><ApartmentDetail /></PageLoader></ProtectedRoute> },
+      { path: "landlord/market/:id", element: <ProtectedRoute allowedRoles={["landlord"]}><PageLoader><ApartmentDetail /></PageLoader></ProtectedRoute> },
       { path: "admin/apartment/:id", element: <ProtectedRoute allowedRoles={["admin"]}><PageLoader><AdminApartmentDetail /></PageLoader></ProtectedRoute> },
       { path: "add-apartment", element: <ProtectedRoute allowedRoles={["landlord"]}><PageLoader><AddApartment /></PageLoader></ProtectedRoute> },
       { path: "landlord/properties/:id/rooms", element: <ProtectedRoute allowedRoles={["landlord"]}><PageLoader><ManageRooms /></PageLoader></ProtectedRoute> },

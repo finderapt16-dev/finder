@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
 
-type LandlordSection = "overview" | "activity" | "notifications" | "settings" | "help";
+type LandlordSection = "overview" | "activity" | "notifications" | "market" | "settings" | "help";
 
 type LandlordSidebarProps = {
   user?: { name?: string | null; email?: string | null; avatar?: string | null } | null;
@@ -48,7 +48,7 @@ export function LandlordSidebar({ user, verified = false, activeSection, unreadN
       </div>
 
       <nav className="space-y-1 px-3 py-3"><p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]">Main<span className="h-px w-5 bg-[#8B735B]/45" /></p><div className="space-y-1">{mainItems.map(({ label, section, icon: Icon }) => <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => selectSection(section)} className={navClass(activeSection === section)}><Icon className="h-4 w-4 shrink-0" />{label}{section === "notifications" && unreadNotifications > 0 && <span className="app-sidebar-badge ml-auto flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white">{unreadNotifications}</span>}</button>)}</div></nav>
-      <nav className="space-y-1 border-t border-[#E8DED1] px-3 py-4"><p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]">Market<span className="h-px w-5 bg-[#8B735B]/45" /></p><Link to="/browse" onClick={onClose} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] transition-all hover:bg-[#FAF8F5] hover:text-[#8B735B]"><TrendingUp className="h-4 w-4 shrink-0" />Market Overview</Link></nav>
+      <nav className="space-y-1 border-t border-[#E8DED1] px-3 py-4"><p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]">Market<span className="h-px w-5 bg-[#8B735B]/45" /></p><Link to="/browse" onClick={onClose} aria-current={activeSection === "market" ? "page" : undefined} className={navClass(activeSection === "market")}><TrendingUp className="h-4 w-4 shrink-0" />Market Overview</Link></nav>
       <nav className="space-y-1 border-t border-[#E8DED1] px-3 py-4"><p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]">Manage<span className="h-px w-5 bg-[#8B735B]/45" /></p><Link to="/add-apartment" onClick={onClose} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] transition-all hover:bg-[#FAF8F5] hover:text-[#8B735B]"><ListPlus className="h-4 w-4 shrink-0" />Add Property</Link></nav>
       <nav className="space-y-1 border-t border-[#E8DED1] px-3 py-4"><p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]">Account<span className="h-px w-5 bg-[#8B735B]/45" /></p><div className="space-y-1">{accountItems.map(({ label, section, icon: Icon }) => <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => selectSection(section)} className={navClass(activeSection === section)}><Icon className="h-4 w-4 shrink-0" />{label}</button>)}</div></nav>
       <div className="flex-1" />

@@ -335,7 +335,7 @@ export function Chatbot({ userRole }: ChatbotProps) {
       )}
 
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 mx-6 flex h-[min(640px,calc(100vh-3rem))] w-full max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-amber-100 bg-white shadow-2xl sm:mx-0 sm:w-[400px]">
+        <div className="fixed bottom-6 right-6 z-50 mx-6 flex h-[min(640px,calc(100vh-3rem))] w-full max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-[#F3EFEA] bg-white shadow-2xl sm:mx-0 sm:w-[400px]">
           <div className="flex items-center justify-between bg-[#8b735b] p-4 text-white">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
@@ -360,7 +360,7 @@ export function Chatbot({ userRole }: ChatbotProps) {
             </Button>
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-gradient-to-b from-amber-50/50 to-white p-4">
+          <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#FAF8F5]/50 to-white p-4">
             <div className="space-y-4">
               {messages.map((message) => (
                 <div
@@ -368,22 +368,22 @@ export function Chatbot({ userRole }: ChatbotProps) {
                   className={`flex gap-2 ${message.sender === "user" ? "justify-end" : "justify-start"}`}
                 >
                   {message.sender === "bot" && (
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
-                      <Bot className="h-4 w-4 text-amber-700" />
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#F3EFEA]">
+                      <Bot className="h-4 w-4 text-[#5F5145]" />
                     </div>
                   )}
                   <div className={`max-w-[85%] ${message.sender === "user" ? "order-first" : ""}`}>
                     <div
                       className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                         message.sender === "user"
-                          ? "rounded-br-md bg-gradient-to-r from-amber-500 to-orange-600 text-white"
+                          ? "rounded-br-md bg-gradient-to-r from-[#8B735B] to-[#756A60] text-white"
                           : message.category === "unrelated" || message.category === "unauthorized" || message.category === "error"
                             ? "rounded-bl-md border border-red-100 bg-white text-slate-800 shadow-sm"
-                            : "rounded-bl-md border border-amber-100 bg-white text-slate-800 shadow-sm"
+                            : "rounded-bl-md border border-[#F3EFEA] bg-white text-slate-800 shadow-sm"
                       }`}
                     >
                       <p className="whitespace-pre-wrap">{renderMessageText(message.text)}</p>
-                      <p className={`mt-1.5 text-[10px] ${message.sender === "user" ? "text-amber-100" : "text-slate-400"}`}>
+                      <p className={`mt-1.5 text-[10px] ${message.sender === "user" ? "text-[#F3EFEA]" : "text-slate-400"}`}>
                         {message.timestamp.toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -398,7 +398,7 @@ export function Chatbot({ userRole }: ChatbotProps) {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-7 rounded-full border-amber-200 text-xs text-amber-800 hover:bg-amber-50"
+                            className="h-7 rounded-full border-[#E8DED1] text-xs text-[#493D33] hover:bg-[#FAF8F5]"
                             onClick={() => handleAction(action.path)}
                           >
                             {action.label}
@@ -417,14 +417,14 @@ export function Chatbot({ userRole }: ChatbotProps) {
 
               {isTyping && (
                 <div className="flex justify-start gap-2">
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
-                    <Bot className="h-4 w-4 text-amber-700" />
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#F3EFEA]">
+                    <Bot className="h-4 w-4 text-[#5F5145]" />
                   </div>
-                  <div className="rounded-2xl border border-amber-100 bg-white px-4 py-3 shadow-sm">
+                  <div className="rounded-2xl border border-[#F3EFEA] bg-white px-4 py-3 shadow-sm">
                     <div className="flex gap-1">
-                      <div className="h-2 w-2 animate-bounce rounded-full bg-amber-400 [animation-delay:0ms]" />
-                      <div className="h-2 w-2 animate-bounce rounded-full bg-amber-400 [animation-delay:150ms]" />
-                      <div className="h-2 w-2 animate-bounce rounded-full bg-amber-400 [animation-delay:300ms]" />
+                      <div className="h-2 w-2 animate-bounce rounded-full bg-[#A68B70] [animation-delay:0ms]" />
+                      <div className="h-2 w-2 animate-bounce rounded-full bg-[#A68B70] [animation-delay:150ms]" />
+                      <div className="h-2 w-2 animate-bounce rounded-full bg-[#A68B70] [animation-delay:300ms]" />
                     </div>
                   </div>
                 </div>
@@ -448,7 +448,7 @@ export function Chatbot({ userRole }: ChatbotProps) {
             </div>
           </div>
 
-          <div className="border-t border-amber-100 bg-white px-3 pb-1 pt-2">
+          <div className="border-t border-[#F3EFEA] bg-white px-3 pb-1 pt-2">
             <p className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
               Quick questions
             </p>
@@ -459,7 +459,7 @@ export function Chatbot({ userRole }: ChatbotProps) {
                   type="button"
                   disabled={isTyping}
                   onClick={() => handleSend(prompt.message)}
-                  className="flex-shrink-0 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-900 transition-colors hover:bg-amber-100 disabled:opacity-50"
+                  className="flex-shrink-0 rounded-full border border-[#E8DED1] bg-[#FAF8F5] px-3 py-1.5 text-xs text-[#302820] transition-colors hover:bg-[#F3EFEA] disabled:opacity-50"
                 >
                   {prompt.label}
                 </button>
@@ -467,14 +467,14 @@ export function Chatbot({ userRole }: ChatbotProps) {
             </div>
           </div>
 
-          <div className="border-t border-amber-100 bg-white p-3">
+          <div className="border-t border-[#F3EFEA] bg-white p-3">
             <div className="flex gap-2">
               <Input
                 value={inputValue}
                 onChange={(event) => setInputValue(event.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about platform features..."
-                className="flex-1 rounded-xl border-amber-200 focus-visible:ring-amber-400"
+                className="flex-1 rounded-xl border-[#E8DED1] focus-visible:ring-[#A68B70]"
                 disabled={isTyping}
                 maxLength={800}
                 aria-label="Ask the platform assistant"
@@ -482,7 +482,7 @@ export function Chatbot({ userRole }: ChatbotProps) {
               <Button
                 onClick={() => handleSend()}
                 disabled={inputValue.trim() === "" || isTyping}
-                className="shrink-0 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
+                className="shrink-0 rounded-xl bg-gradient-to-r from-[#8B735B] to-[#756A60] hover:from-[#756A60] hover:to-[#5F5145]"
                 aria-label="Send message"
               >
                 <Send className="h-4 w-4" />

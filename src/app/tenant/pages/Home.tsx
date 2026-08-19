@@ -782,11 +782,11 @@ function TenantBrowse() {
             <div className="min-w-0">
               <h2 className="truncate text-xl font-black text-slate-950">{apartment.title}</h2>
               <ApartmentRatingSummary stats={ratingSummary.byApartment.get(apartment.id)} isLoading={ratingsLoading} className="mt-1.5" />
-              <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-slate-500"><MapPin className="h-4 w-4 text-orange-500" />{locationText}</p>
+              <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-slate-500"><MapPin className="h-4 w-4 text-[#8B735B]" />{locationText}</p>
             </div>
             <div className="shrink-0 text-right">
-              <p className="text-sm font-black text-orange-600">View room prices</p>
-              <p className="mt-1 flex items-center justify-end gap-1 text-xs font-bold text-slate-500"><Eye className="h-3.5 w-3.5 text-orange-500" />{viewLabel(viewCount)}</p>
+              <p className="text-sm font-black text-[#756A60]">View room prices</p>
+              <p className="mt-1 flex items-center justify-end gap-1 text-xs font-bold text-slate-500"><Eye className="h-3.5 w-3.5 text-[#8B735B]" />{viewLabel(viewCount)}</p>
             </div>
           </div>
           <div className="mt-5 grid grid-cols-4 gap-2 border-t border-slate-100 pt-4 text-sm">
@@ -795,7 +795,7 @@ function TenantBrowse() {
             <Metric icon={Bath} label="bath" value={apartment.bathrooms.toLocaleString()} />
             <Metric icon={Square} label="sqft" value={Number(apartment.sqft || 0).toLocaleString()} />
           </div>
-          <Button asChild variant="outline" className="mt-5 h-12 w-full rounded-lg border-orange-200 font-black text-orange-600 hover:bg-orange-50">
+          <Button asChild variant="outline" className="mt-5 h-12 w-full rounded-lg border-[#E8DED1] font-black text-[#756A60] hover:bg-[#FAF8F5]">
             <Link to={`/apartment/${apartment.id}`}>
               <Eye className="mr-2 h-4 w-4" />
               View Details
@@ -819,17 +819,17 @@ function TenantBrowse() {
               <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <input value={searchQuery} onChange={(event) => updateSearchQuery(event.target.value)} placeholder="Search apartments or try near ISAT U" className="h-12 w-full rounded-lg border border-slate-200 bg-white pl-12 pr-4 text-sm font-medium outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100" />
+                  <input value={searchQuery} onChange={(event) => updateSearchQuery(event.target.value)} placeholder="Search apartments or try near ISAT U" className="h-12 w-full rounded-lg border border-slate-200 bg-white pl-12 pr-4 text-sm font-medium outline-none focus:border-[#DCC9B4] focus:ring-2 focus:ring-[#F3EFEA]" />
                 </div>
                 {renderFilterTrigger()}
               </div>
-              {nearbySearchLoading && <p className="px-1 pt-2 text-xs font-bold text-orange-600">Finding nearby apartments…</p>}
+              {nearbySearchLoading && <p className="px-1 pt-2 text-xs font-bold text-[#756A60]">Finding nearby apartments…</p>}
               {nearbySearchError && <p className="px-1 pt-2 text-xs font-bold text-red-600">{nearbySearchError}</p>}
             </form>
 
-            <section className="relative mt-8 overflow-hidden rounded-lg bg-gradient-to-r from-white via-orange-50 to-orange-100 p-7">
+            <section className="relative mt-8 overflow-hidden rounded-lg bg-gradient-to-r from-white via-[#FAF8F5] to-[#F3EFEA] p-7">
               <div className="relative z-10">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-orange-100 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-orange-600 shadow-sm">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-[#F3EFEA] bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-[#756A60] shadow-sm">
                   <Sparkles className="h-4 w-4" />
                   Find Your Next Home
                 </div>
@@ -848,14 +848,14 @@ function TenantBrowse() {
                 <SortButton icon={Flame} label="Popular" active={sortBy === "popular"} onClick={() => setSortBy("popular")} />
               </div>}
               <div className="grid h-12 grid-cols-2 rounded-lg border border-slate-200 bg-white p-1">
-                <button onClick={() => setViewMode("grid")} className={`flex items-center justify-center gap-2 rounded-md px-5 text-sm font-black ${viewMode === "grid" ? "bg-orange-50 text-orange-600" : "text-slate-600 hover:bg-slate-50"}`}><Grid2X2 className="h-4 w-4" />Grid</button>
-                <button onClick={() => setViewMode("map")} className={`flex items-center justify-center gap-2 rounded-md px-5 text-sm font-black ${viewMode === "map" ? "bg-orange-50 text-orange-600" : "text-slate-600 hover:bg-slate-50"}`}><Map className="h-4 w-4" />Map</button>
+                <button onClick={() => setViewMode("grid")} className={`flex items-center justify-center gap-2 rounded-md px-5 text-sm font-black ${viewMode === "grid" ? "bg-[#FAF8F5] text-[#756A60]" : "text-slate-600 hover:bg-slate-50"}`}><Grid2X2 className="h-4 w-4" />Grid</button>
+                <button onClick={() => setViewMode("map")} className={`flex items-center justify-center gap-2 rounded-md px-5 text-sm font-black ${viewMode === "map" ? "bg-[#FAF8F5] text-[#756A60]" : "text-slate-600 hover:bg-slate-50"}`}><Map className="h-4 w-4" />Map</button>
               </div>
             </section>
 
             <section className="mt-6">
               {apartmentsRefreshing && allApartments.length > 0 && (
-                <div className="mb-3 flex items-center gap-2 rounded-lg border border-orange-100 bg-orange-50 px-4 py-2 text-xs font-black text-orange-700">
+                <div className="mb-3 flex items-center gap-2 rounded-lg border border-[#F3EFEA] bg-[#FAF8F5] px-4 py-2 text-xs font-black text-[#5F5145]">
                   <RefreshCw className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   Refreshing latest apartment data...
                 </div>
@@ -886,7 +886,7 @@ function TenantBrowse() {
                   <LocateFixed className="mb-4 h-12 w-12 text-slate-300" />
                   <h2 className="text-2xl font-black text-slate-950">No apartments match your filters.</h2>
                   <p className="mt-2 text-sm font-medium text-slate-500">Try adjusting your search criteria to find your perfect home.</p>
-                  <Button onClick={resetFilters} className="mt-6 rounded-lg bg-orange-500 font-black text-white hover:bg-orange-600">Reset Filters</Button>
+                  <Button onClick={resetFilters} className="mt-6 rounded-lg bg-[#8B735B] font-black text-white hover:bg-[#756A60]">Reset Filters</Button>
                 </div>
               ) : viewMode === "grid" ? (
                 <>
@@ -949,7 +949,7 @@ function TenantBrowse() {
 function Metric({ icon: Icon, value, label }: { icon: ComponentType<{ className?: string }>; value: string; label: string }) {
   return (
     <div className="flex items-center gap-1.5 text-slate-600">
-      <Icon className="h-4 w-4 text-orange-500" />
+      <Icon className="h-4 w-4 text-[#8B735B]" />
       <span className="font-bold">{value}</span>
       <span className="text-xs">{label}</span>
     </div>
@@ -1052,7 +1052,7 @@ function Pagination({
           <ChevronLeft className="h-4 w-4" />
         </button>
         {visiblePages.map((page) => (
-            <button key={page} onClick={() => setCurrentPage(page)} className={`h-10 min-w-10 rounded-lg px-3 text-sm font-black ${currentPage === page ? "bg-orange-500 text-white" : "border border-slate-200 bg-white text-slate-700"}`}>
+            <button key={page} onClick={() => setCurrentPage(page)} className={`h-10 min-w-10 rounded-lg px-3 text-sm font-black ${currentPage === page ? "bg-[#8B735B] text-white" : "border border-slate-200 bg-white text-slate-700"}`}>
               {page}
             </button>
         ))}

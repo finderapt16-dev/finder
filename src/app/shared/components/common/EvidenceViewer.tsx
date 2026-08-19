@@ -58,8 +58,8 @@ export function EvidenceViewer({
 
   if (evidence.length === 0) {
     return (
-      <Card className="p-6 text-center border border-amber-100 bg-amber-50/30">
-        <ImageIcon className="h-8 w-8 text-amber-400 mx-auto mb-2 opacity-50" />
+      <Card className="p-6 text-center border border-[#F3EFEA] bg-[#FAF8F5]/30">
+        <ImageIcon className="h-8 w-8 text-[#A68B70] mx-auto mb-2 opacity-50" />
         <p className="text-sm text-slate-600">No evidence attached</p>
       </Card>
     );
@@ -116,7 +116,7 @@ export function EvidenceViewer({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <ImageIcon className="h-5 w-5 text-amber-600" />
+          <ImageIcon className="h-5 w-5 text-[#756A60]" />
           {title}
           <Badge variant="secondary" className="ml-2">
             {evidence.length} file{evidence.length !== 1 ? "s" : ""}
@@ -128,7 +128,7 @@ export function EvidenceViewer({
       {imageEvidence.length > 0 && currentPreviewEvidence && (
         <div className="space-y-3">
           {/* Large Preview */}
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl border-2 border-amber-100 bg-slate-100">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-xl border-2 border-[#F3EFEA] bg-slate-100">
             <img
               src={currentPreviewEvidence.fileUrl}
               alt={currentPreviewEvidence.fileName}
@@ -181,8 +181,8 @@ export function EvidenceViewer({
                   onClick={() => goToImage(img.id)}
                   className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-all hover:opacity-80 ${
                     previewImageId === img.id
-                      ? "border-amber-500 ring-2 ring-amber-300"
-                      : "border-amber-100 hover:border-amber-300"
+                      ? "border-[#8B735B] ring-2 ring-[#DCC9B4]"
+                      : "border-[#F3EFEA] hover:border-[#DCC9B4]"
                   }`}
                 >
                   <img
@@ -208,7 +208,7 @@ export function EvidenceViewer({
             return (
               <Card
                 key={item.id}
-                className="p-3 flex items-center justify-between border border-amber-100 bg-gradient-to-r from-amber-50/50 to-transparent hover:bg-amber-50 transition-colors"
+                className="p-3 flex items-center justify-between border border-[#F3EFEA] bg-gradient-to-r from-[#FAF8F5]/50 to-transparent hover:bg-[#FAF8F5] transition-colors"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div
@@ -245,7 +245,7 @@ export function EvidenceViewer({
                       size="icon"
                       variant="ghost"
                       onClick={() => goToImage(item.id)}
-                      className="h-8 w-8 text-slate-600 hover:text-amber-600"
+                      className="h-8 w-8 text-slate-600 hover:text-[#756A60]"
                       title="View image"
                     >
                       <Eye className="h-4 w-4" />
@@ -255,7 +255,7 @@ export function EvidenceViewer({
                     size="icon"
                     variant="ghost"
                     onClick={() => handleDownload(item)}
-                    className="h-8 w-8 text-slate-600 hover:text-amber-600"
+                    className="h-8 w-8 text-slate-600 hover:text-[#756A60]"
                     title="Download file"
                   >
                     <Download className="h-4 w-4" />

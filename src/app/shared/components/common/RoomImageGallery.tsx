@@ -51,7 +51,7 @@ export function RoomImageGallery({ images = [], roomName = "Room" }: RoomImageGa
         <button type="button" onClick={() => setFullScreen(true)} className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-md bg-slate-950/75 px-3 py-2 text-xs font-bold text-white hover:bg-slate-950"><Expand className="h-3.5 w-3.5" />Full screen</button>
       </div>
       {sources.length > 1 && <div className="flex gap-2 overflow-x-auto pb-1" aria-label={`${roomName} image thumbnails`}>
-        {sources.map((source, index) => <button type="button" key={`${source}-${index}`} onClick={() => setActiveIndex(index)} className={`h-16 w-20 shrink-0 overflow-hidden rounded-md border-2 ${index === activeIndex ? "border-orange-500" : "border-transparent opacity-75 hover:opacity-100"}`}><img src={source} alt={`${roomName} thumbnail ${index + 1}`} className="h-full w-full object-cover" /></button>)}
+        {sources.map((source, index) => <button type="button" key={`${source}-${index}`} onClick={() => setActiveIndex(index)} className={`h-16 w-20 shrink-0 overflow-hidden rounded-md border-2 ${index === activeIndex ? "border-[#8B735B]" : "border-transparent opacity-75 hover:opacity-100"}`}><img src={source} alt={`${roomName} thumbnail ${index + 1}`} className="h-full w-full object-cover" /></button>)}
       </div>}
     </div>
 

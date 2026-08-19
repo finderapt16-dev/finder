@@ -611,10 +611,10 @@ export function StudentEmployeeDashboard() {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-bold text-slate-600">{title}</span>
-        <strong className="mt-1 block text-4xl font-black leading-none text-orange-600">{value.toLocaleString()}</strong>
+        <strong className="mt-1 block text-4xl font-black leading-none text-[#756A60]">{value.toLocaleString()}</strong>
         <span className="mt-2 block text-sm font-medium text-slate-500">{detail}</span>
       </span>
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-500 transition group-hover:bg-orange-500 group-hover:text-white">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FAF8F5] text-[#8B735B] transition group-hover:bg-[#8B735B] group-hover:text-white">
         <ChevronRight className="h-5 w-5" />
       </span>
     </button>
@@ -636,7 +636,7 @@ export function StudentEmployeeDashboard() {
     accent: "orange" | "indigo" | "green";
   }) => {
     const accentClass = {
-      orange: "bg-orange-50 text-orange-600 border-orange-100",
+      orange: "bg-[#FAF8F5] text-[#756A60] border-[#F3EFEA]",
       indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
       green: "bg-emerald-50 text-emerald-600 border-emerald-100",
     }[accent];
@@ -678,12 +678,12 @@ export function StudentEmployeeDashboard() {
     action?: () => void;
   }) => (
     <div className="flex min-h-72 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
-      <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
+      <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]">
         <Icon className="h-7 w-7" />
       </span>
       <p className="max-w-md text-base font-bold text-slate-700">{message}</p>
       {actionLabel && action && (
-        <Button onClick={action} className="mt-5 rounded-lg bg-orange-500 font-black text-white hover:bg-orange-600">
+        <Button onClick={action} className="mt-5 rounded-lg bg-[#8B735B] font-black text-white hover:bg-[#756A60]">
           {actionLabel}
         </Button>
       )}
@@ -777,12 +777,12 @@ export function StudentEmployeeDashboard() {
               </div>
             </div>
             <div className="shrink-0 sm:text-right">
-              <p className="text-sm font-black text-orange-600">View room prices</p>
+              <p className="text-sm font-black text-[#756A60]">View room prices</p>
             </div>
           </div>
 
           <div className="my-5 grid grid-cols-2 gap-3 border-y border-slate-100 py-4 sm:grid-cols-4">
-            <InfoPill icon={Bookmark} value={availableRooms.toLocaleString()} label={availableRooms === 1 ? "Room" : "Rooms"} tone="bg-orange-50 text-orange-600" />
+            <InfoPill icon={Bookmark} value={availableRooms.toLocaleString()} label={availableRooms === 1 ? "Room" : "Rooms"} tone="bg-[#FAF8F5] text-[#756A60]" />
             <InfoPill icon={Bed} value={apartment.rooms?.length ? apartment.rooms.length.toLocaleString() : apartment.bedrooms.toLocaleString()} label={apartment.rooms?.length ? "Room count" : "Beds"} tone="bg-rose-50 text-rose-600" />
             <InfoPill icon={Bath} value={apartment.bathrooms.toLocaleString()} label={apartment.bathrooms === 1 ? "Bath" : "Baths"} tone="bg-purple-50 text-purple-600" />
             <InfoPill icon={Square} value={Number(apartment.sqft || 0).toLocaleString()} label="Sqft" tone="bg-sky-50 text-sky-600" />
@@ -816,23 +816,23 @@ export function StudentEmployeeDashboard() {
 
   const renderOverview = () => (
     <div className="mx-auto max-w-7xl space-y-7">
-      <section className="relative overflow-hidden rounded-lg border border-orange-100 bg-white px-6 py-8 shadow-[0_22px_60px_rgba(15,23,42,0.08)] md:px-9 md:py-10">
+      <section className="relative overflow-hidden rounded-lg border border-[#F3EFEA] bg-white px-6 py-8 shadow-[0_22px_60px_rgba(15,23,42,0.08)] md:px-9 md:py-10">
         <div className="relative z-10 max-w-3xl">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-lg border border-orange-100 bg-orange-50 px-4 py-2 text-xs font-black uppercase tracking-wider text-orange-600 shadow-sm">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-lg border border-[#F3EFEA] bg-[#FAF8F5] px-4 py-2 text-xs font-black uppercase tracking-wider text-[#756A60] shadow-sm">
             <LayoutDashboard className="h-4 w-4" />
             Your Dashboard
           </div>
           <h1 className="text-4xl font-black tracking-tight text-slate-950 md:text-6xl">
             Welcome back{displayName ? "," : ""}
-            {displayName && <span className="block text-orange-600">{displayName}</span>}
+            {displayName && <span className="block text-[#756A60]">{displayName}</span>}
           </h1>
           <p className="mt-5 text-lg font-medium text-slate-600">{dashboardSubtitle}</p>
         </div>
-        <div className="pointer-events-none absolute right-6 top-6 hidden h-48 w-72 rounded-full bg-orange-100 md:block" />
-        <div className="pointer-events-none absolute right-12 top-20 hidden h-28 w-56 rounded-lg border border-orange-100 bg-white/80 shadow-lg md:block">
-          <div className="absolute bottom-5 left-7 h-12 w-40 rounded-lg bg-orange-100" />
+        <div className="pointer-events-none absolute right-6 top-6 hidden h-48 w-72 rounded-full bg-[#F3EFEA] md:block" />
+        <div className="pointer-events-none absolute right-12 top-20 hidden h-28 w-56 rounded-lg border border-[#F3EFEA] bg-white/80 shadow-lg md:block">
+          <div className="absolute bottom-5 left-7 h-12 w-40 rounded-lg bg-[#F3EFEA]" />
           <div className="absolute bottom-16 left-12 h-12 w-12 rounded-lg bg-slate-200" />
-          <div className="absolute bottom-16 right-12 h-12 w-12 rounded-lg bg-orange-200" />
+          <div className="absolute bottom-16 right-12 h-12 w-12 rounded-lg bg-[#E8DED1]" />
           <div className="absolute -right-8 bottom-0 h-24 w-10 rounded-full bg-emerald-100" />
         </div>
       </section>
@@ -843,7 +843,7 @@ export function StudentEmployeeDashboard() {
           value={favoriteIds.length}
           detail="Apartments saved"
           icon={Heart}
-          tone="bg-gradient-to-br from-rose-500 to-pink-600 text-white"
+          tone="bg-[#8B735B] text-white"
           onClick={() => setActiveSection("favorites")}
         />
         <SummaryCard
@@ -851,7 +851,7 @@ export function StudentEmployeeDashboard() {
           value={availableApartments.length}
           detail={`${availableRoomsCount.toLocaleString()} available ${availableRoomsCount === 1 ? "room" : "rooms"}`}
           icon={Clock}
-          tone="bg-gradient-to-br from-orange-500 to-amber-500 text-white"
+          tone="bg-emerald-600 text-white"
           onClick={() => availableApartments.length > 0 ? navigate("/browse") : setActiveSection("recent")}
         />
       </section>
@@ -867,14 +867,14 @@ export function StudentEmployeeDashboard() {
       </section>
 
       <section className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.07)] sm:flex-row sm:items-center">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#FAF8F5] text-[#756A60]">
           <Search className="h-7 w-7" />
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="text-xl font-black text-slate-950">Looking for something specific?</h2>
           <p className="mt-1 text-sm font-medium text-slate-500">Use Browse All to find apartments from the live listing database.</p>
         </div>
-        <Button onClick={() => navigate("/browse")} className="rounded-lg bg-orange-500 px-6 font-black text-white hover:bg-orange-600">
+        <Button onClick={() => navigate("/browse")} className="rounded-lg bg-[#8B735B] px-6 font-black text-white hover:bg-[#756A60]">
           Browse All Apartments
           <ChevronRight className="ml-2 h-4 w-4" />
         </Button>
@@ -885,7 +885,7 @@ export function StudentEmployeeDashboard() {
   // ── Section: Favorites ───────────────────────────────────────────────────
   const renderFavorites = () => (
     <div className="mx-auto max-w-7xl space-y-6">
-      <section className="relative overflow-hidden rounded-lg border border-orange-100 bg-white px-6 py-8 shadow-[0_22px_60px_rgba(15,23,42,0.08)] md:px-9">
+      <section className="relative overflow-hidden rounded-lg border border-[#F3EFEA] bg-white px-6 py-8 shadow-[0_22px_60px_rgba(15,23,42,0.08)] md:px-9">
         <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-rose-100 bg-rose-50 text-rose-500 shadow-sm">
             <Heart className="h-8 w-8 fill-current" />
@@ -895,8 +895,8 @@ export function StudentEmployeeDashboard() {
             <p className="mt-2 text-lg font-medium text-slate-600">Apartments you've saved for later</p>
           </div>
         </div>
-        <div className="pointer-events-none absolute bottom-0 right-8 hidden h-28 w-72 rounded-t-lg bg-orange-50 md:block" />
-        <div className="pointer-events-none absolute bottom-8 right-20 hidden h-16 w-36 rounded-lg bg-orange-100 md:block" />
+        <div className="pointer-events-none absolute bottom-0 right-8 hidden h-28 w-72 rounded-t-lg bg-[#FAF8F5] md:block" />
+        <div className="pointer-events-none absolute bottom-8 right-20 hidden h-16 w-36 rounded-lg bg-[#F3EFEA] md:block" />
       </section>
 
       <section className="grid gap-5 rounded-lg border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)] md:grid-cols-2">
@@ -911,7 +911,7 @@ export function StudentEmployeeDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-5 border-t border-slate-100 pt-5 md:border-l md:border-t-0 md:pl-8 md:pt-0">
-          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
+          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]">
             <Bookmark className="h-8 w-8 fill-current" />
           </span>
           <div>
@@ -922,23 +922,23 @@ export function StudentEmployeeDashboard() {
       </section>
 
       <section className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-[0_14px_35px_rgba(15,23,42,0.07)] lg:flex-row lg:items-center lg:justify-between">
-        <select value={favoriteFilter} onChange={(event) => setFavoriteFilter(event.target.value as typeof favoriteFilter)} className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100">
+        <select value={favoriteFilter} onChange={(event) => setFavoriteFilter(event.target.value as typeof favoriteFilter)} className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-[#DCC9B4] focus:ring-2 focus:ring-[#F3EFEA]">
           <option value="all">All Favorites ({favoriteApartments.length})</option>
           <option value="available">Available Only</option>
           <option value="unavailable">Unavailable</option>
         </select>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <select value={favoriteSort} onChange={(event) => setFavoriteSort(event.target.value as typeof favoriteSort)} className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100">
+          <select value={favoriteSort} onChange={(event) => setFavoriteSort(event.target.value as typeof favoriteSort)} className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-[#DCC9B4] focus:ring-2 focus:ring-[#F3EFEA]">
             <option value="newest">Newest Added</option>
             <option value="price-low">Price: Low to High</option>
             <option value="price-high">Price: High to Low</option>
             <option value="name">Name</option>
           </select>
           <div className="grid h-12 grid-cols-2 rounded-lg border border-slate-200 bg-white p-1">
-            <button onClick={() => setFavoriteView("grid")} className={`flex h-10 w-12 items-center justify-center rounded-md transition ${favoriteView === "grid" ? "bg-orange-50 text-orange-600" : "text-slate-500 hover:bg-slate-50"}`} aria-label="Grid view">
+            <button onClick={() => setFavoriteView("grid")} className={`flex h-10 w-12 items-center justify-center rounded-md transition ${favoriteView === "grid" ? "bg-[#FAF8F5] text-[#756A60]" : "text-slate-500 hover:bg-slate-50"}`} aria-label="Grid view">
               <Grid2X2 className="h-5 w-5" />
             </button>
-            <button onClick={() => setFavoriteView("list")} className={`flex h-10 w-12 items-center justify-center rounded-md transition ${favoriteView === "list" ? "bg-orange-50 text-orange-600" : "text-slate-500 hover:bg-slate-50"}`} aria-label="List view">
+            <button onClick={() => setFavoriteView("list")} className={`flex h-10 w-12 items-center justify-center rounded-md transition ${favoriteView === "list" ? "bg-[#FAF8F5] text-[#756A60]" : "text-slate-500 hover:bg-slate-50"}`} aria-label="List view">
               <List className="h-5 w-5" />
             </button>
           </div>
@@ -966,15 +966,15 @@ export function StudentEmployeeDashboard() {
         </div>
       )}
 
-      <section className="flex flex-col gap-4 rounded-lg border border-orange-100 bg-orange-50 p-6 shadow-[0_16px_35px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-orange-600 shadow-sm">
+      <section className="flex flex-col gap-4 rounded-lg border border-[#F3EFEA] bg-[#FAF8F5] p-6 shadow-[0_16px_35px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-[#756A60] shadow-sm">
           <Building2 className="h-7 w-7" />
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="text-xl font-black text-slate-950">Explore more apartments</h2>
           <p className="mt-1 text-sm font-medium text-slate-600">Find more places you'll love and add to your favorites.</p>
         </div>
-        <Button onClick={() => navigate("/browse")} className="rounded-lg bg-orange-500 px-6 font-black text-white hover:bg-orange-600">
+        <Button onClick={() => navigate("/browse")} className="rounded-lg bg-[#8B735B] px-6 font-black text-white hover:bg-[#756A60]">
           Browse Apartments
           <ChevronRight className="ml-2 h-4 w-4" />
         </Button>
@@ -1064,7 +1064,7 @@ export function StudentEmployeeDashboard() {
           </div>
           <p className="mt-2 text-base font-medium text-slate-600">Newest published apartments from the current listing records.</p>
         </div>
-        <Button onClick={() => navigate("/browse")} className="rounded-lg bg-orange-500 font-black text-white hover:bg-orange-600">
+        <Button onClick={() => navigate("/browse")} className="rounded-lg bg-[#8B735B] font-black text-white hover:bg-[#756A60]">
           Browse All
         </Button>
       </div>
@@ -1347,10 +1347,10 @@ export function StudentEmployeeDashboard() {
 
   const renderDashboardLoading = () => (
     <div className="mx-auto max-w-7xl space-y-6">
-      <section className="overflow-hidden rounded-lg border border-orange-100 bg-white px-6 py-8 shadow-[0_22px_60px_rgba(15,23,42,0.08)] md:px-9">
+      <section className="overflow-hidden rounded-lg border border-[#F3EFEA] bg-white px-6 py-8 shadow-[0_22px_60px_rgba(15,23,42,0.08)] md:px-9">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-lg border border-orange-100 bg-orange-50 px-4 py-2 text-xs font-black uppercase tracking-wider text-orange-600">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-[#F3EFEA] bg-[#FAF8F5] px-4 py-2 text-xs font-black uppercase tracking-wider text-[#756A60]">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading Dashboard
             </div>
@@ -1358,7 +1358,7 @@ export function StudentEmployeeDashboard() {
             <div className="h-5 w-96 max-w-full animate-pulse rounded-lg bg-slate-100" />
           </div>
           <div className="grid w-full gap-3 md:w-80">
-            <div className="h-20 animate-pulse rounded-lg bg-orange-50" />
+            <div className="h-20 animate-pulse rounded-lg bg-[#FAF8F5]" />
             <div className="h-20 animate-pulse rounded-lg bg-slate-100" />
           </div>
         </div>
@@ -1368,7 +1368,7 @@ export function StudentEmployeeDashboard() {
         {[0, 1].map((item) => (
           <div key={item} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center gap-4">
-              <div className="h-14 w-14 animate-pulse rounded-lg bg-orange-50" />
+              <div className="h-14 w-14 animate-pulse rounded-lg bg-[#FAF8F5]" />
               <div className="flex-1 space-y-3">
                 <div className="h-4 w-32 animate-pulse rounded bg-slate-100" />
                 <div className="h-8 w-20 animate-pulse rounded bg-slate-100" />
@@ -1386,7 +1386,7 @@ export function StudentEmployeeDashboard() {
             <div className="mt-6 h-6 w-40 animate-pulse rounded bg-slate-100" />
             <div className="mt-4 h-4 w-full animate-pulse rounded bg-slate-100" />
             <div className="mt-2 h-4 w-4/5 animate-pulse rounded bg-slate-100" />
-            <div className="mt-8 h-10 w-32 animate-pulse rounded-lg bg-orange-50" />
+            <div className="mt-8 h-10 w-32 animate-pulse rounded-lg bg-[#FAF8F5]" />
           </div>
         ))}
       </section>
@@ -1403,7 +1403,7 @@ export function StudentEmployeeDashboard() {
         <p className="mx-auto mt-2 max-w-lg text-sm font-medium leading-6 text-slate-500">
           {apartmentsError || "We could not load the latest apartment records. Please try again."}
         </p>
-        <Button onClick={() => void refreshApartments()} className="mt-6 rounded-lg bg-orange-500 px-6 font-black text-white hover:bg-orange-600">
+        <Button onClick={() => void refreshApartments()} className="mt-6 rounded-lg bg-[#8B735B] px-6 font-black text-white hover:bg-[#756A60]">
           <RotateCcw className="mr-2 h-4 w-4" />
           Try Again
         </Button>

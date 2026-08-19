@@ -125,7 +125,7 @@ export function LandingApartmentPreview({ onBrowseClick }: LandingApartmentPrevi
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-black mb-3 text-slate-900">Available Apartment Listings</h2>
             <p className="text-lg text-slate-600 flex items-center justify-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
+              <Loader2 className="h-5 w-5 animate-spin text-[#8B735B]" />
               Loading apartment records...
             </p>
           </div>
@@ -243,8 +243,8 @@ export function LandingListingsPlaceholder({
             />
             <div className="absolute bottom-0 left-0 right-0 p-8">
               <h3 className="text-3xl font-black text-white mb-2">Apartment information</h3>
-              <p className="text-amber-100 mb-4">Photos, amenities, rent, availability, and landlord details</p>
-              <span className="inline-flex items-center text-amber-300 font-bold group-hover:translate-x-2 transition-transform">
+              <p className="text-[#F3EFEA] mb-4">Photos, amenities, rent, availability, and landlord details</p>
+              <span className="inline-flex items-center text-[#DCC9B4] font-bold group-hover:translate-x-2 transition-transform">
                 Browse listings <ArrowRight className="ml-2 h-5 w-5" />
               </span>
             </div>
@@ -275,8 +275,8 @@ export function LandingListingsPlaceholder({
             />
             <div className="absolute bottom-0 left-0 right-0 p-8">
               <h3 className="text-3xl font-black text-white mb-2">GIS map browsing</h3>
-              <p className="text-orange-100 mb-4">Compare apartment locations within La Paz before visiting</p>
-              <span className="inline-flex items-center text-orange-300 font-bold group-hover:translate-x-2 transition-transform">
+              <p className="text-[#F3EFEA] mb-4">Compare apartment locations within La Paz before visiting</p>
+              <span className="inline-flex items-center text-[#DCC9B4] font-bold group-hover:translate-x-2 transition-transform">
                 Open map view <ArrowRight className="ml-2 h-5 w-5" />
               </span>
             </div>

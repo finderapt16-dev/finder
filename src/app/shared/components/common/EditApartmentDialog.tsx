@@ -246,8 +246,8 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
           {/* Images Section */}
           <div className="space-y-3 border-b pb-4">
             <div className="flex items-center gap-2">
-              <Images className="h-5 w-5 text-amber-600" />
-              <Label className="text-amber-700 font-bold">Property Images</Label>
+              <Images className="h-5 w-5 text-[#756A60]" />
+              <Label className="text-[#5F5145] font-bold">Property Images</Label>
             </div>
 
             {/* Existing Images */}
@@ -448,9 +448,9 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
             </div>
           </div>
 
-          <div className="space-y-2 rounded-lg border border-amber-100 bg-amber-50/30 p-4">
+          <div className="space-y-2 rounded-lg border border-[#F3EFEA] bg-[#FAF8F5]/30 p-4">
             <div>
-              <Label className="text-amber-700">Map Location</Label>
+              <Label className="text-[#5F5145]">Map Location</Label>
               <p className="mt-1 text-xs text-slate-500">Use the address lookup or drag the pin to the exact apartment location.</p>
             </div>
             <LocationPicker
@@ -474,12 +474,12 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
             />
           </div>
 
-          <div className="space-y-3 rounded-lg border border-amber-100 bg-amber-50/30 p-4">
-            <div className="flex items-center justify-between gap-3 border-b border-amber-100 pb-3">
+          <div className="space-y-3 rounded-lg border border-[#F3EFEA] bg-[#FAF8F5]/30 p-4">
+            <div className="flex items-center justify-between gap-3 border-b border-[#F3EFEA] pb-3">
               <div className="flex items-center gap-2">
-                <Home className="h-5 w-5 text-amber-600" />
+                <Home className="h-5 w-5 text-[#756A60]" />
                 <div>
-                  <Label className="text-amber-700">Rooms</Label>
+                  <Label className="text-[#5F5145]">Rooms</Label>
                   <p className="text-xs text-slate-500">Add rooms, mark them available, and set rent per room.</p>
                 </div>
               </div>
@@ -490,16 +490,16 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
             </div>
 
             {rooms.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-amber-200 bg-white p-4 text-center">
+              <div className="rounded-lg border border-dashed border-[#E8DED1] bg-white p-4 text-center">
                 <p className="text-sm font-medium text-slate-700">No individual rooms added yet.</p>
                 <p className="text-xs text-slate-500">Use Add Room when a landlord wants to list a newly available room.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {rooms.map((room, index) => (
-                  <div key={room.id ?? index} className="space-y-3 rounded-lg border border-amber-100 bg-white p-4">
+                  <div key={room.id ?? index} className="space-y-3 rounded-lg border border-[#F3EFEA] bg-white p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
+                      <span className="rounded-full bg-[#F3EFEA] px-3 py-1 text-xs font-bold text-[#493D33]">
                         Room {index + 1}
                       </span>
                       <Button
@@ -631,7 +631,7 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
                   </div>
                 ))}
 
-                <div className="grid grid-cols-4 gap-2 rounded-lg border border-amber-100 bg-white p-3 text-center">
+                <div className="grid grid-cols-4 gap-2 rounded-lg border border-[#F3EFEA] bg-white p-3 text-center">
                   {[
                     { label: "Total", value: rooms.length },
                     { label: "Available", value: availableRooms },
@@ -639,7 +639,7 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
                     { label: "Private Bath", value: privateBathRooms },
                   ].map((item) => (
                     <div key={item.label}>
-                      <p className="text-lg font-bold text-amber-700">{item.value}</p>
+                      <p className="text-lg font-bold text-[#5F5145]">{item.value}</p>
                       <p className="text-xs text-slate-500">{item.label}</p>
                     </div>
                   ))}
@@ -648,11 +648,11 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
             )}
           </div>
 
-          <div className="space-y-4 rounded-lg border border-amber-100 bg-amber-50/30 p-4">
-            <div className="flex items-center gap-2 border-b border-amber-100 pb-3">
-              <Home className="h-5 w-5 text-amber-600" />
+          <div className="space-y-4 rounded-lg border border-[#F3EFEA] bg-[#FAF8F5]/30 p-4">
+            <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">
+              <Home className="h-5 w-5 text-[#756A60]" />
               <div>
-                <Label className="font-bold text-amber-700">Amenities & Features</Label>
+                <Label className="font-bold text-[#5F5145]">Amenities & Features</Label>
                 <p className="text-xs text-slate-500">These values use the same format as Add Property.</p>
               </div>
             </div>

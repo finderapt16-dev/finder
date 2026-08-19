@@ -236,11 +236,11 @@ export function EvidenceUploader({
   return (
     <div className="space-y-4">
       {/* Evidence Requirement Message */}
-      {required && <div className="flex items-start gap-3 rounded-lg border border-orange-100 bg-orange-50 p-3">
-        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-orange-600" />
+      {required && <div className="flex items-start gap-3 rounded-lg border border-[#F3EFEA] bg-[#FAF8F5] p-3">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[#756A60]" />
         <div>
-          <p className="text-sm font-black text-orange-900">Evidence required</p>
-          <p className="mt-1 text-xs font-medium text-orange-700">
+          <p className="text-sm font-black text-[#302820]">Evidence required</p>
+          <p className="mt-1 text-xs font-medium text-[#5F5145]">
             Upload at least one image, screenshot, or document to support this report.
           </p>
         </div>

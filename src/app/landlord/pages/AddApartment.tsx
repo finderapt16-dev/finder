@@ -478,7 +478,7 @@ export function AddApartment() {
 
   const fieldClass = (field: string) => validationErrors[field]
     ? "rounded-xl border-red-400 focus-visible:border-red-500 focus-visible:ring-red-100"
-    : "rounded-xl border-slate-200 focus-visible:border-amber-500 focus-visible:ring-amber-100";
+    : "rounded-xl border-slate-200 focus-visible:border-[#8B735B] focus-visible:ring-[#F3EFEA]";
 
   const clearValidationError = (field: string) => {
     setValidationErrors((previous) => {
@@ -864,7 +864,7 @@ export function AddApartment() {
           <div className="mt-3 flex min-h-8 flex-wrap items-center gap-2">
             {draftStatus !== "idle" && (
               <span className={`inline-flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs font-bold shadow-sm ${
-                draftStatus === "error" ? "border-red-200 text-red-600" : "border-amber-200 text-amber-700"
+                draftStatus === "error" ? "border-red-200 text-red-600" : "border-[#E8DED1] text-[#5F5145]"
               }`}>
                 {draftStatus === "saving" ? <Cloud className="h-3.5 w-3.5 animate-pulse" /> : <CloudUpload className="h-3.5 w-3.5" />}
                 {draftStatus === "saving" && "Saving..."}
@@ -888,9 +888,9 @@ export function AddApartment() {
         </div>
 
         {!user?.isVerified && (
-          <Alert className="mb-8 max-w-4xl mx-auto border-amber-200 bg-white/80 rounded-2xl">
-            <AlertCircle className="h-5 w-5 text-amber-600" />
-            <AlertTitle className="text-amber-900">Verification Pending</AlertTitle>
+          <Alert className="mb-8 max-w-4xl mx-auto border-[#E8DED1] bg-white/80 rounded-2xl">
+            <AlertCircle className="h-5 w-5 text-[#756A60]" />
+            <AlertTitle className="text-[#302820]">Verification Pending</AlertTitle>
             <AlertDescription className="text-slate-600">
               You can save and manage this property now. Tenants will only see it after an admin verifies your landlord account.
             </AlertDescription>
@@ -907,9 +907,9 @@ export function AddApartment() {
                   disabled={isSubmitting}
                   aria-label={`Go to step ${step.number}: ${step.title}`}
                   aria-current={currentStep === step.number ? "step" : undefined}
-                  className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-sm transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-200 disabled:cursor-not-allowed disabled:opacity-60 hover:scale-105 ${
+                  className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-sm transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#E8DED1] disabled:cursor-not-allowed disabled:opacity-60 hover:scale-105 ${
                     currentStep >= step.number
-                      ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+                      ? "bg-gradient-to-r from-[#8B735B] to-[#8B735B] text-white"
                       : "bg-slate-200 text-slate-600"
                   }`}
                 >
@@ -919,7 +919,7 @@ export function AddApartment() {
                   <div
                     className={`flex-1 h-1 mx-2 rounded-full transition-all ${
                       currentStep > step.number
-                        ? "bg-gradient-to-r from-amber-500 to-orange-500"
+                        ? "bg-gradient-to-r from-[#8B735B] to-[#8B735B]"
                         : "bg-slate-200"
                     }`}
                   />
@@ -935,9 +935,9 @@ export function AddApartment() {
                 onClick={() => handleStepClick(step.number)}
                 disabled={isSubmitting}
                 aria-label={`Go to ${step.title}`}
-                className={`rounded-md px-1 py-1 text-center text-xs font-bold uppercase transition hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 disabled:cursor-not-allowed disabled:opacity-60 ${
+                className={`rounded-md px-1 py-1 text-center text-xs font-bold uppercase transition hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DCC9B4] disabled:cursor-not-allowed disabled:opacity-60 ${
                     currentStep === step.number
-                      ? "text-amber-600"
+                      ? "text-[#756A60]"
                       : currentStep > step.number
                       ? "text-slate-500"
                       : "text-slate-400"
@@ -949,8 +949,8 @@ export function AddApartment() {
           </div>
         </div>
 
-        <Card className="max-w-4xl mx-auto border-amber-100/50 shadow-2xl bg-white/90 rounded-3xl">
-          <CardHeader className="pb-6 border-b bg-gradient-to-r from-amber-50 to-orange-50">
+        <Card className="max-w-4xl mx-auto border-[#F3EFEA]/50 shadow-2xl bg-white/90 rounded-3xl">
+          <CardHeader className="pb-6 border-b bg-gradient-to-r from-[#FAF8F5] to-[#FAF8F5]">
             <CardTitle className="text-2xl">{stepConfig[currentStep - 1].title}</CardTitle>
             <CardDescription>{stepConfig[currentStep - 1].description}</CardDescription>
           </CardHeader>
@@ -961,9 +961,9 @@ export function AddApartment() {
               {currentStep === 1 && (
                 <>
                   <div className="space-y-6">
-                    <div className="flex items-center gap-2 border-b border-amber-100 pb-3">
-                      <Upload className="h-5 w-5 text-amber-600" />
-                      <h3 className="text-sm font-bold text-amber-600 uppercase">Property Photos</h3>
+                    <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">
+                      <Upload className="h-5 w-5 text-[#756A60]" />
+                      <h3 className="text-sm font-bold text-[#756A60] uppercase">Property Photos</h3>
                     </div>
 
                     <MultiImageUploader
@@ -981,18 +981,18 @@ export function AddApartment() {
                       maxFileSize={5}
                     />
                     {imageReuploadRequired && (
-                      <Alert className="rounded-lg border-amber-200 bg-amber-50">
-                        <Upload className="h-4 w-4 text-amber-600" />
-                        <AlertDescription className="font-semibold text-amber-800">Please re-upload images before submitting.</AlertDescription>
+                      <Alert className="rounded-lg border-[#E8DED1] bg-[#FAF8F5]">
+                        <Upload className="h-4 w-4 text-[#756A60]" />
+                        <AlertDescription className="font-semibold text-[#493D33]">Please re-upload images before submitting.</AlertDescription>
                       </Alert>
                     )}
                     <FieldError field="images" />
                   </div>
 
                   <div className="space-y-6">
-                    <div className="flex items-center gap-2 border-b border-amber-100 pb-3">
-                      <Building2 className="h-5 w-5 text-amber-600" />
-                      <h3 className="text-sm font-bold text-amber-600 uppercase">Basic Information</h3>
+                    <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">
+                      <Building2 className="h-5 w-5 text-[#756A60]" />
+                      <h3 className="text-sm font-bold text-[#756A60] uppercase">Basic Information</h3>
                     </div>
 
                     <div className="space-y-3">
@@ -1052,9 +1052,9 @@ export function AddApartment() {
               {/* ──────── STEP 3: Location ──────── */}
               {currentStep === 3 && (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-2 border-b border-amber-100 pb-3">
-                    <MapPin className="h-5 w-5 text-amber-600" />
-                    <h3 className="text-sm font-bold text-amber-600 uppercase">Location Details</h3>
+                  <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">
+                    <MapPin className="h-5 w-5 text-[#756A60]" />
+                    <h3 className="text-sm font-bold text-[#756A60] uppercase">Location Details</h3>
                   </div>
 
                   <div className="space-y-3">
@@ -1094,7 +1094,7 @@ export function AddApartment() {
                   <div className="space-y-3">
                     <Label className="text-slate-700 font-bold">Map Location</Label>
                     <p className="text-xs text-slate-500">Enter the address, then use the map result or drag the marker to the exact apartment location.</p>
-                    <div className="rounded-2xl border-2 border-amber-200 overflow-hidden bg-white shadow-sm" style={{ height: "500px" }}>
+                    <div className="rounded-2xl border-2 border-[#E8DED1] overflow-hidden bg-white shadow-sm" style={{ height: "500px" }}>
                       <LocationPicker
                         lat={Number.isFinite(Number(formData.lat)) ? Number(formData.lat) : DEFAULT_LA_PAZ_MAP_CENTER.lat}
                         lng={Number.isFinite(Number(formData.lng)) ? Number(formData.lng) : DEFAULT_LA_PAZ_MAP_CENTER.lng}
@@ -1117,9 +1117,9 @@ export function AddApartment() {
               {currentStep === 4 && (
                 <>
                   <div className="space-y-6">
-                    <div className="flex items-center gap-2 border-b border-amber-100 pb-3">
-                      <Building2 className="h-5 w-5 text-amber-600" />
-                      <h3 className="text-sm font-bold text-amber-600 uppercase">Amenities</h3>
+                    <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">
+                      <Building2 className="h-5 w-5 text-[#756A60]" />
+                      <h3 className="text-sm font-bold text-[#756A60] uppercase">Amenities</h3>
                     </div>
                     <div className="space-y-3">
                       <Label className="text-slate-700 font-bold">Amenities (comma-separated) *</Label>
@@ -1141,9 +1141,9 @@ export function AddApartment() {
                   </div>
 
                   <div className="space-y-6">
-                    <div className="flex items-center gap-2 border-b border-amber-100 pb-3">
-                      <Home className="h-5 w-5 text-amber-600" />
-                      <h3 className="text-sm font-bold text-amber-600 uppercase">Utilities Included</h3>
+                    <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">
+                      <Home className="h-5 w-5 text-[#756A60]" />
+                      <h3 className="text-sm font-bold text-[#756A60] uppercase">Utilities Included</h3>
                     </div>
                     <div className="space-y-3">
                       <Label className="text-slate-700 font-bold">Included Utilities (comma-separated)</Label>
@@ -1152,15 +1152,15 @@ export function AddApartment() {
                         onChange={(e) => setUtilitiesInput(e.target.value)}
                         placeholder="e.g., Water, Electricity, Internet"
                         rows={3}
-                        className="rounded-xl border-amber-100 resize-none"
+                        className="rounded-xl border-[#F3EFEA] resize-none"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-6">
-                    <div className="flex items-center gap-2 border-b border-amber-100 pb-3">
-                      <ListChecks className="h-5 w-5 text-amber-600" />
-                      <h3 className="text-sm font-bold text-amber-600 uppercase">Additional Features</h3>
+                    <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">
+                      <ListChecks className="h-5 w-5 text-[#756A60]" />
+                      <h3 className="text-sm font-bold text-[#756A60] uppercase">Additional Features</h3>
                     </div>
 
                     <div className="flex gap-2">
@@ -1175,7 +1175,7 @@ export function AddApartment() {
                         placeholder="Type feature and press Enter"
                         className={`${fieldClass("features")} flex-1`}
                       />
-                      <Button type="button" onClick={() => addFeature(featureInput)} className="bg-amber-500 rounded-xl px-4">
+                      <Button type="button" onClick={() => addFeature(featureInput)} className="bg-[#8B735B] rounded-xl px-4">
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
@@ -1186,7 +1186,7 @@ export function AddApartment() {
                         {features.map((feature, i) => (
                           <span
                             key={i}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-800 text-sm font-semibold rounded-full border border-amber-200"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F3EFEA] text-[#493D33] text-sm font-semibold rounded-full border border-[#E8DED1]"
                           >
                             {feature}
                             <button type="button" onClick={() => removeFeature(i)} className="hover:text-red-600">
@@ -1207,7 +1207,7 @@ export function AddApartment() {
                             key={suggestion}
                             type="button"
                             onClick={() => addFeature(suggestion)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-amber-200 text-slate-600 text-xs font-semibold rounded-full hover:bg-amber-50"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-[#E8DED1] text-slate-600 text-xs font-semibold rounded-full hover:bg-[#FAF8F5]"
                           >
                             <Plus className="h-3" /> {suggestion}
                           </button>
@@ -1221,9 +1221,9 @@ export function AddApartment() {
               {/* ──────── STEP 2: Verification ──────── */}
               {currentStep === 2 && (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-2 border-b border-amber-100 pb-3">
-                    <ShieldCheck className="h-5 w-5 text-amber-600" />
-                    <h3 className="text-sm font-bold text-amber-600 uppercase">Legitimacy & Verification</h3>
+                  <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">
+                    <ShieldCheck className="h-5 w-5 text-[#756A60]" />
+                    <h3 className="text-sm font-bold text-[#756A60] uppercase">Legitimacy & Verification</h3>
                   </div>
 
                   <div className="space-y-3">
@@ -1301,7 +1301,7 @@ export function AddApartment() {
                         }}
                         aria-invalid={Boolean(validationErrors.idType)}
                         className={`w-full h-11 rounded-xl border bg-white px-3 text-sm outline-none transition focus:ring-[3px] ${
-                          validationErrors.idType ? "border-red-400 focus:border-red-500 focus:ring-red-100" : "border-slate-200 focus:border-amber-500 focus:ring-amber-100"
+                          validationErrors.idType ? "border-red-400 focus:border-red-500 focus:ring-red-100" : "border-slate-200 focus:border-[#8B735B] focus:ring-[#F3EFEA]"
                         }`}
                       >
                         <option value="">Select ID Type</option>
@@ -1330,11 +1330,11 @@ export function AddApartment() {
                     </div>
                   </div>
 
-                  <div className="space-y-4 border-t border-amber-100 pt-6">
+                  <div className="space-y-4 border-t border-[#F3EFEA] pt-6">
                     <div>
                       <h3 className="font-black text-slate-900">Supporting documents</h3>
                       <p className="mt-1 text-sm font-medium text-slate-500">Upload available documents now. Missing items appear as “Not provided” for the admin and can be supplied later.</p>
-                      <p className="mt-1 text-xs font-bold text-amber-700">JPG, JPEG, PNG, WebP, or PDF · maximum 10 MB each</p>
+                      <p className="mt-1 text-xs font-bold text-[#5F5145]">JPG, JPEG, PNG, WebP, or PDF · maximum 10 MB each</p>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                       {VERIFICATION_DOCUMENT_TYPES.map((documentType) => {
@@ -1344,13 +1344,13 @@ export function AddApartment() {
                         return (
                           <div key={documentType.key} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                             <div className="flex min-h-16 items-center gap-3 border-b border-slate-100 p-4">
-                              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600"><FileText className="h-5 w-5" /></span>
+                              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FAF8F5] text-[#756A60]"><FileText className="h-5 w-5" /></span>
                               <div className="min-w-0"><p className="text-sm font-black text-slate-900">{documentType.label}</p><p className="truncate text-xs font-medium text-slate-400">{document?.file.name || "Not provided"}</p></div>
                             </div>
                             {document && (
                               <div className="border-b border-slate-100 bg-slate-50 p-3">
                                 {document.file.type === "application/pdf" ? (
-                                  <a href={document.previewUrl} target="_blank" rel="noopener noreferrer" className="flex h-28 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700"><FileText className="h-6 w-6 text-rose-500" />Preview PDF</a>
+                                  <a href={document.previewUrl} target="_blank" rel="noopener noreferrer" className="flex h-28 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700"><FileText className="h-6 w-6 text-[#8B735B]" />Preview PDF</a>
                                 ) : (
                                   <a href={document.previewUrl} target="_blank" rel="noopener noreferrer"><img src={document.previewUrl} alt={`${documentType.label} preview`} className="h-28 w-full rounded-xl object-cover" /></a>
                                 )}
@@ -1371,7 +1371,7 @@ export function AddApartment() {
                 </div>
               )}
 
-              <div className="flex gap-4 pt-10 border-t border-amber-100">
+              <div className="flex gap-4 pt-10 border-t border-[#F3EFEA]">
                 {currentStep > 1 ? (
                   <Button
                     type="button"
@@ -1393,7 +1393,7 @@ export function AddApartment() {
                 )}
 
                 {currentStep < totalSteps ? (
-                  <Button type="button" onClick={handleNextStep} className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl h-12 font-bold">
+                  <Button type="button" onClick={handleNextStep} className="flex-1 bg-gradient-to-r from-[#8B735B] to-[#756A60] text-white rounded-2xl h-12 font-bold">
                     Next <ArrowRight className="h-5 w-5" />
                   </Button>
                 ) : (
@@ -1413,7 +1413,7 @@ export function AddApartment() {
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="draft-dialog-title">
           <div className="w-full max-w-md rounded-2xl border border-white/70 bg-white p-6 shadow-2xl">
             <div className="flex items-start gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#FAF8F5] text-[#756A60]">
                 <CloudUpload className="h-6 w-6" />
               </span>
               <div className="min-w-0">
@@ -1424,13 +1424,13 @@ export function AddApartment() {
               </div>
             </div>
             {pendingDraft.requiresImageReupload && (
-              <div className="mt-5 flex gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+              <div className="mt-5 flex gap-3 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] p-3 text-sm font-semibold text-[#493D33]">
                 <Upload className="mt-0.5 h-4 w-4 shrink-0" />
                 Please re-upload images before submitting.
               </div>
             )}
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <Button type="button" onClick={continueDraft} className="h-11 rounded-lg bg-orange-500 font-bold text-white hover:bg-orange-600">
+              <Button type="button" onClick={continueDraft} className="h-11 rounded-lg bg-[#8B735B] font-bold text-white hover:bg-[#756A60]">
                 Continue Draft
               </Button>
               <Button type="button" variant="outline" onClick={() => discardDraft(true)} className="h-11 rounded-lg border-slate-300 font-bold text-slate-700 hover:bg-slate-50">

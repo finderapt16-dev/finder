@@ -336,7 +336,7 @@ export function ManageRooms() {
     return (
       <div className="min-h-screen bg-slate-50 grid place-items-center p-6 text-center">
         <div>
-          <DoorOpen className="mx-auto mb-4 h-12 w-12 text-orange-500" />
+          <DoorOpen className="mx-auto mb-4 h-12 w-12 text-[#8B735B]" />
           <h1 className="mb-2 text-2xl font-bold text-slate-950">Property Not Available</h1>
           <p className="mb-6 text-sm text-slate-500">This property could not be found or is not assigned to your account.</p>
           <Button onClick={() => navigate("/dashboard?section=overview")}>Back to My Properties</Button>
@@ -393,7 +393,7 @@ export function ManageRooms() {
           </motion.section>
 
           {formOpen && (
-            <Card className="mb-6 rounded-lg border-orange-200 bg-white shadow-md">
+            <Card className="mb-6 rounded-lg border-[#E8DED1] bg-white shadow-md">
               <CardHeader><CardTitle>{form.id ? "Edit Room" : "Add Room"}</CardTitle><CardDescription>Enter the details for this room. Property information remains unchanged.</CardDescription></CardHeader>
               <CardContent className="space-y-5">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -414,13 +414,13 @@ export function ManageRooms() {
                   <div><Label className="text-base font-bold">Room Images</Label><p className="mt-1 text-xs text-slate-500">Upload up to 10 JPG, PNG, or WebP images. Drag thumbnails to reorder and select a cover photo.</p></div>
                   <MultiImageUploader images={roomImages} onImagesChange={setRoomImages} maxImages={10} maxFileSize={8} uploadProgress={uploadProgress} disabled={isSaving} />
                 </div>
-                <div className="flex flex-col gap-3 sm:flex-row"><Button onClick={() => void saveRoom()} disabled={isSaving} className="bg-orange-500 font-bold hover:bg-orange-600">{isSaving ? "Saving..." : form.id ? "Save Room" : "Add Room"}</Button><Button variant="outline" onClick={resetForm} disabled={isSaving}>Cancel</Button></div>
+                <div className="flex flex-col gap-3 sm:flex-row"><Button onClick={() => void saveRoom()} disabled={isSaving} className="bg-[#8B735B] font-bold hover:bg-[#756A60]">{isSaving ? "Saving..." : form.id ? "Save Room" : "Add Room"}</Button><Button variant="outline" onClick={resetForm} disabled={isSaving}>Cancel</Button></div>
               </CardContent>
             </Card>
           )}
 
           {rooms.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-orange-200 bg-white py-16 text-center shadow-sm"><DoorOpen className="mx-auto mb-4 h-12 w-12 text-orange-400" /><h2 className="text-xl font-bold">No rooms have been added yet.</h2><p className="mx-auto mb-5 mt-2 max-w-md text-sm text-slate-500">Add the first room to make availability visible across your property listing.</p><Button onClick={openAddForm} className="bg-orange-500 hover:bg-orange-600"><Plus className="mr-2 h-4 w-4" />Add First Room</Button></div>
+            <div className="rounded-lg border border-dashed border-[#E8DED1] bg-white py-16 text-center shadow-sm"><DoorOpen className="mx-auto mb-4 h-12 w-12 text-[#A68B70]" /><h2 className="text-xl font-bold">No rooms have been added yet.</h2><p className="mx-auto mb-5 mt-2 max-w-md text-sm text-slate-500">Add the first room to make availability visible across your property listing.</p><Button onClick={openAddForm} className="bg-[#8B735B] hover:bg-[#756A60]"><Plus className="mr-2 h-4 w-4" />Add First Room</Button></div>
           ) : (
             <motion.section initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.08 } } }} className="space-y-5">
               {rooms.map((room) => {
@@ -441,8 +441,8 @@ export function ManageRooms() {
                             <div className="relative flex items-center gap-2"><Badge className={`${statusOption.className} border px-3 py-1`}>{statusOption.label}</Badge><button aria-label={`Actions for ${room.name || "room"}`} disabled={processingRoomId === room.id} onClick={() => setOpenRoomMenuId((current) => current === room.id ? null : room.id ?? null)} className="grid h-9 w-9 place-items-center rounded-md hover:bg-slate-100 disabled:cursor-wait disabled:opacity-50"><MoreVertical className="h-5 w-5" /></button>{openRoomMenuId === room.id && <div className="absolute right-0 top-11 z-20 w-52 rounded-lg border bg-white p-1.5 shadow-xl">{status !== "maintenance" && <button disabled={processingRoomId !== null} onClick={() => void changeRoomStatus(room, "maintenance")} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-violet-700 hover:bg-violet-50 disabled:opacity-50"><Wrench className="h-4 w-4" />Mark as Maintenance</button>}<button disabled={processingRoomId !== null} onClick={() => { openEditForm(room); setOpenRoomMenuId(null); }} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"><Edit3 className="h-4 w-4" />Edit Room</button><button disabled={processingRoomId !== null} onClick={() => void removeRoom(room)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"><Trash2 className="h-4 w-4" />Delete Room</button></div>}</div>
                           </div>
                           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-                            <div className="rounded-lg bg-orange-50 p-3"><p className="text-xs font-semibold text-slate-500">Monthly Rent</p><p className="mt-1 font-bold">₱{(room.price ?? 0).toLocaleString("en-PH")}</p></div>
-                            <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs font-semibold text-slate-500">Capacity</p><p className="mt-1 flex items-center gap-2 font-bold"><Users className="h-4 w-4 text-orange-500" />{room.maxOccupants ?? 1}</p></div>
+                            <div className="rounded-lg bg-[#FAF8F5] p-3"><p className="text-xs font-semibold text-slate-500">Monthly Rent</p><p className="mt-1 font-bold">₱{(room.price ?? 0).toLocaleString("en-PH")}</p></div>
+                            <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs font-semibold text-slate-500">Capacity</p><p className="mt-1 flex items-center gap-2 font-bold"><Users className="h-4 w-4 text-[#8B735B]" />{room.maxOccupants ?? 1}</p></div>
                             <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs font-semibold text-slate-500">Room Type</p><p className="mt-1 font-bold">{room.type || "Not provided"}</p></div>
                             <div className="rounded-lg bg-slate-50 p-3"><p className="text-xs font-semibold text-slate-500">Room Size</p><p className="mt-1 font-bold">{room.sqft ? `${room.sqft.toLocaleString("en-PH")} sq ft` : "Not provided"}</p></div>
                           </div>
@@ -452,12 +452,12 @@ export function ManageRooms() {
 
                       <div className="mt-6 grid gap-3 border-t pt-5 sm:grid-cols-3">
                         <Button variant="outline" disabled={processingRoomId !== null} onClick={() => void changeRoomStatus(room, status === "available" ? "occupied" : "available")} className="border-emerald-300 font-bold text-emerald-700 hover:bg-emerald-50">{processingRoomId === room.id ? "Updating..." : status === "available" ? <><Users className="mr-2 h-4 w-4" />Mark as Occupied</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Mark as Available</>}</Button>
-                        <Button variant="outline" disabled={processingRoomId !== null} onClick={() => openEditForm(room)} className="border-orange-300 font-bold text-orange-700 hover:bg-orange-50"><Edit3 className="mr-2 h-4 w-4" />Edit Room</Button>
+                        <Button variant="outline" disabled={processingRoomId !== null} onClick={() => openEditForm(room)} className="border-[#DCC9B4] font-bold text-[#5F5145] hover:bg-[#FAF8F5]"><Edit3 className="mr-2 h-4 w-4" />Edit Room</Button>
                         <Button variant="outline" disabled={processingRoomId !== null} onClick={() => void removeRoom(room)} className="border-rose-300 font-bold text-rose-600 hover:bg-rose-50"><Trash2 className="mr-2 h-4 w-4" />Delete Room</Button>
                       </div>
                     </div>
                     <div className="grid gap-px border-t bg-slate-200 sm:grid-cols-2 xl:grid-cols-4">
-                      {[{ label: "Created", value: formatDate(room.createdAt), icon: CalendarDays }, { label: "Created By", value: "Not recorded", icon: Users }, { label: "Last Updated", value: "Not recorded", icon: TrendingUp }, { label: "Room ID", value: room.id || "Not recorded", icon: Tag }].map(({ label, value, icon: Icon }) => <div key={label} className="min-w-0 bg-slate-50 px-5 py-4"><p className="flex items-center gap-2 text-xs font-semibold text-slate-500"><Icon className="h-4 w-4 text-orange-500" />{label}</p><p className="mt-1 truncate text-sm font-bold" title={value}>{value}</p></div>)}
+                      {[{ label: "Created", value: formatDate(room.createdAt), icon: CalendarDays }, { label: "Created By", value: "Not recorded", icon: Users }, { label: "Last Updated", value: "Not recorded", icon: TrendingUp }, { label: "Room ID", value: room.id || "Not recorded", icon: Tag }].map(({ label, value, icon: Icon }) => <div key={label} className="min-w-0 bg-slate-50 px-5 py-4"><p className="flex items-center gap-2 text-xs font-semibold text-slate-500"><Icon className="h-4 w-4 text-[#8B735B]" />{label}</p><p className="mt-1 truncate text-sm font-bold" title={value}>{value}</p></div>)}
                     </div>
                   </motion.article>
                 );
