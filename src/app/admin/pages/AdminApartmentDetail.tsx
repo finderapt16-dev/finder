@@ -37,6 +37,7 @@ import {
 import { formatAuditLogForDisplay } from "@/app/shared/utils/auditLogDisplay";
 import { fetchApartmentRatings, subscribeToApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
 import { supabase } from "@/lib/supabaseclient";
+import { clearAdminNavigationMemory, getAdminModulePath, rememberAdminModuleLocation, type AdminModule } from "@/app/admin/utils/adminNavigationMemory";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -250,7 +251,18 @@ export function AdminApartmentDetail() {
     const value = (routeLocation.state as { backLabel?: unknown } | null)?.backLabel;
     return typeof value === "string" && value.trim() ? value : "Back to Apartments";
   })();
-  const handleBack = () => navigate(returnTo);
+  const handleBack = () => {
+    if (user?.id && returnTo.includes("section=apartments")) {
+      rememberAdminModuleLocation(user.id, "apartments", { view: "overview" });
+    }
+    navigate(returnTo);
+  };
+
+  const navigateToAdminModule = (section: AdminModule) => {
+    if (!user?.id) return navigate(`/dashboard?section=${section}`);
+    navigate(getAdminModulePath(user.id, section));
+    setSidebarOpen(false);
+  };
 
   useEffect(() => {
     let active = true;
@@ -272,6 +284,12 @@ export function AdminApartmentDetail() {
         setInspectionDetails(details);
         setApartment(loaded);
         setVerificationDocuments(submittedDocuments);
+        if (loaded?.id && user?.id) {
+          rememberAdminModuleLocation(user.id, "apartments", { view: "apartment-inspection", apartmentId: loaded.id });
+        } else if (!loaded && user?.id) {
+          rememberAdminModuleLocation(user.id, "apartments", { view: "overview" });
+          navigate("/dashboard?section=apartments", { replace: true });
+        }
 
         if (loaded?.landlordId) {
           const landlordData = await fetchUserById(loaded.landlordId);
@@ -664,19 +682,19 @@ export function AdminApartmentDetail() {
   const Sidebar = () => <div className="flex h-full flex-col overflow-y-auto bg-[#fffefc]">
     <div className="px-5 pb-5 pt-6"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#e8ded1] bg-[#faf8f5] text-[#8b735b]"><Home className="h-6 w-6" /></span><span><strong className="block text-xl text-[#302820]">AptFindr</strong><small className="text-xs text-[#756a60]">Admin Portal</small></span></div></div>
     <div className="px-4 pb-5"><div className="flex items-center gap-3 rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-3"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#8b735b] font-bold text-white">{user?.name?.[0]?.toUpperCase() ?? "A"}</span><span className="min-w-0 flex-1"><strong className="block truncate text-sm text-[#302820]">{user?.name ?? "Admin"}</strong><small className="block truncate text-[#756a60]">{user?.email ?? ""}</small></span><ShieldCheck className="h-4 w-4 text-[#8b735b]" /></div></div>
-    <nav className="space-y-1 px-3 py-3"><p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[.14em] text-[#756a60]">Main</p>{adminNavItems.map(({ label, section, icon: Icon }) => <button key={section} onClick={() => navigate(`/dashboard?section=${section}`)} className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold ${section === "apartments" ? "bg-[#f3efea] text-[#8b735b]" : "text-[#302820] hover:bg-[#faf8f5]"}`}><Icon className="h-4 w-4" />{label}</button>)}</nav>
-    <nav className="border-t border-[#e8ded1] px-3 py-4"><p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[.14em] text-[#756a60]">Account</p><button onClick={() => navigate("/dashboard?section=admininfo")} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] hover:bg-[#faf8f5]"><Settings className="h-4 w-4" />Settings</button></nav>
-    <div className="flex-1" /><div className="border-t border-[#e8ded1] p-4"><LogoutConfirmation onConfirm={() => { logout?.(); navigate("/"); }}><button className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#dfcdbb] px-4 py-3 text-sm font-bold text-[#6f4525] hover:bg-[#f7f1eb]"><LogOut className="h-4 w-4" />Log Out</button></LogoutConfirmation></div>
+    <nav className="space-y-1 px-3 py-3"><p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[.14em] text-[#756a60]">Main</p>{adminNavItems.map(({ label, section, icon: Icon }) => <button key={section} onClick={() => navigateToAdminModule(section as AdminModule)} className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold ${section === "apartments" ? "bg-[#f3efea] text-[#8b735b]" : "text-[#302820] hover:bg-[#faf8f5]"}`}><Icon className="h-4 w-4" />{label}</button>)}</nav>
+    <nav className="border-t border-[#e8ded1] px-3 py-4"><p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[.14em] text-[#756a60]">Account</p><button onClick={() => navigateToAdminModule("admininfo")} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] hover:bg-[#faf8f5]"><Settings className="h-4 w-4" />Settings</button></nav>
+    <div className="flex-1" /><div className="border-t border-[#e8ded1] p-4"><LogoutConfirmation onConfirm={() => { if (user?.id) clearAdminNavigationMemory(user.id); logout?.(); navigate("/"); }}><button className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#dfcdbb] px-4 py-3 text-sm font-bold text-[#6f4525] hover:bg-[#f7f1eb]"><LogOut className="h-4 w-4" />Log Out</button></LogoutConfirmation></div>
   </div>;
 
   return (
-    <div className="fixed inset-0 z-50 flex overflow-hidden bg-[#fbfaf8]">
+    <div className="admin-apartment-detail fixed inset-0 z-50 flex overflow-hidden bg-[#fbfaf8]">
       <aside className="hidden h-full w-60 shrink-0 border-r border-[#e8ded1] lg:block"><Sidebar /></aside>
       {sidebarOpen && <button aria-label="Close navigation" onClick={() => setSidebarOpen(false)} className="fixed inset-0 z-40 bg-black/30 lg:hidden" />}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 border-r border-[#e8ded1] transition-transform lg:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}><Sidebar /></aside>
       <main className="min-w-0 flex-1 overflow-y-auto pb-8">
       <div className="mx-auto max-w-[1500px] px-4 py-5 sm:px-6 lg:px-8">
-        <button onClick={() => setSidebarOpen(true)} className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-[#e8ded1] bg-white text-[#6f4525] lg:hidden" aria-label="Open navigation"><Menu className="h-5 w-5" /></button>
+        <button onClick={() => setSidebarOpen(true)} className="app-sidebar-trigger mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-white/50 bg-[#8B735B] text-white shadow-md hover:bg-[#756A60] lg:hidden" aria-label="Open navigation"><Menu className="h-5 w-5" /></button>
         {/* Header */}
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">

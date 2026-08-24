@@ -368,7 +368,7 @@ export function ManageRooms() {
       <main className="app-shell-page-main min-h-screen lg:ml-60">
         <div className="app-shell-content mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
           <div className="mb-5 flex items-center justify-between lg:hidden">
-            <button aria-label="Open navigation" onClick={() => setSidebarOpen(true)} className="app-sidebar-trigger grid h-10 w-10 place-items-center rounded-lg border bg-white"><Menu className="h-5 w-5" /></button>
+            <button aria-label="Open navigation" onClick={() => setSidebarOpen(true)} className="app-sidebar-trigger grid h-10 w-10 place-items-center rounded-lg border border-white/50 bg-[#8B735B] text-white shadow-md hover:bg-[#756A60]"><Menu className="h-5 w-5" /></button>
             <span className="font-bold">Room Management</span>
           </div>
 

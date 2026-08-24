@@ -122,6 +122,7 @@ import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState, type ComponentType, type ReactElement, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { clearAdminNavigationMemory, getAdminModuleLocation, getAdminModulePath, rememberAdminModuleLocation, type AdminModule } from "@/app/admin/utils/adminNavigationMemory";
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
 const NAV_MAIN = [
@@ -163,6 +164,7 @@ const NOTICE_TYPES = [
   "Permit re-verification required",
 ];
 const ADMIN_DASHBOARD_SECTIONS = new Set(["overview", "notifications", "landlords", "apartments", "reports", "appeals", "admininfo"]);
+const isAdminModule = (value: string): value is AdminModule => ADMIN_DASHBOARD_SECTIONS.has(value);
 
 type AdminProfileState = {
   firstName: string;
@@ -352,12 +354,13 @@ export function AdminDashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedSection = searchParams.get("section") ?? "overview";
-  const [activeSection, setActiveSection] = useState(() => ADMIN_DASHBOARD_SECTIONS.has(requestedSection) ? requestedSection : "overview");
+  const [activeSection, setActiveSection] = useState<AdminModule>(() => isAdminModule(requestedSection) ? requestedSection : "overview");
 
   useEffect(() => {
-    if (ADMIN_DASHBOARD_SECTIONS.has(requestedSection)) setActiveSection(requestedSection);
+    if (isAdminModule(requestedSection)) setActiveSection(requestedSection);
   }, [requestedSection]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [navigationDataReady, setNavigationDataReady] = useState(false);
 
   // landlords
   const [landlords, setLandlords] = useState<DashboardUserRow[]>([]);
@@ -435,6 +438,7 @@ export function AdminDashboard() {
     apartmentTitle: string;
     reportId?: string;
     apartmentId?: string;
+    sourceModule: AdminModule;
   } | null>(null);
   const [vType, setVType]       = useState(VIOLATION_TYPES[0]);
   const [vMessage, setVMessage] = useState("");
@@ -614,8 +618,10 @@ export function AdminDashboard() {
       appeal = latestAppeals.find((item) => item.id === appealId);
     }
     if (!appeal) return void toast.error("The linked appeal could not be found.");
+    if (user?.id) rememberAdminModuleLocation(user.id, "appeals", { view: "appeal-review", appealId });
     setSelectedAppeal(appeal);
     setActiveSection("appeals");
+    navigate("/dashboard?section=appeals");
   };
 
   const refreshAdminNotifications = async () => {
@@ -890,6 +896,7 @@ export function AdminDashboard() {
       setArchivedAppeals(loadedArchivedAppeals);
       setRecentActivityLogs(loadedActivityLogs);
       await loadLandlords();
+      setNavigationDataReady(true);
     };
 
     void loadData();
@@ -1272,12 +1279,13 @@ export function AdminDashboard() {
     apartmentTitle: string,
     reportId?: string,
     apartmentId?: string,
+    sourceModule: AdminModule = activeSection,
   ) => {
     setVType(VIOLATION_TYPES[0]);
     setNType(NOTICE_TYPES[0]);
     setVMessage(""); setNMessage("");
     setVExpirationDays(90);
-    setViolationModal({ open: true, mode, landlordId, landlordName, apartmentTitle, reportId, apartmentId });
+    setViolationModal({ open: true, mode, landlordId, landlordName, apartmentTitle, reportId, apartmentId, sourceModule });
   };
 
   const getLandlordForApt = (apt: ListingRecord) =>
@@ -1303,7 +1311,85 @@ export function AdminDashboard() {
     return category !== "reports" && category !== "appeals" && !n.is_deleted && !isNotificationRead(n);
   }).length;
 
-  const handleLogout = () => { logout?.(); navigate("/"); };
+  const restoreAdminModule = (section: AdminModule) => {
+    if (!user?.id) return;
+    const remembered = getAdminModuleLocation(user.id, section);
+
+    if (section === "landlords") {
+      const landlordId = remembered?.view === "landlord-details" || remembered?.view === "landlord-action" ? remembered.landlordId : "";
+      const landlord = landlordId ? landlords.find((item) => text(item.id) === landlordId) ?? null : null;
+      setSelectedLandlord(landlord);
+      if (remembered?.view === "landlord-action" && landlord) {
+        openViolationModal(remembered.mode, landlordId, text(landlord.name, "Landlord"), "General", undefined, undefined, "landlords");
+      } else if (violationModal?.sourceModule === "landlords") {
+        setViolationModal(null);
+      }
+      if (remembered && remembered.view !== "overview" && !landlord) {
+        rememberAdminModuleLocation(user.id, "landlords", { view: "overview" });
+      }
+    }
+
+    if (section === "reports") {
+      const reportId = remembered?.view === "report-review" ? remembered.reportId : "";
+      const report = reportId ? [...reports, ...archivedReports].find((item) => text(item.id) === reportId) ?? null : null;
+      setSelectedReport(report);
+      if (remembered?.view === "report-review" && !report) {
+        rememberAdminModuleLocation(user.id, "reports", { view: "overview" });
+      }
+    }
+
+    if (section === "appeals") {
+      const appealId = remembered?.view === "appeal-review" ? remembered.appealId : "";
+      const appeal = appealId ? [...appeals, ...archivedAppeals].find((item) => text(item.id) === appealId) ?? null : null;
+      setSelectedAppeal(appeal);
+      if (remembered?.view === "appeal-review" && !appeal) {
+        rememberAdminModuleLocation(user.id, "appeals", { view: "overview" });
+      }
+    }
+  };
+
+  const navigateToAdminModule = (section: AdminModule) => {
+    setSidebarOpen(false);
+    if (!user?.id) {
+      setActiveSection(section);
+      navigate(`/dashboard?section=${section}`);
+      return;
+    }
+    const path = getAdminModulePath(user.id, section);
+    if (path.startsWith("/admin/apartment/")) {
+      navigate(path, { state: { returnTo: "/dashboard?section=apartments", backLabel: "Back to Apartments" } });
+      return;
+    }
+    restoreAdminModule(section);
+    setActiveSection(section);
+    navigate(path);
+  };
+
+  useEffect(() => {
+    if (!navigationDataReady || !user?.id || !isAdminModule(requestedSection)) return;
+    restoreAdminModule(requestedSection);
+  }, [navigationDataReady, requestedSection, user?.id]);
+
+  useEffect(() => {
+    if (!navigationDataReady || !user?.id) return;
+    if (activeSection === "landlords") {
+      if (violationModal?.open && violationModal.sourceModule === "landlords") {
+        rememberAdminModuleLocation(user.id, "landlords", { view: "landlord-action", landlordId: violationModal.landlordId, mode: violationModal.mode });
+      } else if (selectedLandlord?.id) {
+        rememberAdminModuleLocation(user.id, "landlords", { view: "landlord-details", landlordId: text(selectedLandlord.id) });
+      } else {
+        rememberAdminModuleLocation(user.id, "landlords", { view: "overview" });
+      }
+    } else if (activeSection === "reports") {
+      rememberAdminModuleLocation(user.id, "reports", selectedReport?.id ? { view: "report-review", reportId: text(selectedReport.id) } : { view: "overview" });
+    } else if (activeSection === "appeals") {
+      rememberAdminModuleLocation(user.id, "appeals", selectedAppeal?.id ? { view: "appeal-review", appealId: text(selectedAppeal.id) } : { view: "overview" });
+    } else {
+      rememberAdminModuleLocation(user.id, activeSection, { view: "overview" });
+    }
+  }, [activeSection, navigationDataReady, selectedAppeal?.id, selectedLandlord?.id, selectedReport?.id, user?.id, violationModal]);
+
+  const handleLogout = () => { if (user?.id) clearAdminNavigationMemory(user.id); logout?.(); navigate("/"); };
 // ── Sidebar ───────────────────────────────────────────────────────────────
   const SidebarContent = () => (
     <div className="app-sidebar flex flex-col h-full overflow-y-auto bg-slate-950 border-r border-white/[0.06] shadow-2xl relative z-10 select-none">
@@ -1365,8 +1451,7 @@ export function AdminDashboard() {
               key={section}
               aria-current={activeSection === section ? "page" : undefined}
               onClick={() => {
-                setActiveSection(section);
-                setSidebarOpen(false);
+                navigateToAdminModule(section as AdminModule);
               }}
               className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 relative group overflow-hidden ${
                 activeSection === section
@@ -1418,8 +1503,7 @@ export function AdminDashboard() {
               key={section}
               aria-current={activeSection === section ? "page" : undefined}
               onClick={() => {
-                setActiveSection(section);
-                setSidebarOpen(false);
+                navigateToAdminModule(section as AdminModule);
               }}
               className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 relative group overflow-hidden ${
                 activeSection === section
@@ -1481,7 +1565,7 @@ export function AdminDashboard() {
           {NAV_MAIN.map(({ icon: Icon, label, section }) => {
             const count = label === "Reports" ? pendingReports : label === "Appeals" ? activeAppealsCount : label === "Landlords" ? pendingCount : label === "Notifications" ? unreadNotifsCount : 0;
             return (
-              <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => { setActiveSection(section); setSidebarOpen(false); }} className={navItemClass(section)}>
+              <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => navigateToAdminModule(section as AdminModule)} className={navItemClass(section)}>
                 <Icon className="h-4 w-4 shrink-0" /><span className="flex-1 text-left">{label}</span>
                 {count > 0 && <span className={countBadge}>{count}</span>}
               </button>
@@ -1491,7 +1575,7 @@ export function AdminDashboard() {
         <nav className="space-y-1 border-t border-[#E8DED1] px-3 py-4">
           <p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]"><span>Account</span><span className="h-px w-5 bg-[#8B735B]/45" /></p>
           {NAV_ACCOUNT.map(({ icon: Icon, label, section }) => (
-            <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => { setActiveSection(section); setSidebarOpen(false); }} className={navItemClass(section)}>
+            <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => navigateToAdminModule(section as AdminModule)} className={navItemClass(section)}>
               <Icon className="h-4 w-4 shrink-0" /><span className="flex-1 text-left">{label}</span>
             </button>
           ))}
@@ -1607,11 +1691,11 @@ export function AdminDashboard() {
             <p className="mt-1 text-sm text-[#756A60]">Monitor platform activity and manage items that require administrative attention.</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-amber-300 hover:text-amber-600">
+            <button onClick={() => navigateToAdminModule("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-amber-300 hover:text-amber-600">
               <Bell className="h-4 w-4" />
               {unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}
             </button>
-            <button onClick={() => setActiveSection("admininfo")} className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 shadow-sm transition hover:border-amber-300">
+            <button onClick={() => navigateToAdminModule("admininfo")} className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 shadow-sm transition hover:border-amber-300">
               {user?.avatar ? <img src={user.avatar} alt="" className="h-7 w-7 rounded-md object-cover" /> : <span className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-900 text-xs font-black text-white">{user?.name?.[0]?.toUpperCase() ?? "A"}</span>}
               <span className="hidden max-w-28 truncate text-xs font-bold text-slate-700 md:block">{user?.name || "Admin"}</span>
             </button>
@@ -1627,7 +1711,7 @@ export function AdminDashboard() {
             { label: "Open Reports", value: pendingReports, suffix: "Open", action: "View Reports", icon: Flag, section: "reports" },
             { label: "Pending Appeals", value: pendingAppealCount, suffix: "Pending", action: "View Appeals", icon: FileText, section: "appeals" },
           ].map(({ label, value, suffix, action, icon: Icon, section }) => (
-            <motion.button key={label} whileHover={{ y: -2 }} onClick={() => setActiveSection(section)} className="group rounded-xl border border-[#E8DED1] bg-white p-4 text-left transition hover:border-[#DCC9B4] hover:shadow-sm">
+            <motion.button key={label} whileHover={{ y: -2 }} onClick={() => isAdminModule(section) && navigateToAdminModule(section)} className="group rounded-xl border border-[#E8DED1] bg-white p-4 text-left transition hover:border-[#DCC9B4] hover:shadow-sm">
               <span className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><Icon className="h-5 w-5" /></span><span className="min-w-0"><span className="block text-sm font-bold text-[#302820]">{label}</span><span className="mt-1 flex items-baseline gap-2"><strong className="text-2xl text-[#302820]">{value}</strong><small className="font-semibold text-[#756A60]">{suffix}</small></span></span></span>
               <span className="mt-3 flex items-center justify-between border-t border-[#EEE6DC] pt-3 text-xs font-bold text-[#8B735B]">{action}<ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
             </motion.button>
@@ -1645,7 +1729,7 @@ export function AdminDashboard() {
                 {priorityTasks.map(({ id, section, icon: Icon, type, context, timestamp, action }) => (
                   <div key={id} className="grid gap-2 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                     <span className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FAF8F5] text-[#8B735B]"><Icon className="h-4 w-4" /></span><span className="min-w-0"><strong className="block text-xs text-[#302820]">{type}</strong><span className="block truncate text-xs text-[#756A60]">{context}</span><time className="text-[10px] text-slate-400">{formatOptionalDate(timestamp, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time></span></span>
-                    <button onClick={() => setActiveSection(section)} className="h-8 rounded-md border border-[#DCC9B4] px-4 text-xs font-bold text-[#8B735B] hover:bg-[#FAF8F5]">{action}</button>
+                    <button onClick={() => isAdminModule(section) && navigateToAdminModule(section)} className="h-8 rounded-md border border-[#DCC9B4] px-4 text-xs font-bold text-[#8B735B] hover:bg-[#FAF8F5]">{action}</button>
                   </div>
                 ))}
               </div>
@@ -1657,7 +1741,7 @@ export function AdminDashboard() {
             {activity.length === 0 ? <OverviewEmpty icon={Clock} text="No recent activities." /> : (
               <div className="divide-y divide-slate-100">
                 {activity.map(({ id, timestamp, title, detail, icon: Icon, tone, section }) => (
-                  <button key={id} onClick={() => setActiveSection(section)} className="flex w-full items-center gap-3 py-3 text-left transition hover:bg-slate-50">
+                  <button key={id} onClick={() => isAdminModule(section) && navigateToAdminModule(section)} className="flex w-full items-center gap-3 py-3 text-left transition hover:bg-slate-50">
                     <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${tone}`}><Icon className="h-3.5 w-3.5" /></span>
                     <span className="min-w-0 flex-1"><span className="block text-xs font-bold text-slate-800">{title}</span><span className="block truncate text-xs text-slate-500">{detail}</span></span>
                     <span className="shrink-0 text-[10px] font-semibold text-slate-400">{formatOptionalDate(timestamp, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
@@ -1840,7 +1924,7 @@ export function AdminDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2 self-start md:self-auto">
-            <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[#E8DED1] bg-white text-[#756A60] shadow-sm transition hover:border-[#D8C5B1] hover:text-[#8B735B]">
+            <button onClick={() => navigateToAdminModule("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[#E8DED1] bg-white text-[#756A60] shadow-sm transition hover:border-[#D8C5B1] hover:text-[#8B735B]">
               <Bell className="h-4 w-4" />
               {unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}
             </button>
@@ -3531,7 +3615,11 @@ export function AdminDashboard() {
         </button>
         <div className="app-shell-main flex-1 min-w-0 h-full overflow-y-auto">
           <main className="app-shell-content app-shell-content-mobile-nav px-4 py-5 pt-16 md:px-6 lg:px-8 lg:pt-6">
-            {violationModal?.open ? renderAdministrativeAction() : selectedLandlord && selectedLandlordDetails ? renderLandlordDetails() : (sectionMap[activeSection] ?? renderOverview)()}
+            {violationModal?.open && violationModal.sourceModule === activeSection
+              ? renderAdministrativeAction()
+              : activeSection === "landlords" && selectedLandlord && selectedLandlordDetails
+                ? renderLandlordDetails()
+                : (sectionMap[activeSection] ?? renderOverview)()}
           </main>
         </div>
       </div>
