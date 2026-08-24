@@ -1,5 +1,6 @@
 import { MapView } from "@/app/shared/components/features/map/MapView";
 import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
+import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
 import { Badge } from "@/app/shared/components/ui/badge";
 import { Button } from "@/app/shared/components/ui/button";
 import { Card, CardContent } from "@/app/shared/components/ui/card";
@@ -39,6 +40,7 @@ import { supabase } from "@/lib/supabaseclient";
 import {
   AlertTriangle,
   ArrowLeft,
+  Bell,
   Building2,
   CalendarCheck,
   Check,
@@ -46,7 +48,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
-  Edit3,
   ExternalLink,
   Eye,
   EyeOff,
@@ -56,12 +57,17 @@ import {
   Home,
   Image as ImageIcon,
   Lock,
+  LayoutDashboard,
+  LogOut,
   Mail,
+  Menu,
   MapPin,
   MessageSquare,
   Phone,
   Send,
   ShieldCheck,
+  Settings,
+  Star,
   Users,
   X
 } from "lucide-react";
@@ -209,7 +215,8 @@ export function AdminApartmentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const routeLocation = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [apartment, setApartment] = useState<Apartment | null>(null);
   const [inspectionDetails, setInspectionDetails] = useState<ApartmentInspectionDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -227,7 +234,6 @@ export function AdminApartmentDetail() {
   const [isIssuingViolation, setIsIssuingViolation] = useState(false);
   const [messageModalOpen, setMessageModalOpen] = useState(false);
   const [messageText, setMessageText] = useState("");
-  const [quickNotes, setQuickNotes] = useState("");
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [changeLogOpen, setChangeLogOpen] = useState(false);
   const [changeLogLoading, setChangeLogLoading] = useState(false);
@@ -484,12 +490,7 @@ export function AdminApartmentDetail() {
       return;
     }
 
-    if (id !== apartment.id) {
-      navigate(`/admin/apartment/${apartment.id}`, { state: { returnTo, backLabel } });
-      return;
-    }
-
-    scrollToSection("admin-property-details");
+    navigate(`/apartment/${apartment.id}`, { state: { preview: true, returnTo: routeLocation.pathname } });
   };
 
   const handleSendMessage = async () => {
@@ -634,6 +635,8 @@ export function AdminApartmentDetail() {
     setCurrentImageIndex((index) => (index + 1) % imageCount);
   };
   const listingStatusLabel = getAdminPropertyStatusLabel(apartment.status, apartment.isPublished);
+  const activeReports = reports.filter((report) => !["resolved", "dismissed", "archived"].includes(String(report.status ?? "pending").toLowerCase()));
+  const averageRating = ratings.length > 0 ? ratings.reduce((sum, rating) => sum + getRecordNumber(rating, ["rating"], 0), 0) / ratings.length : 0;
   const landlordVerificationStatus = getLandlordVerificationStatus(landlord);
   const landlordCanPublish = canPublishForLandlord(landlord);
   const publicationBlockedByLandlord = apartment.isPublished === false && !landlordCanPublish;
@@ -649,12 +652,31 @@ export function AdminApartmentDetail() {
     { label: "Rooms", target: "admin-rooms", icon: Home },
     { label: "Location", target: "admin-location", icon: MapPin },
     { label: "Documents", target: "admin-verification", icon: FileSearch },
-    { label: "Notes", target: "admin-notes", icon: Edit3 },
   ];
+  const adminNavItems = [
+    { label: "Dashboard", section: "overview", icon: LayoutDashboard },
+    { label: "Notifications", section: "notifications", icon: Bell },
+    { label: "Landlords", section: "landlords", icon: Users },
+    { label: "Apartments", section: "apartments", icon: Building2 },
+    { label: "Reports", section: "reports", icon: Flag },
+    { label: "Appeals", section: "appeals", icon: AlertTriangle },
+  ];
+  const Sidebar = () => <div className="flex h-full flex-col overflow-y-auto bg-[#fffefc]">
+    <div className="px-5 pb-5 pt-6"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#e8ded1] bg-[#faf8f5] text-[#8b735b]"><Home className="h-6 w-6" /></span><span><strong className="block text-xl text-[#302820]">AptFindr</strong><small className="text-xs text-[#756a60]">Admin Portal</small></span></div></div>
+    <div className="px-4 pb-5"><div className="flex items-center gap-3 rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-3"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#8b735b] font-bold text-white">{user?.name?.[0]?.toUpperCase() ?? "A"}</span><span className="min-w-0 flex-1"><strong className="block truncate text-sm text-[#302820]">{user?.name ?? "Admin"}</strong><small className="block truncate text-[#756a60]">{user?.email ?? ""}</small></span><ShieldCheck className="h-4 w-4 text-[#8b735b]" /></div></div>
+    <nav className="space-y-1 px-3 py-3"><p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[.14em] text-[#756a60]">Main</p>{adminNavItems.map(({ label, section, icon: Icon }) => <button key={section} onClick={() => navigate(`/dashboard?section=${section}`)} className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold ${section === "apartments" ? "bg-[#f3efea] text-[#8b735b]" : "text-[#302820] hover:bg-[#faf8f5]"}`}><Icon className="h-4 w-4" />{label}</button>)}</nav>
+    <nav className="border-t border-[#e8ded1] px-3 py-4"><p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[.14em] text-[#756a60]">Account</p><button onClick={() => navigate("/dashboard?section=admininfo")} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] hover:bg-[#faf8f5]"><Settings className="h-4 w-4" />Settings</button></nav>
+    <div className="flex-1" /><div className="border-t border-[#e8ded1] p-4"><LogoutConfirmation onConfirm={() => { logout?.(); navigate("/"); }}><button className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#dfcdbb] px-4 py-3 text-sm font-bold text-[#6f4525] hover:bg-[#f7f1eb]"><LogOut className="h-4 w-4" />Log Out</button></LogoutConfirmation></div>
+  </div>;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] pb-8">
+    <div className="fixed inset-0 z-50 flex overflow-hidden bg-[#fbfaf8]">
+      <aside className="hidden h-full w-60 shrink-0 border-r border-[#e8ded1] lg:block"><Sidebar /></aside>
+      {sidebarOpen && <button aria-label="Close navigation" onClick={() => setSidebarOpen(false)} className="fixed inset-0 z-40 bg-black/30 lg:hidden" />}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 border-r border-[#e8ded1] transition-transform lg:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}><Sidebar /></aside>
+      <main className="min-w-0 flex-1 overflow-y-auto pb-8">
       <div className="mx-auto max-w-[1500px] px-4 py-5 sm:px-6 lg:px-8">
+        <button onClick={() => setSidebarOpen(true)} className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-[#e8ded1] bg-white text-[#6f4525] lg:hidden" aria-label="Open navigation"><Menu className="h-5 w-5" /></button>
         {/* Header */}
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
@@ -663,51 +685,41 @@ export function AdminApartmentDetail() {
               {backLabel}
             </Button>
             <div className="flex min-w-0 flex-col gap-2">
-              <h1 className="truncate text-2xl font-black text-slate-950 md:text-3xl">Apartment Inspection</h1>
-              <p className="max-w-3xl text-sm font-medium text-slate-500">Review the submitted apartment, landlord verification, map location, documents, rooms, reports, and publishing readiness.</p>
+              <h1 className="truncate text-2xl font-black text-stone-950 md:text-3xl">Apartment Review</h1>
+              <p className="max-w-4xl text-sm font-medium text-stone-500">Review the submitted apartment information, landlord verification, documents, rooms, reports, and publishing readiness.</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={() => void handlePublicationReview()}
-              disabled={isUpdatingPublication || publicationBlockedByLandlord}
-              variant="outline"
-              className={apartment.isPublished === false ? "h-10 rounded-lg border-emerald-200 bg-emerald-600 px-4 font-black text-white hover:bg-emerald-700" : "h-10 rounded-lg border-red-200 px-4 font-black text-red-600 hover:bg-red-50"}
-            >
-              {apartment.isPublished === false ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
-              {isUpdatingPublication ? "Updating..." : apartment.isPublished === false ? "Approve & Publish" : "Unpublish"}
-            </Button>
-            {publicationBlockedByLandlord && (
-              <Button
-                onClick={() => scrollToFirstVisibleSection(["admin-verification-rail", "admin-verification"])}
-                variant="outline"
-                className="h-10 rounded-lg border-amber-200 px-4 font-black text-amber-700 hover:bg-amber-50"
-              >
-                <FileSearch className="mr-2 h-4 w-4" />
-                Review Landlord
-              </Button>
-            )}
+            <Button onClick={() => apartment.id && navigate(`/apartment/${apartment.id}`, { state: { preview: true, returnTo: routeLocation.pathname } })} variant="outline" className="h-10 rounded-lg border-[#cdb69f] px-4 font-black text-[#6f4525] hover:bg-[#f7f1eb]"><Eye className="mr-2 h-4 w-4" />Preview Tenant View</Button>
             <Button
               onClick={handleRefreshData}
               disabled={isLoading}
               variant="outline"
-              className="h-10 rounded-lg border-orange-200 px-4 font-black text-slate-700 hover:bg-orange-50"
+              className="h-10 w-10 rounded-lg border-[#dfcdbb] p-0 font-black text-[#6f4525] hover:bg-[#f7f1eb]"
+              title="Refresh apartment data"
+              aria-label="Refresh apartment data"
             >
               {isLoading ? (
                 <span className="animate-spin">⟳</span>
               ) : (
                 <span>↻</span>
               )}
-              {isLoading ? "Syncing..." : "Refresh"}
             </Button>
-            <div className="flex items-center gap-2">
-              <Badge className="rounded-lg bg-purple-600 px-3 py-1.5 text-white">Admin View</Badge>
-              <Badge className={`rounded-lg px-3 py-1.5 ${STATUS_BADGE[apartment.status ?? "available"]}`}>
-                {listingStatusLabel}
-              </Badge>
-            </div>
           </div>
         </div>
+
+        <section className="mb-5 overflow-hidden rounded-xl border border-[#e7d8c9] bg-white shadow-sm" aria-labelledby="review-summary-title">
+          <h2 id="review-summary-title" className="sr-only">Review Summary</h2>
+          <div className="grid divide-y divide-[#eee3d8] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
+            {[
+              { label: "Listing Status", value: listingStatusLabel, helper: apartment.isPublished === false ? "Not visible to tenants" : "Visible to tenants", icon: apartment.isPublished === false ? EyeOff : CheckCircle2, tone: apartment.isPublished === false ? "text-amber-700" : "text-emerald-700" },
+              { label: "Landlord Verification", value: landlordVerificationStatus, helper: landlordCanPublish ? "Publication requirement met" : "Requires review", icon: ShieldCheck, tone: landlordCanPublish ? "text-emerald-700" : "text-amber-700" },
+              { label: "Submitted On", value: formattedDatePosted, helper: formattedDatePostedTime || "Time not provided", icon: CalendarCheck, tone: "text-[#76502f]" },
+              { label: "Active Reports", value: String(activeReports.length), helper: activeReports.length ? "Requires review" : "No active reports", icon: Flag, tone: activeReports.length ? "text-rose-700" : "text-stone-500" },
+              { label: "Tenant Rating", value: ratings.length ? averageRating.toFixed(1) : "No ratings yet", helper: ratings.length ? `${ratings.length} tenant rating${ratings.length === 1 ? "" : "s"}` : "No tenant ratings", icon: Star, tone: "text-[#76502f]" },
+            ].map(({ label, value, helper, icon: Icon, tone }) => <div key={label} className="flex min-h-24 items-center gap-3 p-4"><Icon className={`h-6 w-6 shrink-0 ${tone}`} /><div><p className="text-xs font-semibold text-stone-500">{label}</p><p className="mt-1 font-black text-stone-900">{value}</p><p className="mt-0.5 text-[11px] text-stone-400">{helper}</p></div></div>)}
+          </div>
+        </section>
 
         <div className="mb-6 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
           <div className="flex gap-2 overflow-x-auto">
@@ -824,7 +836,7 @@ export function AdminApartmentDetail() {
               </CardContent>
             </Card>
 
-            <Card id="admin-overview" className="order-3 rounded-xl border border-slate-200 bg-white shadow-sm lg:col-span-2">
+            <Card id="admin-overview" className="hidden">
               <CardContent className="p-5 sm:p-6">
                 <div className="mb-5 flex items-start gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
@@ -854,44 +866,6 @@ export function AdminApartmentDetail() {
                       </div>
                     </div>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card id="admin-notes" className="order-8 rounded-xl border border-slate-200 bg-white shadow-sm lg:col-span-2">
-              <CardContent className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_280px]">
-                <div>
-                  <div className="mb-4 flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
-                      <Edit3 className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <h2 className="font-black text-slate-950">Quick Notes</h2>
-                      <p className="mt-1 text-xs font-semibold text-slate-500">Add notes about this inspection for your records.</p>
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <textarea
-                      value={quickNotes}
-                      onChange={(event) => setQuickNotes(event.target.value)}
-                      maxLength={500}
-                      rows={5}
-                      placeholder="Write your inspection notes here..."
-                      className="w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100"
-                    />
-                    <span className="absolute bottom-3 right-4 text-[11px] font-bold text-slate-400">{quickNotes.length}/500</span>
-                  </div>
-                </div>
-                <div className="rounded-lg bg-orange-50 p-5 text-sm">
-                  <h3 className="mb-3 font-black text-orange-900">Inspection Tips</h3>
-                  <div className="space-y-2 font-semibold text-slate-700">
-                    {["Verify landlord information", "Check property images", "Review listing details", "Ensure compliance"].map((tip) => (
-                      <div key={tip} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-orange-600" />
-                        <span>{tip}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1379,19 +1353,24 @@ export function AdminApartmentDetail() {
               <CardContent className="p-5">
                 <h2 className="mb-5 flex items-center gap-3 text-lg font-black text-slate-950">
                   <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-orange-600"><ShieldCheck className="h-5 w-5" /></span>
-                  Admin Actions
+                  Administrative Actions
                 </h2>
 
                 <div className="space-y-3">
+                  <div className={`rounded-lg border p-3 text-xs font-semibold ${apartment.isPublished === false ? "border-amber-200 bg-amber-50 text-amber-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
+                    {apartment.isPublished === false ? (publicationBlockedByLandlord ? "Publication is blocked until the landlord verification requirement is complete." : "This apartment is ready for an administrative publishing decision.") : "This apartment is published and visible to tenants."}
+                  </div>
+                  <Button onClick={() => void handlePublicationReview()} disabled={isUpdatingPublication || publicationBlockedByLandlord} variant="outline" className={apartment.isPublished === false ? "h-11 w-full border-emerald-300 bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700" : "h-11 w-full border-rose-300 text-xs font-black text-rose-700 hover:bg-rose-50"}>{apartment.isPublished === false ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}{isUpdatingPublication ? "Updating..." : apartment.isPublished === false ? "Approve & Publish" : "Unpublish Listing"}</Button>
                   <Button
                     onClick={handleViewListingDetails}
-                    className="h-11 w-full justify-start rounded-lg bg-orange-600 text-xs font-black text-white hover:bg-orange-700"
+                    variant="outline"
+                    className="h-11 w-full justify-start rounded-lg border-[#dfcdbb] bg-white text-xs font-black text-[#6f4525] hover:bg-[#f7f1eb]"
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    View Listing Details
+                    Preview Tenant View
                   </Button>
 
-                  {selectedReport && (
+                  {false && selectedReport && (
                     <>
                       <div className="border-t border-amber-300 pt-3">
                         <Button
@@ -1405,7 +1384,7 @@ export function AdminApartmentDetail() {
                         {moderationMode === "takeAction" && (
                           <>
                             <Button
-                              onClick={() => handleResolveReport(selectedReport.id)}
+                              onClick={() => handleResolveReport(selectedReport?.id)}
                               className="mt-2 h-10 w-full justify-start rounded-lg bg-green-600 text-xs font-black text-white hover:bg-green-700"
                             >
                               <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -1468,19 +1447,13 @@ export function AdminApartmentDetail() {
                     View Change Log
                   </Button>
 
-                  {reports.length > 0 && (
+                  {activeReports.length > 0 && (
                     <div className="border-t border-amber-300 pt-3">
                       <p className="text-xs font-bold text-slate-900 mb-2 flex items-center gap-2">
                         <Flag className="h-4 w-4 text-red-600" />
-                        Reports: {reports.length}
+                        Active Reports: {activeReports.length}
                       </p>
-                      {!selectedReport ? (
-                        <p className="text-xs text-slate-600">Click a report in the section below to inspect and take action</p>
-                      ) : (
-                        <p className="text-xs text-amber-700 bg-amber-100 p-2 rounded border border-amber-200">
-                          Report selected. Use buttons above to take action or resolve.
-                        </p>
-                      )}
+                      <Button variant="outline" onClick={() => navigate("/dashboard?section=reports")} className="w-full border-rose-200 text-xs font-bold text-rose-700">View Reports</Button>
                     </div>
                   )}
                 </div>
@@ -1756,6 +1729,7 @@ export function AdminApartmentDetail() {
           </Card>
         )}
       </div>
+      </main>
     </div>
   );
 }

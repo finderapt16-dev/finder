@@ -73,7 +73,9 @@ import {
   AlertOctagon,
   AlertTriangle,
   Archive,
+  ArrowLeft,
   BarChart3,
+  BedDouble,
   Bell, BellRing,
   Building2,
   Calendar,
@@ -81,6 +83,7 @@ import {
   CheckCheck,
   CheckCircle2,
   ChevronRight, Clock,
+  ClipboardList,
   Edit2,
   Eye,
   FileText,
@@ -104,6 +107,7 @@ import {
   Settings,
   Shield,
   ShieldAlert,
+  ShieldCheck,
   Smartphone,
   Sofa,
   Sparkles,
@@ -127,7 +131,6 @@ const NAV_MAIN = [
   { icon: Building2,       label: "Apartments",     section: "apartments" },
   { icon: Flag,            label: "Reports",        section: "reports" },
   { icon: AlertTriangle,   label: "Appeals",        section: "appeals" },
-  { icon: History,         label: "History",        section: "history" },
 ];
 const NAV_ACCOUNT = [
   { icon: Shield, label: "Settings", section: "admininfo" },
@@ -159,7 +162,7 @@ const NOTICE_TYPES = [
   "Account suspended pending review",
   "Permit re-verification required",
 ];
-const ADMIN_DASHBOARD_SECTIONS = new Set(["overview", "notifications", "landlords", "apartments", "reports", "appeals", "history", "admininfo"]);
+const ADMIN_DASHBOARD_SECTIONS = new Set(["overview", "notifications", "landlords", "apartments", "reports", "appeals", "admininfo"]);
 
 type AdminProfileState = {
   firstName: string;
@@ -290,20 +293,33 @@ function NotificationEmpty({
 }: {
   title: string;
   message: string;
-  onRefresh: () => void;
-  refreshing: boolean;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }) {
   return (
     <div className="flex min-h-[390px] flex-col items-center justify-center p-6 text-center">
-      <span className="relative mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-orange-50 text-orange-500">
+      <span className="relative mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#f7f1eb] text-[#76502f]">
         <Bell className="h-10 w-10" />
-        <span className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-white ring-4 ring-white"><CheckCircle2 className="h-4 w-4" /></span>
       </span>
       <h3 className="text-xl font-black text-slate-900">{title}</h3>
       <p className="mt-1 max-w-sm text-sm font-medium text-slate-500">{message}</p>
-      <Button variant="outline" size="sm" onClick={onRefresh} disabled={refreshing} className="mt-5 h-9 rounded-md border-orange-200 text-xs font-black text-orange-700 hover:bg-orange-50">
+      {onRefresh && <Button variant="outline" size="sm" onClick={onRefresh} disabled={refreshing} className="mt-5 h-9 rounded-md border-[#dfcdbb] text-xs font-black text-[#6f4525] hover:bg-[#f7f1eb]">
         <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />Refresh
-      </Button>
+      </Button>}
+    </div>
+  );
+}
+
+function ArchiveEmpty({ kind, icon: Icon }: { kind: "notifications" | "reports" | "appeals"; icon: typeof Archive }) {
+  return (
+    <div className="flex min-h-[360px] flex-col items-center justify-center p-8 text-center">
+      <div className="relative mb-6 flex h-24 w-32 items-end justify-center text-[#8a6542]" aria-hidden="true">
+        <div className="absolute bottom-0 h-14 w-24 rounded-lg border-2 border-[#cbb8a5] bg-[#fbf7f2]" />
+        <div className="absolute bottom-12 h-5 w-16 rounded-t-md border-2 border-b-0 border-[#cbb8a5] bg-[#f4ebe2]" />
+        <span className="absolute bottom-5 flex h-11 w-11 items-center justify-center rounded-lg border border-[#dfcdbb] bg-white"><Icon className="h-6 w-6" /></span>
+      </div>
+      <h3 className="text-lg font-black text-stone-900">No archived {kind}</h3>
+      <p className="mt-1 text-sm font-medium text-stone-500">{kind === "notifications" ? "Notifications you archive" : `Archived ${kind}`} will appear here.</p>
     </div>
   );
 }
@@ -379,6 +395,7 @@ export function AdminDashboard() {
   const [reportStatusFilter, setReportStatusFilter] = useState<"all" | "pending" | "resolved" | "dismissed">("all");
   const [reportTypeFilter, setReportTypeFilter] = useState("all");
   const [reportSort, setReportSort] = useState<"newest" | "oldest">("newest");
+  const [reportArchiveView, setReportArchiveView] = useState(false);
 
   // violations / notices  { landlordId, type, category, message, issuedAt, apartmentTitle }
   const [violations, setViolations] = useState<DashboardViolationRow[]>([]);
@@ -392,6 +409,8 @@ export function AdminDashboard() {
   const [appealSearch, setAppealSearch] = useState("");
   const [appealTypeFilter, setAppealTypeFilter] = useState<"all" | "report" | "violation" | "general">("all");
   const [appealSort, setAppealSort] = useState<"newest" | "oldest">("newest");
+  const [appealArchiveView, setAppealArchiveView] = useState(false);
+  // Retained only by the retired History renderer so its old route can remain non-destructive.
   const [historySearch, setHistorySearch] = useState("");
   const [historyKindFilter, setHistoryKindFilter] = useState<"all" | "reports" | "appeals" | "notifications">("all");
   const [historyStatusFilter, setHistoryStatusFilter] = useState("all");
@@ -442,10 +461,12 @@ export function AdminDashboard() {
   // admin notifications (new property submissions)
   const [adminNotifs, setAdminNotifs] = useState<DashboardNotificationRow[]>([]);
   const [notifSearch, setNotifSearch] = useState("");
-  const [notifFilter, setNotifFilter] = useState<"all" | "read" | "unread" | "archived">("all");
+  const [notifFilter, setNotifFilter] = useState<"all" | "unread" | "archived">("all");
   const [notifTypeFilter, setNotifTypeFilter] = useState<"all" | "system" | "landlord" | "activities" | "reports" | "appeals">("all");
   const [notifActivityFilter, setNotifActivityFilter] = useState("all");
   const [isRefreshingNotifs, setIsRefreshingNotifs] = useState(false);
+  const [notifPage, setNotifPage] = useState(1);
+  const [notificationToDelete, setNotificationToDelete] = useState<DashboardNotificationRow | null>(null);
   const [selectedSupportRequest, setSelectedSupportRequest] = useState<{
     ticket: DashboardSupportTicketRow;
     submitter: DashboardUserRow | null;
@@ -517,23 +538,14 @@ export function AdminDashboard() {
     if (!user?.id || !notificationId) return;
 
     const notification = adminNotifs.find((item) => item.id === notificationId);
+    if (notification?.is_deleted !== true) return;
     setDeletingNotifId(notificationId);
-    if (notification?.is_deleted === true) {
-      setAdminNotifs((prev) => prev.filter((n) => n.id !== notificationId));
-      const deleted = await permanentlyDeleteNotification(notificationId, user.id);
-      await loadAdminNotifications();
-      setDeletingNotifId(null);
-      if (!deleted) toast.error("Could not permanently delete the archived notification. Please try again.");
-      return;
-    }
-
-    setAdminNotifs((previous) => previous.map((item) => item.id === notificationId
-      ? { ...item, is_deleted: true, deleted_at: new Date().toISOString() }
-      : item));
-    const archived = await deleteNotification(notificationId, user.id);
+    setAdminNotifs((prev) => prev.filter((n) => n.id !== notificationId));
+    const deleted = await permanentlyDeleteNotification(notificationId, user.id);
     await loadAdminNotifications();
     setDeletingNotifId(null);
-    if (!archived) toast.error("Could not move the notification to History. Please try again.");
+    setNotificationToDelete(null);
+    if (!deleted) toast.error("Could not permanently delete the archived notification. Please try again.");
   };
 
   const archiveNotif = async (notificationId: string) => {
@@ -559,7 +571,7 @@ export function AdminDashboard() {
     const restored = await unarchiveNotification(notificationId, user.id);
     await loadAdminNotifications();
     setDeletingNotifId(null);
-    if (!restored) toast.error("Could not unarchive the notification. Please try again.");
+    if (!restored) toast.error("Could not restore the notification. Please try again.");
   };
 
   const openSupportRequest = async (notification: DashboardNotificationRow) => {
@@ -644,7 +656,7 @@ export function AdminDashboard() {
       const isArchived = n.is_deleted === true;
       const matchesStatus = notifFilter === "archived"
         ? isArchived
-        : !isArchived && (notifFilter === "all" || (notifFilter === "read" ? isRead : !isRead));
+        : !isArchived && (notifFilter === "all" || !isRead);
       const matchesType = notifTypeFilter === "all" || category === notifTypeFilter;
       const matchesActivity = notifActivityFilter === "all" || String(n.payload?.activity_type ?? n.type ?? "") === notifActivityFilter;
       const payloadText = `${n.payload?.landlord_name ?? ""} ${n.payload?.property_name ?? ""} ${n.payload?.room_name ?? ""} ${n.payload?.topic ?? ""}`.toLowerCase();
@@ -652,6 +664,10 @@ export function AdminDashboard() {
       return matchesExpandedSearch && matchesStatus && matchesType && matchesActivity;
     });
   }, [adminNotifs, notifSearch, notifFilter, notifTypeFilter, notifActivityFilter]);
+
+  useEffect(() => {
+    setNotifPage(1);
+  }, [notifSearch, notifFilter, notifTypeFilter, notifActivityFilter]);
 
   // apartments
   const [aptSearch, setAptSearch]   = useState("");
@@ -885,6 +901,7 @@ export function AdminDashboard() {
     }
     if (activeSection === "reports") {
       void fetchAdminReports().then(setReports);
+      void fetchArchivedReports().then(setArchivedReports);
     }
     if (activeSection === "apartments") {
       void fetchApartments().then((items) =>
@@ -893,9 +910,6 @@ export function AdminDashboard() {
     }
     if (activeSection === "appeals") {
       void fetchPendingAppeals().then(setAppeals);
-    }
-    if (activeSection === "history") {
-      void fetchArchivedReports().then(setArchivedReports);
       void fetchArchivedAppeals().then(setArchivedAppeals);
     }
   }, [activeSection, loadAdminNotifications]);
@@ -1090,13 +1104,13 @@ export function AdminDashboard() {
         setReports((current) => current.filter((report) => report.id !== caseAction.id));
         setArchivedReports((current) => [archived, ...current.filter((report) => report.id !== caseAction.id)]);
         setSelectedReport(null);
-        toast.success("Report moved to History.");
+        toast.success("Report archived.");
       } else if (caseAction.type === "archive-appeal") {
         const archived = await archiveAppeal(caseAction.id, user.id);
         setAppeals((current) => current.filter((appeal) => appeal.id !== caseAction.id));
         setArchivedAppeals((current) => [archived, ...current.filter((appeal) => appeal.id !== caseAction.id)]);
         setSelectedAppeal(null);
-        toast.success("Appeal moved to History.");
+        toast.success("Appeal archived.");
       } else if (caseAction.type === "restore-report") {
         const restored = await restoreReport(caseAction.id, user.id);
         setArchivedReports((current) => current.filter((report) => report.id !== caseAction.id));
@@ -1639,7 +1653,7 @@ export function AdminDashboard() {
           </motion.section>
 
           <motion.section variants={itemMotion} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <SectionHeading title="Recent Activity" description="Latest platform and administrative activities." action={() => setActiveSection("history")} actionLabel="View History" />
+            <SectionHeading title="Recent Activity" description="Latest platform and administrative activities." />
             {activity.length === 0 ? <OverviewEmpty icon={Clock} text="No recent activities." /> : (
               <div className="divide-y divide-slate-100">
                 {activity.map(({ id, timestamp, title, detail, icon: Icon, tone, section }) => (
@@ -1665,14 +1679,9 @@ export function AdminDashboard() {
       return category !== "reports" && category !== "appeals";
     });
     const activeNotifications = notificationCenterItems.filter((notification) => !notification.is_deleted);
-    const archivedCount = notificationCenterItems.filter((notification) => notification.is_deleted).length;
     const unreadCount = activeNotifications.filter((notification) => !isNotificationRead(notification)).length;
-    const readCount = activeNotifications.filter(isNotificationRead).length;
-    const currentDate = new Date().toLocaleDateString("en-PH", {
-      weekday: "short", month: "short", day: "numeric", year: "numeric",
-    });
     const selectNotificationView = (
-      status: "all" | "read" | "unread" | "archived",
+      status: "all" | "unread" | "archived",
       type: "all" | "system" | "landlord" | "activities" | "reports" | "appeals" = "all",
     ) => {
       setNotifFilter(status);
@@ -1683,94 +1692,73 @@ export function AdminDashboard() {
       notifFilter === status && notifTypeFilter === type;
     const notificationTone = (notification: DashboardNotificationRow) => {
       const category = getNotificationCategory(notification);
-      if (category === "reports") return { icon: Flag, bg: "bg-rose-50", text: "text-rose-600", badge: "bg-rose-50 text-rose-700 border-rose-100" };
-      if (category === "appeals") return { icon: FileText, bg: "bg-blue-50", text: "text-blue-600", badge: "bg-blue-50 text-blue-700 border-blue-100" };
-      if (category === "activities") return { icon: Activity, bg: "bg-violet-50", text: "text-violet-600", badge: "bg-violet-50 text-violet-700 border-violet-100" };
-      if (category === "landlord") return { icon: Users, bg: "bg-amber-50", text: "text-amber-700", badge: "bg-amber-50 text-amber-700 border-amber-100" };
-      return { icon: Bell, bg: "bg-slate-100", text: "text-slate-600", badge: "bg-slate-100 text-slate-700 border-slate-200" };
+      if (category === "activities") return { icon: Activity, bg: "bg-violet-50", text: "text-violet-600" };
+      if (category === "landlord") return { icon: Users, bg: "bg-amber-50", text: "text-amber-800" };
+      return { icon: Bell, bg: "bg-stone-100", text: "text-stone-600" };
     };
     const activityTypes = Array.from(new Set(notificationCenterItems
       .filter((notification) => getNotificationCategory(notification) === "activities")
       .map((notification) => String(notification.payload?.activity_type ?? notification.type ?? ""))
       .filter(Boolean))).sort();
+    const pageSize = 8;
+    const pageCount = Math.max(1, Math.ceil(filteredNotifs.length / pageSize));
+    const currentPage = Math.min(notifPage, pageCount);
+    const visibleNotifs = filteredNotifs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     return (
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1500px] space-y-5">
-        <header className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-orange-200/60"><Bell className="h-5 w-5" /></span>
-            <div><h1 className="text-2xl font-black text-slate-950 md:text-3xl">Notifications Center</h1><p className="text-sm font-medium text-slate-500">Review important events and administrative updates.</p></div>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <label className="relative min-w-0 sm:w-[300px]">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input value={notifSearch} onChange={(event) => setNotifSearch(event.target.value)} placeholder="Search notifications" className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-sm font-medium shadow-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100" />
-            </label>
-            <button onClick={() => void refreshAdminNotifications()} disabled={isRefreshingNotifs} title="Refresh notifications" className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-amber-300 hover:text-amber-600 disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${isRefreshingNotifs ? "animate-spin" : ""}`} /></button>
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm"><Calendar className="h-4 w-4 text-amber-600" />{currentDate}</div>
-          </div>
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1500px] space-y-5">
+        <header>
+          <h1 className="text-3xl font-black tracking-tight text-stone-950">Notifications</h1>
+          <p className="mt-1 text-sm font-medium text-stone-500">Review system updates and items relevant to administration.</p>
         </header>
+        <div className="flex gap-3">
+          <label className="relative flex-1">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
+            <input value={notifSearch} onChange={(event) => setNotifSearch(event.target.value)} placeholder="Search notifications..." className="h-12 w-full rounded-xl border border-[#e7d8c9] bg-white pl-12 pr-4 text-sm text-stone-800 outline-none transition focus:border-[#8a6542] focus:ring-2 focus:ring-[#eadfd3]" />
+          </label>
+          <button onClick={() => void refreshAdminNotifications()} disabled={isRefreshingNotifs} title="Refresh" aria-label="Refresh notifications" className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#e7d8c9] bg-white text-[#6f4a2b] transition hover:bg-[#f7f1eb] disabled:opacity-50"><RefreshCw className={`h-5 w-5 ${isRefreshingNotifs ? "animate-spin" : ""}`} /></button>
+        </div>
 
-        <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          {[
-            { label: "Total Notifications", value: notificationCenterItems.length, note: "Database records", icon: Bell, tone: "bg-orange-50 text-orange-600" },
-            { label: "Unread", value: unreadCount, note: unreadCount === 0 ? "All caught up" : "Needs attention", icon: Mail, tone: "bg-amber-50 text-amber-700" },
-            { label: "Read", value: readCount, note: "Active notifications", icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-600" },
-            { label: "Archived", value: archivedCount, note: "Stored history", icon: Archive, tone: "bg-blue-50 text-blue-600" },
-          ].map(({ label, value, note, icon: Icon, tone }) => (
-            <motion.div key={label} whileHover={{ y: -3 }} className="flex min-h-[110px] items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-lg">
-              <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tone}`}><Icon className="h-5 w-5" /></span>
-              <span className="min-w-0"><span className="block text-2xl font-black text-slate-950">{value}</span><span className="block truncate text-xs font-bold text-slate-700">{label}</span><span className="block truncate text-[10px] font-semibold text-slate-400">{note}</span></span>
-            </motion.div>
-          ))}
-        </section>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-bold text-[#6f4525]">{unreadCount > 0 ? `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}` : "You're all caught up."}</p>
+          <Button variant="outline" onClick={() => void markNotifsRead()} disabled={isMarkingAllNotifs || unreadCount === 0} className="h-10 rounded-lg border-[#dfcdbb] text-sm font-bold text-[#6f4525] hover:bg-[#f7f1eb]"><CheckCheck className="mr-2 h-4 w-4" />{isMarkingAllNotifs ? "Marking..." : "Mark all as read"}</Button>
+        </div>
 
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-slate-100 p-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 gap-1 overflow-x-auto pb-1 lg:pb-0">
+        <section className="space-y-4">
+          <div className="flex min-w-0 gap-1 overflow-x-auto rounded-xl border border-[#e7d8c9] bg-white p-1">
               {[
                 { label: "All", status: "all", type: "all", icon: Bell },
                 { label: "Unread", status: "unread", type: "all", icon: Mail },
-                { label: "Read", status: "read", type: "all", icon: MailOpen },
                 { label: "System", status: "all", type: "system", icon: ShieldAlert },
-                { label: "Landlords", status: "all", type: "landlord", icon: Users },
-                { label: "Landlord Activities", status: "all", type: "activities", icon: Activity },
+                { label: "Landlord", status: "all", type: "landlord", icon: Users },
+                { label: "Activity", status: "all", type: "activities", icon: Activity },
                 { label: "Archived", status: "archived", type: "all", icon: Archive },
               ].map(({ label, status, type, icon: Icon }) => {
                 const selected = isViewActive(status as typeof notifFilter, type as typeof notifTypeFilter);
-                return <button key={label} onClick={() => selectNotificationView(status as typeof notifFilter, type as typeof notifTypeFilter)} className={`flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-xs font-bold transition ${selected ? "bg-orange-50 text-orange-700 ring-1 ring-orange-200" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}`}><Icon className="h-3.5 w-3.5" />{label}</button>;
+                return <button key={label} onClick={() => selectNotificationView(status as typeof notifFilter, type as typeof notifTypeFilter)} className={`flex h-9 flex-1 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-bold transition ${selected ? "bg-[#76502f] text-white" : "text-stone-600 hover:bg-[#f7f1eb] hover:text-stone-900"}`}><Icon className="h-3.5 w-3.5" />{label}</button>;
               })}
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              {(notifTypeFilter === "activities" || notifActivityFilter !== "all") && <select value={notifActivityFilter} onChange={(event) => setNotifActivityFilter(event.target.value)} className="h-9 max-w-56 rounded-md border border-slate-200 bg-white px-2 text-xs font-bold text-slate-700"><option value="all">All activity types</option>{activityTypes.map((type) => <option key={type} value={type}>{formatNotificationType(type)}</option>)}</select>}
-              {unreadCount > 0 && <Button variant="outline" size="sm" onClick={() => void markNotifsRead()} disabled={isMarkingAllNotifs} className="h-9 shrink-0 rounded-md border-orange-200 text-xs font-black text-orange-700 hover:bg-orange-50"><CheckCheck className="mr-1.5 h-3.5 w-3.5" />{isMarkingAllNotifs ? "Marking..." : "Mark all as read"}</Button>}
-            </div>
           </div>
+          {notifTypeFilter === "activities" && <select value={notifActivityFilter} onChange={(event) => setNotifActivityFilter(event.target.value)} className="h-10 w-full max-w-xs rounded-lg border border-[#e7d8c9] bg-white px-3 text-sm font-medium text-stone-700 outline-none"><option value="all">All activity types</option>{activityTypes.map((type) => <option key={type} value={type}>{formatNotificationType(type)}</option>)}</select>}
 
           {notificationCenterItems.length === 0 ? (
-            <NotificationEmpty title="No notifications yet." message="New administrative notifications will appear here." onRefresh={() => void refreshAdminNotifications()} refreshing={isRefreshingNotifs} />
+            <NotificationEmpty title="No notifications found." message="New administrative notifications will appear here." />
           ) : filteredNotifs.length === 0 ? (
             notifFilter === "unread" && !notifSearch && notifTypeFilter === "all"
-              ? <NotificationEmpty title="All caught up!" message="You have no unread notifications." onRefresh={() => void refreshAdminNotifications()} refreshing={isRefreshingNotifs} />
-              : <NotificationEmpty title="No matching notifications." message="Try adjusting your search or notification filter." onRefresh={() => void refreshAdminNotifications()} refreshing={isRefreshingNotifs} />
+              ? <NotificationEmpty title="You're all caught up." message="You have no unread notifications." />
+              : notifFilter === "archived" ? <ArchiveEmpty kind="notifications" icon={Bell} /> : <NotificationEmpty title="No notifications found." message="Try adjusting your search or filter." />
           ) : (
-            <div className="divide-y divide-slate-100">
-              {filteredNotifs.map((notification) => {
+            <div className="overflow-hidden rounded-xl border border-[#e7d8c9] bg-white">
+              {visibleNotifs.map((notification) => {
                 const tone = notificationTone(notification);
                 const Icon = tone.icon;
                 const archived = notification.is_deleted === true;
                 const read = isNotificationRead(notification);
                 const apartmentId = String(notification.payload?.apartment_id ?? notification.apartmentId ?? notification.action_target_id ?? "");
                 const apartment = apartmentId ? allApartments.find((item) => item.id === apartmentId) : undefined;
-                const notificationType = formatNotificationType(notification.type);
                 const rawActionUrl = String(notification.action_url ?? notification.payload?.action_url ?? "");
                 const actionUrl = rawActionUrl.startsWith("/")
                   ? rawActionUrl
                   : apartment ? `/admin/apartment/${apartmentId}` : "";
-                const landlordName = String(notification.payload?.landlord_name ?? "");
-                const propertyName = String(notification.payload?.property_name ?? apartment?.title ?? "");
-                const roomName = String(notification.payload?.room_name ?? "");
-                const activityStatus = String(notification.payload?.status ?? "");
                 const supportTicketId = String(notification.payload?.ticket_id ?? notification.payload?.support_ticket_id ?? notification.action_target_id ?? "");
                 const isSupportRequest = String(notification.type ?? "").toLowerCase() === "support_request"
                   || Boolean(notification.payload?.ticket_id ?? notification.payload?.support_ticket_id);
@@ -1780,48 +1768,36 @@ export function AdminDashboard() {
                   <motion.article
                     key={notification.id}
                     layout
-                    role={isSupportRequest ? "button" : undefined}
-                    tabIndex={isSupportRequest ? 0 : undefined}
-                    onClick={isSupportRequest ? () => void openSupportRequest(notification) : undefined}
-                    onKeyDown={isSupportRequest ? (event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        void openSupportRequest(notification);
-                      }
-                    } : undefined}
-                    className={`flex flex-col gap-3 p-4 transition md:flex-row md:items-center ${isSupportRequest ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-orange-300" : ""} ${!read && !archived ? "bg-amber-50/25" : "hover:bg-slate-50/70"}`}
+                    className={`flex flex-col gap-3 border-b border-[#eee3d8] p-4 last:border-b-0 md:flex-row md:items-center ${!read && !archived ? "bg-[#fcf8f3]" : "bg-white"}`}
                   >
-                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${tone.bg} ${tone.text}`}><Icon className="h-4 w-4" /></span>
+                    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone.bg} ${tone.text}`}><Icon className="h-5 w-5" /></span>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className={`text-sm text-slate-900 ${read || archived ? "font-bold" : "font-black"}`}>{safeNotificationText(notification.title, "Notification")}</h3>
-                        {notificationType && <span className={`rounded-md border px-1.5 py-0.5 text-[9px] font-black uppercase ${tone.badge}`}>{notificationType}</span>}
-                        {!read && !archived && <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />}
+                        {!read && !archived && <span className="h-2 w-2 rounded-full bg-[#7b4f2c]" aria-label="Unread" />}
+                        <h3 className={`text-sm text-stone-900 ${read || archived ? "font-semibold" : "font-bold"}`}>{safeNotificationText(notification.title, "Notification")}</h3>
                       </div>
-                      <p className="mt-1 line-clamp-2 text-xs font-medium leading-relaxed text-slate-500">{safeNotificationText(notification.message, "No additional details provided.")}</p>
-                      {(landlordName || propertyName || roomName) && <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold text-slate-500">{landlordName && <span>Landlord: <b className="text-slate-700">{landlordName}</b></span>}{propertyName && <span>Property: <b className="text-slate-700">{propertyName}</b></span>}{roomName && <span>Room: <b className="text-slate-700">{roomName}</b></span>}{activityStatus && <span className="rounded-md bg-slate-100 px-1.5 py-0.5 uppercase text-slate-700">{activityStatus}</span>}</div>}
-                      <p className="mt-1.5 text-[10px] font-semibold text-slate-400">{formatOptionalDate(notification.createdAt ?? notification.created_at, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}{archived && notification.deleted_at ? ` - Archived ${formatOptionalDate(notification.deleted_at, { month: "short", day: "numeric" })}` : ""}</p>
+                      <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-stone-600">{safeNotificationText(notification.message, "No additional details provided.")}</p>
+                      <p className="mt-1.5 text-xs font-medium text-stone-400">{formatOptionalDate(notification.createdAt ?? notification.created_at, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
                     </div>
-                    <div className="flex shrink-0 items-center justify-end gap-1.5" onClick={(event) => event.stopPropagation()}>
-                      {isSupportRequest && <Button size="sm" variant="outline" disabled={supportRequestLoading} onClick={() => void openSupportRequest(notification)} className="h-8 rounded-md border-slate-200 px-2.5 text-[10px] font-black text-slate-600"><Eye className="mr-1 h-3 w-3" />{supportRequestLoading ? "Loading..." : "View Details"}</Button>}
-                      {isAppealNotification && <Button size="sm" variant="outline" onClick={() => void openAppealNotification(notification)} className="h-8 rounded-md border-blue-200 px-2.5 text-[10px] font-black text-blue-700"><Eye className="mr-1 h-3 w-3" />Review Appeal</Button>}
-                      {actionUrl && !archived && !isSupportRequest && <Button size="sm" variant="outline" onClick={() => { if (!read && notification.id) void markNotificationRead(notification.id, user?.id); navigate(actionUrl, { state: { returnTo: "/dashboard?section=notifications", backLabel: "Back to Notifications" } }); }} className="h-8 rounded-md border-slate-200 px-2.5 text-[10px] font-black text-slate-600"><Eye className="mr-1 h-3 w-3" />View Details</Button>}
-                      {!archived && <button onClick={() => void toggleNotifReadStatus(notification.id || "", read)} title={read ? "Mark unread" : "Mark read"} className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition hover:bg-slate-100">{read ? <Mail className="h-3.5 w-3.5" /> : <MailOpen className="h-3.5 w-3.5" />}</button>}
-                      {!archived && <button onClick={() => void archiveNotif(notification.id || "")} title="Archive notification" className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"><Archive className="h-3.5 w-3.5" /></button>}
-                      {archived && <Button size="sm" variant="outline" disabled={deletingNotifId === notification.id} onClick={() => void unarchiveNotif(notification.id || "")} className="h-8 rounded-md border-blue-200 px-2.5 text-[10px] font-black text-blue-700 hover:bg-blue-50"><RotateCcw className="mr-1 h-3 w-3" />Unarchive</Button>}
-                      <button onClick={() => void deleteNotif(notification.id || "")} title={archived ? "Permanently delete notification" : "Move notification to History"} className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                      {!archived && isSupportRequest && <Button size="sm" variant="outline" disabled={supportRequestLoading} onClick={() => void openSupportRequest(notification)} className="h-9 rounded-lg border-[#dfcdbb] text-xs font-bold text-[#6f4525]"><Eye className="mr-1.5 h-3.5 w-3.5" />{supportRequestLoading ? "Loading..." : "View Details"}</Button>}
+                      {!archived && isAppealNotification && <Button size="sm" variant="outline" onClick={() => void openAppealNotification(notification)} className="h-9 rounded-lg border-[#dfcdbb] text-xs font-bold text-[#6f4525]"><Eye className="mr-1.5 h-3.5 w-3.5" />View Details</Button>}
+                      {actionUrl && !archived && !isSupportRequest && !isAppealNotification && <Button size="sm" variant="outline" onClick={() => { if (!read && notification.id) void markNotificationRead(notification.id, user?.id); navigate(actionUrl, { state: { returnTo: "/dashboard?section=notifications", backLabel: "Back to Notifications" } }); }} className="h-9 rounded-lg border-[#dfcdbb] text-xs font-bold text-[#6f4525]"><Eye className="mr-1.5 h-3.5 w-3.5" />View Details</Button>}
+                      {!archived && <button onClick={() => void toggleNotifReadStatus(notification.id || "", read)} title={read ? "Mark as unread" : "Mark as read"} aria-label={read ? "Mark as unread" : "Mark as read"} className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e7d8c9] text-stone-600 hover:bg-[#f7f1eb]">{read ? <Mail className="h-4 w-4" /> : <MailOpen className="h-4 w-4" />}</button>}
+                      {!archived && <button onClick={() => void archiveNotif(notification.id || "")} title="Archive" aria-label="Archive notification" className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e7d8c9] text-stone-600 hover:bg-[#f7f1eb]"><Archive className="h-4 w-4" /></button>}
+                      {archived && <Button size="sm" variant="outline" disabled={deletingNotifId === notification.id} onClick={() => void unarchiveNotif(notification.id || "")} className="h-9 rounded-lg border-[#dfcdbb] text-xs font-bold text-[#6f4525]"><RotateCcw className="mr-1.5 h-3.5 w-3.5" />Restore</Button>}
+                      {archived && <Button size="sm" variant="outline" disabled={deletingNotifId === notification.id} onClick={() => setNotificationToDelete(notification)} className="h-9 rounded-lg border-rose-200 text-xs font-bold text-rose-700 hover:bg-rose-50"><Trash2 className="mr-1.5 h-3.5 w-3.5" />Delete Permanently</Button>}
                     </div>
                   </motion.article>
                 );
               })}
             </div>
           )}
-        </section>
-
-        <section className="grid gap-4 rounded-lg border border-amber-200 bg-amber-50/60 p-4 md:grid-cols-3">
-          {[{ icon: Shield, title: "Database synchronized", text: "Read and archive states are stored with each notification." }, { icon: Search, title: "Focused filtering", text: "Search and filter by status or notification type." }, { icon: RefreshCw, title: "Current updates", text: "Refresh anytime to load the latest administrative events." }].map(({ icon: Icon, title, text: description }) => (
-            <div key={title} className="flex gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-amber-600 shadow-sm"><Icon className="h-4 w-4" /></span><div><p className="text-xs font-black text-slate-800">{title}</p><p className="mt-0.5 text-[11px] font-medium leading-relaxed text-slate-500">{description}</p></div></div>
-          ))}
+          {filteredNotifs.length > pageSize && <nav className="flex items-center justify-center gap-2" aria-label="Notification pages">
+            <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setNotifPage((page) => Math.max(1, page - 1))} className="border-[#dfcdbb]">Previous</Button>
+            {Array.from({ length: pageCount }, (_, index) => index + 1).map((page) => <button key={page} onClick={() => setNotifPage(page)} className={`h-9 min-w-9 rounded-lg text-sm font-bold ${page === currentPage ? "bg-[#76502f] text-white" : "text-stone-600 hover:bg-[#f7f1eb]"}`}>{page}</button>)}
+            <Button variant="outline" size="sm" disabled={currentPage === pageCount} onClick={() => setNotifPage((page) => Math.min(pageCount, page + 1))} className="border-[#dfcdbb]">Next</Button>
+          </nav>}
         </section>
       </motion.div>
     );
@@ -1852,95 +1828,101 @@ export function AdminDashboard() {
     });
 
     return (
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1500px] space-y-5">
-        <header className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 md:flex-row md:items-center md:justify-between">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1500px] space-y-5">
+        <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-orange-200/60">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FAF8F5] text-[#8B735B] shadow-sm">
               <Users className="h-5 w-5" />
             </span>
             <div>
               <h1 className="text-2xl font-black text-slate-950 md:text-3xl">Landlord Verification</h1>
-              <p className="text-sm font-medium text-slate-500">Review credentials and manage landlord compliance.</p>
+              <p className="mt-1 text-sm font-medium text-slate-500">Review landlord credentials and verification status.</p>
             </div>
           </div>
           <div className="flex items-center gap-2 self-start md:self-auto">
-            <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-amber-300 hover:text-amber-600">
+            <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[#E8DED1] bg-white text-[#756A60] shadow-sm transition hover:border-[#D8C5B1] hover:text-[#8B735B]">
               <Bell className="h-4 w-4" />
               {unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}
             </button>
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm"><Calendar className="h-4 w-4 text-amber-600" />{currentDate}</div>
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#756A60] shadow-sm"><Calendar className="h-4 w-4 text-[#8B735B]" />{currentDate}</div>
           </div>
         </header>
 
-        <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm lg:grid-cols-4">
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
-            { label: "Total Landlords", value: landlords.length, note: "Registered", icon: Users, tone: "bg-amber-50 text-amber-700" },
-            { label: "Pending Review", value: pendingCount, note: "Awaiting verification", icon: Clock, tone: "bg-orange-50 text-orange-600" },
-            { label: "Verified", value: verifiedCount, note: "Active landlords", icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-600" },
-            { label: "Violations", value: activeViolationCount, note: "Require attention", icon: AlertTriangle, tone: "bg-rose-50 text-rose-600" },
-          ].map(({ label, value, note, icon: Icon, tone }, index) => (
-            <button key={label} type="button" onClick={() => label === "Violations" ? setLandlordStatusFilter("violations") : undefined} className={`flex min-h-[112px] items-center gap-3 p-4 text-left transition ${label === "Violations" ? "hover:bg-rose-50/60" : "cursor-default"} md:p-5 ${index % 2 !== 0 ? "border-l border-slate-100" : ""} ${index > 1 ? "border-t border-slate-100 lg:border-t-0" : ""} ${index > 0 ? "lg:border-l" : ""}`}>
+            { label: "Total Landlords", value: landlords.length, note: "Registered landlords", icon: Users, tone: "bg-[#FAF8F5] text-[#8B735B]" },
+            { label: "Pending Review", value: pendingCount, note: "Awaiting verification", icon: Clock, tone: "bg-[#FAF8F5] text-[#8B735B]" },
+            { label: "Verified", value: verifiedCount, note: "Verified landlords", icon: CheckCircle2, tone: "bg-[#FAF8F5] text-[#8B735B]" },
+            { label: "Violations", value: activeViolationCount, note: "Compliance information", icon: AlertTriangle, tone: "bg-[#FAF8F5] text-[#8B735B]" },
+          ].map(({ label, value, note, icon: Icon, tone }) => (
+            <button key={label} type="button" onClick={() => label === "Violations" ? setLandlordStatusFilter("violations") : undefined} className={`flex min-h-[112px] items-center gap-3 rounded-xl border border-[#E8DED1] bg-white p-4 text-left shadow-sm transition md:p-5 ${label === "Violations" ? "hover:bg-[#FAF8F5]" : "cursor-default"}`}>
               <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tone}`}><Icon className="h-5 w-5" /></span>
               <span className="min-w-0"><span className="block text-2xl font-black text-slate-950">{value}</span><span className="block truncate text-xs font-bold text-slate-700">{label}</span><span className="block truncate text-[10px] font-semibold text-slate-400">{note}</span></span>
             </button>
           ))}
         </section>
 
-        <section className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-[minmax(0,1fr)_180px_180px]">
+        <section className="grid gap-3 rounded-xl border border-[#E8DED1] bg-white p-3 shadow-sm md:grid-cols-[minmax(0,1fr)_210px_180px]">
           <label className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input value={landlordSearch} onChange={(event) => setLandlordSearch(event.target.value)} placeholder="Search landlords by name, email, or ID" className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm font-medium outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100" />
+            <input value={landlordSearch} onChange={(event) => setLandlordSearch(event.target.value)} placeholder="Search landlords by name, email, or ID" className="h-10 w-full rounded-lg border border-[#E8DED1] bg-[#FAF8F5] pl-10 pr-3 text-sm font-medium text-[#302820] outline-none transition focus:border-[#8B735B] focus:bg-white focus:ring-2 focus:ring-[#EEE6DC]" />
           </label>
-          <select value={landlordStatusFilter} onChange={(event) => setLandlordStatusFilter(event.target.value as "all" | "pending" | "verified" | "violations")} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400">
-            <option value="all">Status: All</option><option value="pending">Status: Pending</option><option value="verified">Status: Verified</option><option value="violations">Status: Violations</option>
+          <select value={landlordStatusFilter} onChange={(event) => setLandlordStatusFilter(event.target.value as "all" | "pending" | "verified" | "violations")} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#8B735B]">
+            <option value="all">Verification Status: All</option><option value="pending">Verification Status: Pending</option><option value="verified">Verification Status: Verified</option><option value="violations">Verification Status: Violations</option>
           </select>
-          <select value={landlordSort} onChange={(event) => setLandlordSort(event.target.value as "newest" | "oldest" | "name")} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400">
-            <option value="newest">Sort: Newest</option><option value="oldest">Sort: Oldest</option><option value="name">Sort: Name</option>
+          <select value={landlordSort} onChange={(event) => setLandlordSort(event.target.value as "newest" | "oldest" | "name")} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#8B735B]">
+            <option value="newest">Sort by: Newest</option><option value="oldest">Sort by: Oldest</option><option value="name">Sort by: Name</option>
           </select>
         </section>
 
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <section className="overflow-hidden rounded-xl border border-[#E8DED1] bg-white shadow-sm">
           {landlords.length === 0 ? (
             <OverviewEmpty icon={Users} text="No landlords registered yet." />
           ) : visibleLandlords.length === 0 ? (
-            <OverviewEmpty icon={Search} text="No landlords match the selected filters." />
+            <OverviewEmpty icon={Search} text="No landlords match your current search or verification filter." />
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-[#EEE6DC]">
               {visibleLandlords.map((landlord) => {
                 const landlordViolations = violationsForLandlord(text(landlord.id));
                 const verified = (landlord.isVerified ?? landlord.is_verified) === true;
                 const permitNumber = landlord.permitNumber ?? landlord.permit_number;
                 return (
-                  <motion.article key={landlord.id} whileHover={{ backgroundColor: "rgba(248, 250, 252, 0.85)" }} className="grid cursor-pointer gap-4 p-4 md:p-5 xl:grid-cols-[minmax(250px,1.4fr)_150px_minmax(170px,0.8fr)_150px] xl:items-center" onClick={() => setSelectedLandlord(landlord)}>
+                  <motion.article key={landlord.id} whileHover={{ backgroundColor: "rgba(250, 248, 245, 0.85)" }} className="grid cursor-pointer gap-5 p-4 md:grid-cols-2 md:p-5 xl:grid-cols-[minmax(250px,1.35fr)_170px_minmax(180px,0.8fr)_220px] xl:items-center" onClick={() => setSelectedLandlord(landlord)}>
                     <div className="flex min-w-0 items-center gap-3">
-                      {landlord.avatar_url ? <img src={landlord.avatar_url} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" /> : <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-base font-black text-amber-700">{landlord.name?.[0]?.toUpperCase() ?? "L"}</span>}
+                      {landlord.avatar_url ? <img src={landlord.avatar_url} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-[#E8DED1]" /> : <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#FAF8F5] text-base font-black text-[#302820] ring-1 ring-[#E8DED1]">{landlord.name?.[0]?.toUpperCase() ?? "L"}</span>}
                       <div className="min-w-0">
-                        <h3 className="truncate text-sm font-black text-slate-900">{landlord.name || "Unnamed landlord"}</h3>
+                        <p className="mb-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Landlord</p>
+                        <h3 className="truncate text-base font-black text-slate-950">{landlord.name || "Unnamed landlord"}</h3>
                         <p className="truncate text-xs font-medium text-slate-500">{landlord.email || "No email provided"}</p>
-                        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-semibold text-slate-400">
+                        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold text-slate-500">
                           <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />Registered {formatOptionalDate(landlord.created_at as string | undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
                         </div>
                       </div>
                     </div>
 
                     <div>
-                      <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10px] font-black uppercase ${verified ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-                        {verified ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}{verified ? "Verified" : "Pending"}
+                      <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Verification Status</p>
+                      <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#E8DED1] bg-[#FAF8F5] px-2.5 text-[10px] font-black text-[#6F4E37]">
+                        {verified ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}{verified ? "Verified" : "Pending Review"}
                       </span>
-                      {landlordViolations.length > 0 && <p className="mt-2 text-[10px] font-bold text-rose-600">{landlordViolations.length} active {landlordViolations.length === 1 ? "violation" : "violations"}</p>}
+                      {landlordViolations.length > 0 && <p className="mt-2 text-[10px] font-bold text-[#756A60]">{landlordViolations.length} active {landlordViolations.length === 1 ? "violation" : "violations"}</p>}
                     </div>
 
                     <div className="min-w-0">
-                      <p className="text-[10px] font-black uppercase text-slate-400">Verification information</p>
-                      {permitNumber ? <p className="mt-1 flex items-center gap-1.5 truncate text-xs font-bold text-slate-700"><FileText className="h-3.5 w-3.5 shrink-0 text-emerald-500" />Permit {permitNumber}</p> : <p className="mt-1 text-xs font-medium text-slate-400">No permit information submitted.</p>}
+                      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Submitted Credential</p>
+                      {permitNumber ? <p className="mt-2 flex items-center gap-2 truncate text-sm font-bold text-slate-700"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500"><FileText className="h-3.5 w-3.5" /></span>Permit #{permitNumber}</p> : <p className="mt-2 text-xs font-medium text-slate-500">No permit information submitted.</p>}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5 xl:grid-cols-1" onClick={(event) => event.stopPropagation()}>
-                      <Button size="sm" variant={verified ? "outline" : "default"} onClick={() => setVerifyAction({ landlordId: text(landlord.id), verify: !verified })} className={`h-8 rounded-md text-[10px] font-black ${verified ? "border-slate-200 text-slate-600 hover:bg-slate-50" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}>
+                    <div className="space-y-2" onClick={(event) => event.stopPropagation()}>
+                      <Button size="sm" onClick={() => setSelectedLandlord(landlord)} className="h-9 w-full rounded-lg bg-[#8B735B] text-xs font-black text-white hover:bg-[#765F4A]"><Eye className="mr-1.5 h-3.5 w-3.5" />Review Details</Button>
+                      <div className="grid grid-cols-3 gap-1.5">
+                      <Button size="sm" variant="outline" onClick={() => setVerifyAction({ landlordId: text(landlord.id), verify: !verified })} className="h-8 rounded-md border-[#E8DED1] text-[10px] font-black text-[#302820] hover:bg-[#FAF8F5]">
                         {verified ? <XCircle className="mr-1 h-3 w-3" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}{verified ? "Revoke" : "Verify"}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => openViolationModal("violation", text(landlord.id), text(landlord.name, "Landlord"), "General")} className="h-8 rounded-md border-rose-200 text-[10px] font-black text-rose-600 hover:bg-rose-50"><AlertOctagon className="mr-1 h-3 w-3" />Violation</Button>
-                      <Button variant="outline" size="sm" onClick={() => openViolationModal("notice", text(landlord.id), text(landlord.name, "Landlord"), "General")} className="h-8 rounded-md border-amber-200 text-[10px] font-black text-amber-700 hover:bg-amber-50"><BellRing className="mr-1 h-3 w-3" />Notice</Button>
+                      <Button variant="outline" size="sm" onClick={() => openViolationModal("violation", text(landlord.id), text(landlord.name, "Landlord"), "General")} className="h-8 rounded-md border-[#E8DED1] text-[10px] font-black text-[#302820] hover:bg-[#FAF8F5]"><AlertOctagon className="mr-1 h-3 w-3" />Violation</Button>
+                      <Button variant="outline" size="sm" onClick={() => openViolationModal("notice", text(landlord.id), text(landlord.name, "Landlord"), "General")} className="h-8 rounded-md border-[#E8DED1] text-[10px] font-black text-[#302820] hover:bg-[#FAF8F5]"><BellRing className="mr-1 h-3 w-3" />Notice</Button>
+                      </div>
+                      <p className="text-center text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">Verification · Administrative actions</p>
                     </div>
                   </motion.article>
                 );
@@ -1949,8 +1931,8 @@ export function AdminDashboard() {
           )}
         </section>
 
-        <section className="flex gap-3 rounded-lg border border-amber-200 bg-amber-50/70 p-4">
-          <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+        <section className="flex gap-3 rounded-xl border border-[#E8DED1] bg-[#FAF8F5] p-4">
+          <Shield className="mt-0.5 h-5 w-5 shrink-0 text-[#8B735B]" />
           <div><p className="text-sm font-black text-slate-800">Verification requirements</p><p className="mt-0.5 text-xs font-medium text-slate-600">Only verified landlords can add and edit apartments. Use violations for serious offenses and notices for warnings.</p></div>
         </section>
       </motion.div>
@@ -1969,49 +1951,41 @@ export function AdminDashboard() {
     return (
       <div className="space-y-5">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1500px] space-y-5">
-          <header className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 md:flex-row md:items-center md:justify-between">
+          <header className="flex flex-col gap-4 pb-2 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-orange-200/60"><Building2 className="h-5 w-5" /></span>
-              <div><h1 className="text-2xl font-black text-slate-950 md:text-3xl">All Apartments</h1><p className="text-sm font-medium text-slate-500">Browse, inspect, and review apartment listings.</p></div>
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#E8DED1] bg-[#FAF8F5] text-[#8B735B]"><Building2 className="h-5 w-5" /></span>
+              <div><h1 className="text-2xl font-black text-[#302820] md:text-3xl">Apartments</h1><p className="text-sm font-medium text-[#756A60]">Review and manage apartment listings.</p></div>
             </div>
             <div className="flex items-center gap-2 self-start md:self-auto">
-              <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-amber-300 hover:text-amber-600"><Bell className="h-4 w-4" />{unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}</button>
-              <div className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm"><Calendar className="h-4 w-4 text-amber-600" />{currentDate}</div>
+              <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[#E8DED1] bg-white text-[#756A60] shadow-sm transition hover:border-[#D8C5B1] hover:text-[#6F4E37]"><Bell className="h-4 w-4" />{unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}</button>
+              <div className="flex h-10 items-center gap-2 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] shadow-sm"><Calendar className="h-4 w-4 text-[#8B735B]" />{currentDate}</div>
             </div>
           </header>
 
-          <nav className="flex gap-2 overflow-x-auto">
-            <button onClick={() => setAptFilter("all")} className={`flex h-10 shrink-0 items-center gap-2 rounded-lg border px-4 text-xs font-black transition ${aptFilter === "all" ? "border-orange-300 bg-orange-50 text-orange-700 shadow-sm" : "border-transparent text-slate-500 hover:bg-white"}`}><Building2 className="h-4 w-4" />All Apartments ({allApartments.length})</button>
-          </nav>
-
-          <section className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm lg:grid-cols-[minmax(220px,1fr)_150px_180px_150px_auto]">
-            <label className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input value={aptSearch} onChange={(event) => setAptSearch(event.target.value)} placeholder="Search by name, location, or landlord" className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm font-medium outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100" />
-            </label>
-            <select value={aptStatusFilter} onChange={(event) => setAptStatusFilter(event.target.value as typeof aptStatusFilter)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400"><option value="all">Status: All</option><option value="available">Published</option><option value="occupied">Occupied</option><option value="review">Under Review</option></select>
-            <select value={aptPropertyTypeFilter} onChange={(event) => setAptPropertyTypeFilter(event.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400"><option value="all">Property Type: All</option>{propertyTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select>
-            <select value={aptSort} onChange={(event) => setAptSort(event.target.value as typeof aptSort)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400"><option value="newest">Sort: Newest</option><option value="oldest">Sort: Oldest</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="name">Sort: Name</option></select>
-            <div className="grid grid-cols-2 rounded-lg border border-slate-200 p-1">
-              <button onClick={() => setAptViewMode("grid")} title="Grid view" className={`flex h-8 w-9 items-center justify-center rounded-md transition ${aptViewMode === "grid" ? "bg-orange-500 text-white" : "text-slate-400 hover:bg-slate-50"}`}><LayoutGrid className="h-4 w-4" /></button>
-              <button onClick={() => setAptViewMode("list")} title="List view" className={`flex h-8 w-9 items-center justify-center rounded-md transition ${aptViewMode === "list" ? "bg-orange-500 text-white" : "text-slate-400 hover:bg-slate-50"}`}><List className="h-4 w-4" /></button>
-            </div>
+          <section className="grid overflow-hidden rounded-lg border border-[#E8DED1] bg-white shadow-sm sm:grid-cols-3">
+            {[
+              { label: "Total Apartments", value: allApartments.length, note: "All listings", icon: Building2 },
+              { label: "Published", value: availableCount, note: "Visible to tenants", icon: CheckCircle2 },
+              { label: "Under Review", value: reviewCount, note: "Requires inspection", icon: Clock },
+            ].map(({ label, value, note, icon: Icon }) => (
+              <div key={label} className="flex min-h-[108px] items-center gap-4 p-4 md:p-5"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><Icon className="h-5 w-5" /></span><span className="min-w-0"><span className="block text-2xl font-black text-[#302820]">{value}</span><span className="block truncate text-xs font-bold text-[#302820]">{label}</span><span className="block truncate text-[10px] font-semibold text-[#756A60]">{note}</span></span></div>
+            ))}
           </section>
 
-          <section className="grid grid-cols-2 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm lg:grid-cols-4">
-            {[
-              { label: "Total Apartments", value: allApartments.length, note: "All listings", icon: Building2, tone: "bg-orange-50 text-orange-600" },
-              { label: "Published", value: availableCount, note: "Visible to tenants", icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-600" },
-              { label: "Under Review", value: reviewCount, note: "Requires inspection", icon: Clock, tone: "bg-rose-50 text-rose-600" },
-            ].map(({ label, value, note, icon: Icon, tone }, index) => (
-              <div key={label} className={`flex min-h-[108px] items-center gap-3 p-4 md:p-5 ${index % 2 ? "border-l border-slate-100" : ""} ${index > 1 ? "border-t border-slate-100 lg:border-t-0" : ""} ${index > 0 ? "lg:border-l" : ""}`}><span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tone}`}><Icon className="h-5 w-5" /></span><span className="min-w-0"><span className="block text-2xl font-black text-slate-950">{value}</span><span className="block truncate text-xs font-bold text-slate-700">{label}</span><span className="block truncate text-[10px] font-semibold text-slate-400">{note}</span></span></div>
-            ))}
+          <section className="grid gap-3 rounded-lg border border-[#E8DED1] bg-white p-3 shadow-sm lg:grid-cols-[minmax(280px,1fr)_160px_190px_170px]">
+            <label className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#756A60]" />
+              <input value={aptSearch} onChange={(event) => setAptSearch(event.target.value)} placeholder="Search apartments by name, location, or landlord" className="h-10 w-full rounded-lg border border-[#E8DED1] bg-[#FAF8F5] pl-10 pr-3 text-sm font-medium text-[#302820] outline-none transition placeholder:text-[#756A60] focus:border-[#D8C5B1] focus:bg-white focus:ring-2 focus:ring-[#EEE6DC]" />
+            </label>
+            <select value={aptStatusFilter} onChange={(event) => setAptStatusFilter(event.target.value as typeof aptStatusFilter)} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#D8C5B1]"><option value="all">Status: All</option><option value="available">Published</option><option value="occupied">Occupied</option><option value="review">Under Review</option></select>
+            <select value={aptPropertyTypeFilter} onChange={(event) => setAptPropertyTypeFilter(event.target.value)} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#D8C5B1]"><option value="all">Property Type: All</option>{propertyTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select>
+            <select value={aptSort} onChange={(event) => setAptSort(event.target.value as typeof aptSort)} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#D8C5B1]"><option value="newest">Sort by: Newest</option><option value="oldest">Sort by: Oldest</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="name">Sort by: Name</option></select>
           </section>
 
           {filteredApts.length === 0 ? (
             <div className="rounded-lg border border-slate-200 bg-white shadow-sm"><OverviewEmpty icon={Building2} text={aptFilter === "reported" ? "No reported apartments." : allApartments.length === 0 ? "No apartments have been added yet." : "No apartments match the selected filters."} /></div>
           ) : (
-            <section className={aptViewMode === "grid" ? "grid gap-4 md:grid-cols-2" : "space-y-3"}>
+            <section className="space-y-3">
               {filteredApts.map((apartment) => {
                 const landlord = getLandlordForApt(apartment);
                 const reportCount = getApartmentReportCount(apartment.id);
@@ -2022,38 +1996,33 @@ export function AdminDashboard() {
                     : apartment.status === "reserved" ? "Reserved"
                       : apartment.status === "maintenance" ? "Maintenance"
                         : "Published";
-                const statusClass = isReview
-                  ? "bg-rose-500 text-white"
-                  : apartment.status === "occupied" ? "bg-slate-800 text-white"
-                    : apartment.status === "reserved" ? "bg-blue-600 text-white"
-                      : apartment.status === "maintenance" ? "bg-amber-600 text-white"
-                        : "bg-emerald-500 text-white";
                 const location = formatApartmentLocation(apartment);
                 const roomCount = apartment.rooms?.length || apartment.bedrooms || 0;
                 return (
-                  <motion.article key={apartment.id} whileHover={{ y: -3 }} onClick={() => setSelectedApt(apartment)} className={`group cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg ${aptViewMode === "list" ? "md:flex" : ""}`}>
-                    <div className={`relative shrink-0 overflow-hidden bg-slate-100 ${aptViewMode === "list" ? "h-52 md:h-auto md:w-64" : "h-52"}`}>
-                      {apartment.image ? <ImageWithFallback src={apartment.image} alt={apartment.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="flex h-full w-full items-center justify-center"><Building2 className="h-10 w-10 text-slate-300" /></div>}
-                      <span className={`absolute left-3 top-3 rounded-md px-2 py-1 text-[10px] font-black ${statusClass}`}>{status}</span>
-                      {reportCount > 0 && <span className="absolute right-3 top-3 flex items-center gap-1 rounded-md bg-rose-500 px-2 py-1 text-[10px] font-black text-white"><Flag className="h-3 w-3" />{reportCount}</span>}
+                  <motion.article key={apartment.id} whileHover={{ y: -2 }} onClick={() => setSelectedApt(apartment)} className="group grid cursor-pointer overflow-hidden rounded-lg border border-[#E8DED1] bg-white shadow-sm transition-shadow hover:shadow-md md:grid-cols-[185px_minmax(0,1fr)_160px_150px] md:items-stretch">
+                    <div className="relative h-40 overflow-hidden bg-[#FAF8F5] md:h-auto">
+                      {apartment.image ? <ImageWithFallback src={apartment.image} alt={apartment.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="flex h-full min-h-32 w-full items-center justify-center"><Building2 className="h-10 w-10 text-[#D8C5B1]" /></div>}
                     </div>
-                    <div className="flex min-w-0 flex-1 flex-col p-4">
-                      <div className="min-w-0"><h3 className="truncate text-base font-black text-slate-900">{apartment.title}</h3><p className="mt-1 flex items-center gap-1 truncate text-xs font-medium text-slate-500"><MapPin className="h-3 w-3 shrink-0 text-orange-500" />{location || "Location not provided"}</p><p className="mt-2 text-xs font-semibold text-slate-500">{apartment.propertyType || "Property type not specified"}</p></div>
-                      <p className="mt-3 text-xs font-black text-orange-600">Prices are listed per room</p>
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                        <div className="rounded-md bg-slate-50 p-2"><p className="text-[9px] font-black uppercase text-slate-400">Rooms / Units</p><p className="mt-0.5 font-bold text-slate-800">{roomCount || "Not provided"}</p></div>
-                        <div className="rounded-md bg-slate-50 p-2"><p className="text-[9px] font-black uppercase text-slate-400">Floor Area</p><p className="mt-0.5 flex items-center gap-1 font-bold text-slate-800"><Ruler className="h-3 w-3 text-slate-400" />{apartment.sqft ? `${apartment.sqft.toLocaleString()} sqft` : "Not provided"}</p></div>
+                    <div className="min-w-0 p-4">
+                      <h3 className="truncate text-base font-black text-[#302820]">{apartment.title}</h3>
+                      <p className="mt-1 flex items-center gap-1 truncate text-xs font-medium text-[#756A60]"><MapPin className="h-3 w-3 shrink-0 text-[#8B735B]" />{location || "Location not provided"}</p>
+                      <p className="mt-2 truncate text-xs text-[#756A60]">Submitted by <span className="font-bold text-[#302820]">{landlord?.name || "Not available"}</span></p>
+                      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-[#756A60]">
+                        <span className="flex items-center gap-1.5"><BedDouble className="h-3.5 w-3.5 text-[#8B735B]" />{roomCount || 0} {roomCount === 1 ? "Room/Unit" : "Rooms/Units"}</span>
+                        <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-[#8B735B]" />Added {formatOptionalDate(apartment.createdAt, { month: "short", day: "numeric", year: "numeric" })}</span>
                       </div>
-                      <div className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-[10px]"><div><p className="font-black uppercase text-slate-400">Added</p><p className="mt-0.5 font-bold text-slate-700">{formatOptionalDate(apartment.createdAt, { month: "short", day: "numeric", year: "numeric" })}</p></div><div className="min-w-0"><p className="font-black uppercase text-slate-400">Landlord</p><p className="mt-0.5 truncate font-bold text-slate-700">{landlord?.name || "Not available"}</p></div></div>
-                      <Button variant="outline" size="sm" onClick={(event) => { event.stopPropagation(); navigate(`/admin/apartment/${apartment.id}`, { state: { returnTo: "/dashboard?section=apartments", backLabel: "Back to Apartments" } }); }} className="mt-3 h-9 w-full rounded-md border-orange-300 text-xs font-black text-orange-700 hover:bg-orange-50"><Eye className="mr-1.5 h-3.5 w-3.5" />Inspect</Button>
+                    </div>
+                    <div className="flex items-center px-4 py-3">
+                      <div><span className="inline-flex items-center gap-1.5 rounded-md border border-[#E8DED1] bg-[#FAF8F5] px-3 py-2 text-xs font-bold text-[#6F4E37]"><ShieldCheck className="h-3.5 w-3.5" />{status}</span>{reportCount > 0 && <p className="mt-2 flex items-center gap-1 text-[10px] font-bold text-rose-600"><Flag className="h-3 w-3" />{reportCount} {reportCount === 1 ? "report" : "reports"}</p>}</div>
+                    </div>
+                    <div className="flex items-center p-4">
+                      <Button variant="outline" size="sm" onClick={(event) => { event.stopPropagation(); navigate(`/admin/apartment/${apartment.id}`, { state: { returnTo: "/dashboard?section=apartments", backLabel: "Back to Apartments" } }); }} className="h-10 w-full rounded-md border-[#D8C5B1] text-xs font-black text-[#6F4E37] hover:bg-[#FAF8F5]"><Eye className="mr-1.5 h-3.5 w-3.5" />Inspect</Button>
                     </div>
                   </motion.article>
                 );
               })}
             </section>
           )}
-
-          <section className="flex gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-4"><Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" /><div><p className="text-sm font-black text-slate-800">Apartment management</p><p className="mt-0.5 text-xs font-medium text-slate-600">Inspect listings to review complete apartment details, landlord information, reports, and listing status.</p></div></section>
         </motion.div>
 
         <div className="hidden items-center gap-3">
@@ -2471,15 +2440,16 @@ export function AdminDashboard() {
     const pending   = reports.filter((r: any) => r.status === "pending");
     const resolved  = reports.filter((r: any) => r.status === "resolved");
     const dismissed = reports.filter((r: any) => r.status === "dismissed");
-    const reportTypes = Array.from(new Set(reports.map((report) => String(report.issueType ?? report.issue_type ?? report.category ?? "").trim()).filter(Boolean))).sort();
+    const reportSource = reportArchiveView ? archivedReports : reports;
+    const reportTypes = Array.from(new Set(reportSource.map((report) => String(report.issueType ?? report.issue_type ?? report.category ?? "").trim()).filter(Boolean))).sort();
     const normalizedSearch = reportSearch.trim().toLowerCase();
     const getReportApartment = (report: DashboardReportRow) => allApartments.find((apartment) => apartment.id === (report.apartmentId ?? report.apartment_id));
     const getReportApartmentTitle = (report: DashboardReportRow) => report.apartment_title ?? report.apartment ?? getReportApartment(report)?.title ?? report.apartment_id ?? "Apartment unavailable";
     const getReporterLabel = (report: DashboardReportRow) => report.reporter_name ?? report.reporter ?? report.reporter_id ?? "Reporter unavailable";
-    const visibleReports = reports
+    const visibleReports = reportSource
       .filter((report) => {
         const type = String(report.issueType ?? report.issue_type ?? report.category ?? "");
-        const matchesStatus = reportStatusFilter === "all" || report.status === reportStatusFilter;
+        const matchesStatus = reportArchiveView || reportStatusFilter === "all" || report.status === reportStatusFilter;
         const matchesType = reportTypeFilter === "all" || type === reportTypeFilter;
         const matchesSearch = !normalizedSearch || [getReportApartmentTitle(report), getReporterLabel(report), type, report.details, report.id]
           .some((value) => String(value ?? "").toLowerCase().includes(normalizedSearch));
@@ -2493,6 +2463,66 @@ export function AdminDashboard() {
     const currentDate = new Date().toLocaleDateString("en-PH", {
       weekday: "short", month: "short", day: "numeric", year: "numeric",
     });
+
+    if (selectedReport) {
+      const reportApartment = selectedReportDetails?.apartment ?? getReportApartment(selectedReport);
+      const reporter = selectedReportDetails?.reporter;
+      const landlord = selectedReportDetails?.landlord;
+      const reporterName = reporter?.name ?? selectedReport.reporter_name ?? selectedReport.reporter ?? "Reporter unavailable";
+      const reporterRole = reporter?.role ?? selectedReport.reporter_role ?? selectedReport.role ?? "Role unavailable";
+      const reporterContact = reporter?.email ?? selectedReport.contact;
+      const issueType = String(selectedReport.issueType ?? selectedReport.issue_type ?? selectedReport.category ?? "Report type not specified");
+      const apartmentName = selectedReport.apartment_title ?? selectedReport.apartment ?? reportApartment?.title;
+      const statusClass = selectedReport.status === "resolved" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : selectedReport.status === "dismissed" ? "border-slate-200 bg-slate-100 text-slate-600" : "border-[#E8DED1] bg-[#FAF8F5] text-[#6F4E37]";
+      const sectionClass = "rounded-xl border border-[#E8DED1] bg-white p-5 shadow-sm md:p-6";
+      const sectionTitleClass = "text-xs font-black uppercase tracking-[0.08em] text-[#6F4E37]";
+
+      return (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1500px] space-y-5">
+          <div className="flex items-center justify-between gap-4">
+            <button onClick={() => setSelectedReport(null)} className="inline-flex items-center gap-2 text-sm font-bold text-[#6F4E37] transition hover:text-[#302820]"><ArrowLeft className="h-4 w-4" />Back to Reports</button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[#E8DED1] bg-white text-[#756A60] shadow-sm"><Bell className="h-4 w-4" />{unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}</button>
+              <div className="hidden h-10 items-center gap-2 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] shadow-sm sm:flex"><Calendar className="h-4 w-4 text-[#8B735B]" />{currentDate}</div>
+            </div>
+          </div>
+
+          <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-4">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#FAF8F5] text-[#6F4E37]"><Flag className="h-6 w-6" /></span>
+              <div><h1 className="text-2xl font-black text-[#302820] md:text-3xl">Report Details</h1><p className="mt-1 text-sm font-medium text-[#756A60]">Review the reported issue, related records, and submitted evidence.</p></div>
+            </div>
+          </header>
+          <div className="flex flex-wrap items-center gap-3"><span className={`inline-flex rounded-full border px-4 py-1.5 text-xs font-black capitalize ${statusClass}`}>{selectedReport.status || "Pending"}</span><span className="text-xs font-medium text-[#756A60]">Submitted {formatOptionalDate(selectedReport.submittedAt ?? selectedReport.submitted_at, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span></div>
+
+          <section className={sectionClass}>
+            <h2 className={sectionTitleClass}>1. Reported Issue</h2>
+            <div className="mt-5 grid gap-5 md:grid-cols-[220px_1fr]">
+              <div><p className="text-xs font-medium text-[#756A60]">Issue Type</p><p className="mt-2 text-sm font-black text-[#302820]">{issueType}</p></div>
+              <div><p className="text-xs font-medium text-[#756A60]">Issue Description</p><p className="mt-2 whitespace-pre-wrap text-sm font-medium leading-relaxed text-[#302820]">{selectedReport.details || "No description provided."}</p></div>
+            </div>
+          </section>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            <section className={sectionClass}>
+              <h2 className={sectionTitleClass}>2. Reported By</h2>
+              <div className="mt-5 flex items-start gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FAF8F5] text-sm font-black text-[#6F4E37]">{text(reporterName).split(" ").map((name: string) => name[0]).join("").slice(0, 2).toUpperCase() || "R"}</span><div className="min-w-0 flex-1"><p className="font-black text-[#302820]">{reporterName}</p><p className="mt-0.5 text-xs font-medium capitalize text-[#756A60]">{reporterRole}</p>{reporterContact && <p className="mt-4 flex items-center gap-2 truncate text-sm text-[#756A60]"><Mail className="h-4 w-4 shrink-0 text-[#8B735B]" />{reporterContact}</p>}</div>{reporter && <Button size="sm" variant="outline" onClick={() => setViewingUserProfile(reporter)} className="border-[#D8C5B1] text-xs font-bold text-[#6F4E37]"><UserIcon className="mr-1 h-3.5 w-3.5" />View Reporter</Button>}</div>
+            </section>
+
+            <section className={sectionClass}>
+              <h2 className={sectionTitleClass}>3. Reported Apartment</h2>
+              {reportApartment || apartmentName ? <><div className="mt-5 flex items-center gap-4"><span className="flex h-20 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#FAF8F5]">{reportApartment?.image ? <ImageWithFallback src={reportApartment.image} alt={apartmentName || "Reported apartment"} className="h-full w-full object-cover" /> : <Building2 className="h-6 w-6 text-[#D8C5B1]" />}</span><div className="min-w-0"><p className="truncate font-black text-[#302820]">{apartmentName || "Apartment unavailable"}</p>{reportApartment && <p className="mt-1 text-xs leading-relaxed text-[#756A60]">{formatApartmentLocation(reportApartment) || "Location not provided"}</p>}</div></div><Button variant="outline" disabled={!reportApartment?.id} onClick={() => { if (reportApartment?.id) { setSelectedReport(null); navigate(`/admin/apartment/${reportApartment.id}`, { state: { returnTo: "/dashboard?section=reports", backLabel: "Back to Reports" } }); } }} className="mt-5 w-full border-[#D8C5B1] font-bold text-[#6F4E37] hover:bg-[#FAF8F5]"><Eye className="mr-2 h-4 w-4" />View Apartment</Button></> : <div className="mt-5"><p className="font-black text-[#302820]">Apartment unavailable</p><p className="mt-1 text-sm text-[#756A60]">The linked apartment information is currently unavailable.</p></div>}
+            </section>
+          </div>
+
+          {landlord && <section className={sectionClass}><h2 className={sectionTitleClass}>4. Property Owner</h2><div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FAF8F5] font-black text-[#6F4E37]">{landlord.name?.[0]?.toUpperCase() || "L"}</span><div className="min-w-0 flex-1"><p className="font-black text-[#302820]">{landlord.name}</p>{landlord.email && <p className="mt-2 flex items-center gap-2 truncate text-sm text-[#756A60]"><Mail className="h-4 w-4 text-[#8B735B]" />{landlord.email}</p>}{landlord.mobile && <p className="mt-2 flex items-center gap-2 text-sm text-[#756A60]"><Phone className="h-4 w-4 text-[#8B735B]" />{landlord.mobile}</p>}</div><Button variant="outline" onClick={() => setViewingUserProfile(landlord)} className="border-[#D8C5B1] font-bold text-[#6F4E37]"><UserIcon className="mr-2 h-4 w-4" />View Landlord</Button></div></section>}
+
+          <section className={sectionClass}><h2 className={sectionTitleClass}>5. Evidence ({selectedReportEvidence.length})</h2><div className="mt-5"><EvidenceViewer evidence={selectedReportEvidence} title="Submitted Evidence" /></div></section>
+
+          <section className={sectionClass}><h2 className={sectionTitleClass}>6. Admin Decision</h2>{!reportArchiveView && selectedReport.status === "pending" ? <><p className="mt-3 text-sm text-[#756A60]">Choose the appropriate action based on your review of the report and evidence.</p><div className="mt-5 grid gap-3 sm:grid-cols-2"><Button onClick={() => resolveReport(text(selectedReport.id))} className="h-11 bg-[#6F4E37] font-bold text-white hover:bg-[#5F4230]"><CheckCheck className="mr-2 h-4 w-4" />Resolve Report</Button><Button variant="outline" onClick={() => setDismissReportModal({ reportId: text(selectedReport.id), reason: "" })} className="h-11 border-[#D8C5B1] font-bold text-[#6F4E37] hover:bg-[#FAF8F5]"><XCircle className="mr-2 h-4 w-4" />Dismiss Report</Button></div></> : <div className="mt-4"><p className="text-sm font-medium text-[#756A60]">This report has been <span className="font-black capitalize text-[#302820]">{selectedReport.status}</span> on {formatOptionalDate(selectedReport.resolved_at, { month: "short", day: "numeric" })}.</p>{!reportArchiveView && canArchiveReportStatus(selectedReport.status) && <Button variant="outline" onClick={() => setCaseAction({ type: "archive-report", id: text(selectedReport.id), label: selectedReport.apartment || text(selectedReport.id) })} className="mt-4 border-[#D8C5B1] font-bold text-[#6F4E37]"><Archive className="mr-2 h-4 w-4" />Archive</Button>}</div>}</section>
+        </motion.div>
+      );
+    }
 
     const ReportRow = ({ report }: { report: any }) => {
       const sev = SEVERITY_LABEL[report.severity] ?? SEVERITY_LABEL["med"];
@@ -2545,73 +2575,70 @@ export function AdminDashboard() {
     return (
       <div className="space-y-5">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1500px] space-y-5">
-          <header className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 md:flex-row md:items-center md:justify-between">
+          <header className="flex flex-col gap-4 pb-2 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-lg shadow-orange-200/60"><Flag className="h-5 w-5" /></span>
-              <div><h1 className="text-2xl font-black text-slate-950 md:text-3xl">Reports</h1><p className="text-sm font-medium text-slate-500">Review reports submitted by tenants.</p></div>
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#E8DED1] bg-[#FAF8F5] text-[#8B735B]"><Flag className="h-5 w-5" /></span>
+              <div><h1 className="text-2xl font-black text-[#302820] md:text-3xl">Reports</h1><p className="text-sm font-medium text-[#756A60]">Review and manage reported issues.</p></div>
             </div>
             <div className="flex items-center gap-2 self-start md:self-auto">
-              <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-amber-300 hover:text-amber-600"><Bell className="h-4 w-4" />{unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}</button>
-              <div className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm"><Calendar className="h-4 w-4 text-amber-600" />{currentDate}</div>
+              <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[#E8DED1] bg-white text-[#756A60] shadow-sm transition hover:border-[#D8C5B1] hover:text-[#6F4E37]"><Bell className="h-4 w-4" />{unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}</button>
+              <div className="flex h-10 items-center gap-2 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] shadow-sm"><Calendar className="h-4 w-4 text-[#8B735B]" />{currentDate}</div>
             </div>
           </header>
 
           <section className="grid gap-3 md:grid-cols-3">
             {[
-              { label: "Pending Reports", value: pending.length, note: "Awaiting review", icon: Clock, tone: "bg-orange-50 text-orange-600" },
-              { label: "Resolved Reports", value: resolved.length, note: "Successfully resolved", icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-600" },
-              { label: "Dismissed Reports", value: dismissed.length, note: "No action required", icon: XCircle, tone: "bg-blue-50 text-blue-600" },
-            ].map(({ label, value, note, icon: Icon, tone }) => (
-              <motion.div key={label} whileHover={{ y: -3 }} className="flex min-h-[112px] items-center gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg"><span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${tone}`}><Icon className="h-5 w-5" /></span><span><span className="block text-2xl font-black text-slate-950">{value}</span><span className="block text-xs font-bold text-slate-700">{label}</span><span className="block text-[10px] font-semibold text-slate-400">{note}</span></span></motion.div>
+              { label: "Pending Reports", value: pending.length, note: "Awaiting review", icon: Clock },
+              { label: "Resolved Reports", value: resolved.length, note: "Successfully resolved", icon: CheckCircle2 },
+              { label: "Dismissed Reports", value: dismissed.length, note: "No action required", icon: XCircle },
+            ].map(({ label, value, note, icon: Icon }) => (
+              <motion.div key={label} whileHover={{ y: -2 }} className="flex min-h-[112px] items-center gap-4 rounded-lg border border-[#E8DED1] bg-white p-5 shadow-sm transition-shadow hover:shadow-md"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><Icon className="h-5 w-5" /></span><span><span className="block text-2xl font-black text-[#302820]">{value}</span><span className="block text-xs font-bold text-[#302820]">{label}</span><span className="block text-[10px] font-semibold text-[#756A60]">{note}</span></span></motion.div>
             ))}
           </section>
 
-          <section className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm lg:grid-cols-[minmax(240px,1fr)_160px_190px_150px]">
-            <label className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={reportSearch} onChange={(event) => setReportSearch(event.target.value)} placeholder="Search by apartment, reporter, type, or ID" className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm font-medium outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100" /></label>
-            <select value={reportStatusFilter} onChange={(event) => setReportStatusFilter(event.target.value as typeof reportStatusFilter)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400"><option value="all">Status: All</option><option value="pending">Pending</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option></select>
-            <select value={reportTypeFilter} onChange={(event) => setReportTypeFilter(event.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400"><option value="all">Type: All</option>{reportTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select>
-            <select value={reportSort} onChange={(event) => setReportSort(event.target.value as typeof reportSort)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400"><option value="newest">Sort: Newest</option><option value="oldest">Sort: Oldest</option></select>
+          <section className="grid gap-3 rounded-lg border border-[#E8DED1] bg-white p-3 shadow-sm lg:grid-cols-[minmax(240px,1fr)_160px_190px_150px_auto]">
+            <label className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#756A60]" /><input value={reportSearch} onChange={(event) => setReportSearch(event.target.value)} placeholder="Search reports by apartment, reporter, type, or ID" className="h-10 w-full rounded-lg border border-[#E8DED1] bg-[#FAF8F5] pl-10 pr-3 text-sm font-medium text-[#302820] outline-none transition placeholder:text-[#756A60] focus:border-[#D8C5B1] focus:bg-white focus:ring-2 focus:ring-[#EEE6DC]" /></label>
+            <select value={reportStatusFilter} onChange={(event) => setReportStatusFilter(event.target.value as typeof reportStatusFilter)} disabled={reportArchiveView} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#D8C5B1] disabled:bg-[#FAF8F5] disabled:text-[#9A9189]"><option value="all">Status: All</option><option value="pending">Pending</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option></select>
+            <select value={reportTypeFilter} onChange={(event) => setReportTypeFilter(event.target.value)} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#D8C5B1]"><option value="all">Type: All</option>{reportTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select>
+            <select value={reportSort} onChange={(event) => setReportSort(event.target.value as typeof reportSort)} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#D8C5B1]"><option value="newest">Sort by: Newest</option><option value="oldest">Sort by: Oldest</option></select>
+            <button onClick={() => setReportArchiveView((current) => !current)} className={`flex h-10 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-bold transition ${reportArchiveView ? "border-[#8B735B] bg-[#8B735B] text-white" : "border-[#E8DED1] bg-white text-[#6F4E37] hover:bg-[#FAF8F5]"}`}><Archive className="h-3.5 w-3.5" />{reportArchiveView ? "Current Reports" : `Archived (${archivedReports.length})`}</button>
           </section>
 
-          <nav className="grid grid-cols-4 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
-            {[
-              { label: "All Reports", value: "all", count: reports.length, icon: FileText },
-              { label: "Pending", value: "pending", count: pending.length, icon: Clock },
-              { label: "Resolved", value: "resolved", count: resolved.length, icon: CheckCircle2 },
-              { label: "Dismissed", value: "dismissed", count: dismissed.length, icon: XCircle },
-            ].map(({ label, value, count, icon: Icon }) => (
-              <button key={value} onClick={() => setReportStatusFilter(value as typeof reportStatusFilter)} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-md px-2 text-[10px] font-black transition sm:text-xs ${reportStatusFilter === value ? "bg-orange-50 text-orange-700 ring-1 ring-orange-200" : "text-slate-500 hover:bg-slate-50"}`}><Icon className="hidden h-3.5 w-3.5 sm:block" /><span className="truncate">{label}</span><span className="rounded bg-white/80 px-1.5 py-0.5 text-[9px]">{count}</span></button>
-            ))}
-          </nav>
-
-          <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-            {reports.length === 0 ? (
+          <section className="rounded-lg border border-[#E8DED1] bg-white p-3 shadow-sm">
+            {reportArchiveView && archivedReports.length === 0 ? (
+              <ArchiveEmpty kind="reports" icon={Flag} />
+            ) : !reportArchiveView && reports.length === 0 ? (
               <div className="flex min-h-[390px] flex-col items-center justify-center p-6 text-center"><span className="mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-orange-50 text-orange-500"><Flag className="h-10 w-10" /></span><h3 className="text-xl font-black text-slate-900">No reports submitted yet.</h3><p className="mt-1 max-w-sm text-sm font-medium text-slate-500">Reports submitted by tenants will appear here for review.</p></div>
             ) : visibleReports.length === 0 ? (
               <OverviewEmpty icon={Search} text="No reports match the selected filters." />
             ) : (
-              <div className="divide-y divide-slate-100">
+              <div className="space-y-3">
                 {visibleReports.map((report) => {
                   const apartment = getReportApartment(report);
                   const severity = SEVERITY_LABEL[report.severity ?? "med"] ?? SEVERITY_LABEL.med;
-                  const statusClass = report.status === "resolved" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : report.status === "dismissed" ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-orange-50 text-orange-700 border-orange-100";
+                  const reporterLabel = getReporterLabel(report);
+                  const reporterIsId = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(reporterLabel);
+                  const statusClass = report.status === "resolved" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : report.status === "dismissed" ? "bg-slate-100 text-slate-600 border-slate-200" : "bg-[#FAF8F5] text-[#6F4E37] border-[#E8DED1]";
                   return (
-                    <motion.article key={report.id} whileHover={{ backgroundColor: "rgba(248, 250, 252, 0.85)" }} onClick={() => setSelectedReport(report)} className="grid cursor-pointer gap-4 p-4 md:p-5 xl:grid-cols-[minmax(260px,1.35fr)_minmax(180px,0.8fr)_150px_190px] xl:items-center">
+                    <motion.article key={report.id} whileHover={{ y: -2 }} onClick={() => setSelectedReport(report)} className="grid cursor-pointer gap-4 rounded-lg border border-[#E8DED1] bg-white p-4 shadow-sm transition-shadow hover:shadow-md md:p-5 xl:grid-cols-[minmax(220px,1fr)_minmax(210px,1.1fr)_minmax(150px,0.7fr)_125px_190px] xl:items-center">
                       <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-14 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100">{apartment?.image ? <ImageWithFallback src={apartment.image} alt={apartment.title} className="h-full w-full object-cover" /> : <Flag className="h-5 w-5 text-slate-300" />}</span>
-                        <div className="min-w-0"><h3 className="truncate text-sm font-black text-slate-900">{getReportApartmentTitle(report)}</h3><p className="mt-1 truncate text-xs font-medium text-slate-500">{String(report.issueType ?? report.issue_type ?? report.category ?? "Report type not specified")}</p><p className="mt-1 line-clamp-1 text-[10px] text-slate-400">{report.details || "No description provided."}</p></div>
+                        <span className="flex h-16 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#FAF8F5]">{apartment?.image ? <ImageWithFallback src={apartment.image} alt={apartment.title} className="h-full w-full object-cover" /> : <Flag className="h-5 w-5 text-[#D8C5B1]" />}</span>
+                        <div className="min-w-0"><p className="text-[9px] font-black uppercase tracking-wide text-[#756A60]">Apartment</p><h3 className="mt-1 truncate text-sm font-black text-[#302820]">{getReportApartmentTitle(report)}</h3>{apartment && <p className="mt-1 line-clamp-2 text-[10px] font-medium text-[#756A60]">{formatApartmentLocation(apartment) || "Location not provided"}</p>}</div>
                       </div>
-                      <div className="min-w-0"><p className="text-[9px] font-black uppercase text-slate-400">Reported by</p><p className="mt-1 truncate text-xs font-bold text-slate-700">{getReporterLabel(report)}</p><p className="mt-1 text-[10px] font-medium capitalize text-slate-400">{report.reporter_role ?? report.role ?? "Role unavailable"}</p></div>
-                      <div className="flex flex-wrap gap-1.5 xl:block"><span className={`inline-flex rounded-md border px-2 py-1 text-[9px] font-black uppercase ${statusClass}`}>{report.status || "Pending"}</span><span className={`ml-1.5 inline-flex rounded-md border px-2 py-1 text-[9px] font-black ${severity.class}`}>{severity.label}</span><p className="mt-2 text-[10px] font-semibold text-slate-400">{formatOptionalDate(report.submittedAt ?? report.submitted_at, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p></div>
-                      <div className="grid grid-cols-2 gap-2" onClick={(event) => event.stopPropagation()}><Button size="sm" variant="outline" onClick={() => setSelectedReport(report)} className="h-8 rounded-md border-slate-200 text-[10px] font-black text-slate-600"><Eye className="mr-1 h-3 w-3" />Details</Button><Button size="sm" variant="outline" disabled={!apartment?.id} onClick={() => apartment?.id && navigate(`/admin/apartment/${apartment.id}`, { state: { returnTo: "/dashboard?section=reports", backLabel: "Back to Reports" } })} className="h-8 rounded-md border-orange-200 text-[10px] font-black text-orange-700 hover:bg-orange-50"><Building2 className="mr-1 h-3 w-3" />Apartment</Button>{canArchiveReportStatus(report.status) && <Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "archive-report", id: text(report.id), label: getReportApartmentTitle(report) })} className="col-span-2 h-8 rounded-md border-rose-200 text-[10px] font-black text-rose-700 hover:bg-rose-50"><Trash2 className="mr-1 h-3 w-3" />Delete to History</Button>}</div>
+                      <div className="min-w-0"><p className="text-[9px] font-black uppercase tracking-wide text-[#756A60]">Reported issue</p><p className="mt-1 truncate text-xs font-bold text-[#302820]">{String(report.issueType ?? report.issue_type ?? report.category ?? "Report type not specified")}</p><p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-[#756A60]">{report.details || "No description provided."}</p></div>
+                      <div className="min-w-0"><p className="text-[9px] font-black uppercase tracking-wide text-[#756A60]">Reported by</p><p className={`mt-1 truncate font-bold ${reporterIsId ? "font-mono text-[10px] text-[#756A60]" : "text-xs text-[#302820]"}`}>{reporterLabel}</p><p className="mt-1 text-[10px] font-medium capitalize text-[#756A60]">{reporterIsId ? "Reporter ID" : report.reporter_role ?? report.role ?? "Role unavailable"}</p></div>
+                      <div><p className="text-[9px] font-black uppercase tracking-wide text-[#756A60]">Submitted</p><p className="mt-1 text-[10px] font-semibold leading-relaxed text-[#302820]">{formatOptionalDate(report.submittedAt ?? report.submitted_at, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p></div>
+                      <div className="min-w-0"><div className="flex flex-wrap gap-1.5"><span className={`inline-flex rounded-md border px-2 py-1 text-[9px] font-black capitalize ${statusClass}`}>{report.status || "Pending"}</span><span className={`inline-flex rounded-md border px-2 py-1 text-[9px] font-bold ${severity.class}`}>{severity.label}</span></div>
+                      <div className="mt-3 grid grid-cols-2 gap-2" onClick={(event) => event.stopPropagation()}>
+                        <Button size="sm" onClick={() => setSelectedReport(report)} className="col-span-2 h-8 rounded-md bg-[#6F4E37] text-[10px] font-black text-white hover:bg-[#5F4230]"><Eye className="mr-1 h-3 w-3" />Review Report</Button>
+                        {reportArchiveView ? <><Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "restore-report", id: text(report.id), label: getReportApartmentTitle(report) })} className="h-8 rounded-md border-emerald-200 text-[10px] font-black text-emerald-700"><RotateCcw className="mr-1 h-3 w-3" />Restore</Button><Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "delete-report", id: text(report.id), label: getReportApartmentTitle(report) })} className="h-8 rounded-md border-rose-200 text-[10px] font-black text-rose-700"><Trash2 className="mr-1 h-3 w-3" />Delete</Button></> : <><Button size="sm" variant="outline" disabled={!apartment?.id} onClick={() => apartment?.id && navigate(`/admin/apartment/${apartment.id}`, { state: { returnTo: "/dashboard?section=reports", backLabel: "Back to Reports" } })} className="col-span-2 h-8 rounded-md border-[#D8C5B1] text-[10px] font-black text-[#6F4E37] hover:bg-[#FAF8F5]"><Building2 className="mr-1 h-3 w-3" />View Apartment</Button>{canArchiveReportStatus(report.status) && <Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "archive-report", id: text(report.id), label: getReportApartmentTitle(report) })} className="col-span-2 h-8 rounded-md border-[#E8DED1] text-[10px] font-black text-[#756A60]"><Archive className="mr-1 h-3 w-3" />Archive</Button>}</>}
+                      </div></div>
                     </motion.article>
                   );
                 })}
               </div>
             )}
           </section>
-
-          <section className="grid gap-4 rounded-lg border border-amber-200 bg-amber-50/60 p-4 md:grid-cols-3">{[{ icon: Shield, title: "Fair review", text: "Every report remains available for administrative investigation." }, { icon: Clock, title: "Timely action", text: "Pending reports stay visible until resolved or dismissed." }, { icon: FileText, title: "Detailed records", text: "Reporter, apartment, evidence, and status details stay connected." }].map(({ icon: Icon, title, text: description }) => <div key={title} className="flex gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-amber-600 shadow-sm"><Icon className="h-4 w-4" /></span><div><p className="text-xs font-black text-slate-800">{title}</p><p className="mt-0.5 text-[11px] font-medium leading-relaxed text-slate-500">{description}</p></div></div>)}</section>
         </motion.div>
 
         <div className="hidden items-center gap-3">
@@ -2657,208 +2684,6 @@ export function AdminDashboard() {
           <div className="hidden py-16 text-center">
             <Flag className="h-12 w-12 mx-auto mb-3 text-amber-200" />
             <p className="text-slate-400 font-medium">No reports submitted yet</p>
-          </div>
-        )}
-
-        {/* Report detail modal */}
-        {selectedReport && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={() => setSelectedReport(null)}>
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-            <div className="relative z-10 w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-amber-100 overflow-hidden max-h-[90vh] flex flex-col"
-              onClick={(e) => e.stopPropagation()}>
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-amber-50 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center shadow">
-                    <Flag className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-black text-slate-900">Report Detail</p>
-                    <p className="text-slate-400 text-xs font-medium">Review submitted report</p>
-                  </div>
-                </div>
-                <button onClick={() => setSelectedReport(null)} className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
-                  <X className="h-4 w-4 text-slate-500" />
-                </button>
-              </div>
-
-              {/* Body - Scrollable */}
-              <div className="px-6 py-5 space-y-4 overflow-y-auto">
-                {/* Status Badge */}
-                <div className="flex items-center gap-2">
-                  <Badge className={`text-xs font-bold ${
-                    selectedReport.status === "pending" ? "bg-amber-100 text-amber-800 border border-amber-300" :
-                    selectedReport.status === "resolved" ? "bg-green-100 text-green-800 border border-green-300" :
-                    "bg-slate-100 text-slate-800 border border-slate-300"
-                  }`}>
-                    {selectedReport.status?.toUpperCase()}
-                  </Badge>
-                  <span className="text-xs font-medium text-slate-400">
-                    {formatOptionalDate(selectedReport.submittedAt ?? selectedReport.submitted_at, {
-                      month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit"
-                    })}
-                  </span>
-                </div>
-
-                {/* Reporting Tenant Section */}
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Reporting Tenant</p>
-                  <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
-                    <div className="flex items-center gap-3">
-                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-black text-sm shadow shrink-0 ${
-                        selectedReport.role === "student" ? "bg-gradient-to-br from-blue-100 to-sky-200 text-blue-700" : "bg-gradient-to-br from-purple-100 to-violet-200 text-purple-700"
-                      }`}>
-                        {text(selectedReport.reporter).split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-black text-slate-900 text-sm">{selectedReport.reporter}</p>
-                        <p className="text-xs text-slate-500 font-medium capitalize">{selectedReport.role}</p>
-                        {selectedReport.contact && <p className="text-xs text-slate-500 font-medium">{selectedReport.contact}</p>}
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          if (selectedReportDetails?.reporter) {
-                            setViewingUserProfile(selectedReportDetails.reporter);
-                          }
-                        }}
-                        className="border-blue-200 text-blue-600 hover:bg-blue-50 text-xs font-bold rounded-lg shrink-0"
-                      >
-                        <UserIcon className="h-3.5 w-3.5 mr-1" />View
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Reported Apartment Section */}
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Reported Apartment</p>
-                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
-                    <div className="space-y-2">
-                      <p className="font-bold text-slate-900">{selectedReport.apartment || "Unknown Apartment"}</p>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <p className="text-slate-400 font-medium">Date Submitted</p>
-                          <p className="font-bold text-slate-800">
-                            {formatOptionalDate(selectedReport.submittedAt ?? selectedReport.submitted_at, {
-                              month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit"
-                            })}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400 font-medium">Report Status</p>
-                          <p className="font-bold text-slate-800 capitalize">{selectedReport.status || "pending"}</p>
-                        </div>
-                      </div>
-                      <div className="pt-2 flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            if (selectedReportDetails?.apartment?.id) {
-                              setSelectedReport(null);
-                              navigate(`/admin/apartment/${selectedReportDetails.apartment.id}`, { state: { returnTo: "/dashboard?section=reports", backLabel: "Back to Reports" } });
-                            }
-                          }}
-                          className="flex-1 border-amber-200 text-amber-700 hover:bg-amber-100 text-xs font-bold rounded-lg"
-                        >
-                          <Eye className="h-3.5 w-3.5 mr-1" />View Reported Apartment
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Landlord Information Section */}
-                {selectedReportDetails?.landlord && (
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Landlord (Property Owner)</p>
-                    <div className="p-3 bg-orange-50 rounded-xl border border-orange-200">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-100 to-amber-200 flex items-center justify-center font-black text-sm shadow text-orange-700 shrink-0">
-                          {selectedReportDetails.landlord.name?.[0]?.toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-black text-slate-900 text-sm">{selectedReportDetails.landlord.name}</p>
-                          <p className="text-xs text-slate-500 font-medium truncate">{selectedReportDetails.landlord.email}</p>
-                          {selectedReportDetails.landlord.mobile && <p className="text-xs text-slate-500 font-medium">{selectedReportDetails.landlord.mobile}</p>}
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setViewingUserProfile(selectedReportDetails.landlord)}
-                          className="border-orange-200 text-orange-600 hover:bg-orange-100 text-xs font-bold rounded-lg shrink-0"
-                        >
-                          <UserIcon className="h-3.5 w-3.5 mr-1" />View
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Report Description */}
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Problem Description</p>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    <p className="text-sm text-slate-700 font-medium leading-relaxed">
-                      {selectedReport.details || "No description provided."}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Uploaded Evidence */}
-                <div>
-                  <EvidenceViewer
-                    evidence={selectedReportEvidence}
-                    title="Uploaded Evidence/Image"
-                  />
-                </div>
-
-                {/* Contact Information */}
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contact Information</p>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    <p className="text-sm font-medium text-slate-800">{selectedReport.contact || "No contact information provided."}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer Actions */}
-              {selectedReport.status === "pending" && (
-                <div className="px-6 py-4 border-t border-amber-50 flex gap-2 shrink-0 flex-wrap">
-                  <Button
-                    onClick={() => resolveReport(text(selectedReport.id))}
-                    className="flex-1 min-w-[120px] bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-md text-sm"
-                  >
-                    <CheckCheck className="h-4 w-4 mr-2" />Resolve
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setDismissReportModal({ reportId: text(selectedReport.id), reason: "" })}
-                    className="flex-1 min-w-[120px] border-slate-200 text-slate-600 hover:bg-slate-50 font-bold rounded-xl text-sm"
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />Dismiss
-                  </Button>
-                </div>
-              )}
-              {selectedReport.status !== "pending" && (
-                <div className="px-6 py-4 border-t border-amber-50 text-center shrink-0">
-                  <p className="text-sm text-slate-500 font-medium">
-                    This report has been <span className="font-black capitalize">{selectedReport.status}</span> on {formatOptionalDate(selectedReport.resolved_at, { month: "short", day: "numeric" })}.
-                  </p>
-                  {canArchiveReportStatus(selectedReport.status) && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setCaseAction({ type: "archive-report", id: text(selectedReport.id), label: selectedReport.apartment || text(selectedReport.id) })}
-                      className="mt-3 border-rose-200 text-rose-700 hover:bg-rose-50 font-bold rounded-xl text-sm"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />Delete to History
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         )}
 
@@ -2971,7 +2796,7 @@ export function AdminDashboard() {
       return [...documents].reverse().find((entry) => entry && typeof entry === "object" && !Array.isArray(entry) && (entry as Record<string, unknown>).kind === kind) as Record<string, unknown> | undefined;
     };
     const getAppealContext = (appeal: DashboardAppealRow) => {
-      const report = reports.find((item) => item.id === appeal.report_id);
+      const report = reports.find((item) => item.id === appeal.report_id) ?? archivedReports.find((item) => item.id === appeal.report_id);
       const violation = violations.find((item) => item.id === appeal.violation_id);
       const source = getAppealMetadata(appeal, "source");
       const apartmentId = String(report?.apartment_id ?? report?.apartmentId ?? violation?.apartment_id ?? source?.apartment_id ?? "");
@@ -2979,7 +2804,8 @@ export function AdminDashboard() {
       return { report, violation, source, apartmentId, apartment };
     };
     const normalizedSearch = appealSearch.trim().toLowerCase();
-    const visibleAppeals = appeals
+    const appealSource = appealArchiveView ? archivedAppeals : appeals;
+    const visibleAppeals = appealSource
       .filter((appeal) => {
         const landlord = landlordMap.get(appeal.landlord_id ?? "");
         const type = appeal.report_id ? "report" : appeal.violation_id ? "violation" : "general";
@@ -3035,16 +2861,53 @@ export function AdminDashboard() {
       }
     };
 
-    return (
+    if (selectedAppeal) {
+      const landlord = landlordMap.get(selectedAppeal.landlord_id ?? "");
+      const context = getAppealContext(selectedAppeal);
+      const appealType = selectedAppeal.report_id ? "Report Appeal" : selectedAppeal.violation_id ? context.violation?.mode === "notice" ? "Notice Appeal" : "Violation Appeal" : "General Appeal";
+      const evidenceDocuments = (selectedAppeal.supporting_docs ?? []).map((doc, index) => {
+        const document = typeof doc === "object" && doc !== null && !Array.isArray(doc) ? doc as Record<string, unknown> : null;
+        if (document && document.kind !== "evidence") return null;
+        const url = typeof doc === "string" ? doc : String(document?.file_url ?? document?.url ?? "");
+        const name = String(document?.file_name ?? document?.name ?? `Supporting evidence ${index + 1}`);
+        return { url, name };
+      }).filter((document): document is { url: string; name: string } => Boolean(document));
+      const relatedReportTitle = context.report ? String(context.report.issueType ?? context.report.issue_type ?? context.report.category ?? context.report.apartment_title ?? "Related report") : "Report unavailable";
+      const statusClass = selectedAppeal.status === "approved" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : selectedAppeal.status === "rejected" || selectedAppeal.status === "dismissed" ? "border-slate-200 bg-slate-100 text-slate-600" : "border-[#E8DED1] bg-[#FAF8F5] text-[#6F4E37]";
+      const sectionClass = "rounded-xl border border-[#E8DED1] bg-white p-5 shadow-sm md:p-6";
+      const headingClass = "text-xs font-black uppercase tracking-[0.08em] text-[#6F4E37]";
+
+      return <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1500px] space-y-5">
+        <div className="flex items-center justify-between gap-4"><button onClick={() => { setSelectedAppeal(null); setAppealResponse(""); setAppealStatus("under_review"); }} className="inline-flex items-center gap-2 text-sm font-bold text-[#6F4E37] hover:text-[#302820]"><ArrowLeft className="h-4 w-4" />Back to Appeals</button><div className="flex items-center gap-2"><button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[#E8DED1] bg-white text-[#756A60] shadow-sm"><Bell className="h-4 w-4" />{unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}</button><div className="hidden h-10 items-center gap-2 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] shadow-sm sm:flex"><Calendar className="h-4 w-4 text-[#8B735B]" />{currentDate}</div></div></div>
+
+        <header className="flex items-center gap-4"><span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#FAF8F5] text-[#6F4E37]"><Flag className="h-6 w-6" /></span><div><h1 className="text-2xl font-black text-[#302820] md:text-3xl">Review Appeal</h1><p className="mt-1 text-sm font-medium text-[#756A60]">Review the appeal, related case, supporting evidence, and administrative decision.</p></div></header>
+        <div className="flex flex-wrap items-center gap-3"><span className="rounded-full border border-[#D8C5B1] bg-[#FAF8F5] px-4 py-1.5 text-xs font-black text-[#6F4E37]">{appealType}</span><span className={`rounded-full border px-4 py-1.5 text-xs font-black capitalize ${statusClass}`}>{String(selectedAppeal.status || "Pending").replace(/_/g, " ")}</span><span className="text-xs font-medium text-[#756A60]">Submitted {formatOptionalDate(selectedAppeal.submitted_at ?? selectedAppeal.created_at, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span></div>
+
+        <section className={sectionClass}><h2 className={headingClass}>1. Appeal Submitted By</h2><div className="mt-5 flex items-start gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FAF8F5] font-black text-[#6F4E37]">{landlord?.name?.[0]?.toUpperCase() ?? "L"}</span><div className="min-w-0"><p className="font-black text-[#302820]">{landlord?.name || "Landlord unavailable"}</p>{landlord?.email && <p className="mt-3 flex items-center gap-2 text-sm text-[#756A60]"><Mail className="h-4 w-4 text-[#8B735B]" />{landlord.email}</p>}{landlord?.mobile && <p className="mt-2 flex items-center gap-2 text-sm text-[#756A60]"><Phone className="h-4 w-4 text-[#8B735B]" />{landlord.mobile}</p>}</div></div></section>
+
+        <section className={sectionClass}><h2 className={headingClass}>2. Related Case</h2><div className="mt-5 grid gap-5 md:grid-cols-2"><div><p className="text-xs font-medium text-[#756A60]">Appeal Type</p><p className="mt-2 text-sm font-black text-[#302820]">{appealType}</p><p className="mt-5 text-xs font-medium text-[#756A60]">Apartment</p><p className="mt-2 text-sm font-black text-[#302820]">{context.apartment?.title || String(context.source?.apartment_title ?? "Apartment unavailable")}</p>{context.apartment && <p className="mt-1 text-xs text-[#756A60]">{formatApartmentLocation(context.apartment) || "Location not provided"}</p>}</div><div><p className="text-xs font-medium text-[#756A60]">{selectedAppeal.report_id ? "Related Report" : selectedAppeal.violation_id ? "Related Violation" : "Related Record"}</p><p className="mt-2 text-sm font-black text-[#302820]">{selectedAppeal.report_id ? relatedReportTitle : selectedAppeal.violation_id ? context.violation?.mode === "notice" ? "Administrative notice" : "Administrative violation" : String(context.source?.related_label ?? "Unavailable")}</p>{(selectedAppeal.report_id || selectedAppeal.violation_id) && <p className="mt-1 break-all text-[10px] text-[#756A60]">Record ID: {selectedAppeal.report_id || selectedAppeal.violation_id}</p>}</div></div><div className="mt-5 flex flex-wrap gap-3">{context.report && <Button variant="outline" onClick={() => { setSelectedReport(context.report!); setActiveSection("reports"); }} className="border-[#D8C5B1] font-bold text-[#6F4E37]"><Eye className="mr-2 h-4 w-4" />View Report</Button>}{context.apartmentId && <Button variant="outline" onClick={() => navigate(`/admin/apartment/${context.apartmentId}`, { state: { returnTo: "/dashboard?section=appeals", backLabel: "Back to Appeals" } })} className="border-[#D8C5B1] font-bold text-[#6F4E37]"><Building2 className="mr-2 h-4 w-4" />View Apartment</Button>}</div></section>
+
+        <section className={sectionClass}><h2 className={headingClass}>3. Appeal Reason</h2><div className="mt-5"><p className="text-xs font-medium text-[#756A60]">Reason</p><p className="mt-2 whitespace-pre-wrap text-sm text-[#302820]">{selectedAppeal.reason || "—"}</p>{selectedAppeal.description && <div className="mt-5 border-t border-[#E8DED1] pt-5"><p className="text-[10px] font-black uppercase tracking-wide text-[#756A60]">Landlord&apos;s Explanation</p><p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[#302820]">{selectedAppeal.description}</p></div>}</div></section>
+
+        <section className={sectionClass}><h2 className={headingClass}>4. Supporting Evidence ({evidenceDocuments.length})</h2>{evidenceDocuments.length > 0 ? <div className="mt-5 space-y-3">{evidenceDocuments.map((document, index) => <div key={`${document.url}-${index}`} className="flex flex-col gap-3 rounded-lg border border-[#E8DED1] bg-[#FFFEFC] p-4 sm:flex-row sm:items-center"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><FileText className="h-5 w-5" /></span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-[#302820]">{document.name}</p><p className="mt-1 text-[10px] text-[#756A60]">Submitted evidence</p></div>{document.url && <a href={document.url} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center justify-center rounded-md border border-[#D8C5B1] px-4 text-xs font-bold text-[#6F4E37] hover:bg-[#FAF8F5]"><Eye className="mr-2 h-3.5 w-3.5" />Preview</a>}</div>)}</div> : <p className="mt-4 text-sm text-[#756A60]">No supporting evidence submitted.</p>}</section>
+
+        <section className={sectionClass}><h2 className={headingClass}>5. Admin Decision</h2>{selectedAppeal.admin_response && <div className="mt-5 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-medium text-[#756A60]">Decision</p><span className={`mt-2 inline-flex rounded-md border px-2 py-1 text-[10px] font-black capitalize ${statusClass}`}>{String(selectedAppeal.status || "Pending").replace(/_/g, " ")}</span></div>{selectedAppeal.reviewed_at && <div><p className="text-xs font-medium text-[#756A60]">Decision Date</p><p className="mt-2 text-xs font-bold text-[#302820]">{formatOptionalDate(selectedAppeal.reviewed_at, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p></div>}</div><div className="mt-4 border-t border-[#E8DED1] pt-4"><p className="text-xs font-medium text-[#756A60]">Admin Response</p><p className="mt-2 text-sm text-[#302820]">{selectedAppeal.admin_response}</p></div></div>}
+          <div className="mt-5"><label className="block text-xs font-bold text-[#302820]">Update Status</label><div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{(["under_review", "needs_information", "approved", "rejected", "dismissed"] as const).map((status) => <Button key={status} disabled={appealArchiveView} onClick={() => setAppealStatus(status)} className={`text-xs font-bold ${appealStatus === status ? "bg-[#6F4E37] text-white hover:bg-[#5F4230]" : "bg-[#FAF8F5] text-[#6F4E37] hover:bg-[#EEE6DC]"}`}>{status === "under_review" ? "Under Review" : status === "needs_information" ? "Request Info" : status.charAt(0).toUpperCase() + status.slice(1)}</Button>)}</div></div>
+          <div className="mt-5"><label className="block text-xs font-bold text-[#302820]">Admin Response Message</label><textarea disabled={appealArchiveView} value={appealResponse} onChange={(event) => setAppealResponse(event.target.value)} placeholder="Enter your decision and explanation..." className="mt-2 min-h-[100px] w-full resize-y rounded-lg border border-[#D8C5B1] bg-white px-3 py-2 text-xs font-medium text-[#302820] outline-none focus:ring-2 focus:ring-[#EEE6DC]" /></div>
+          <div className="mt-5 flex flex-wrap gap-3"><Button disabled={appealArchiveView} onClick={handleUpdateAppealStatus} className="min-w-48 flex-1 bg-[#6F4E37] font-black text-white hover:bg-[#5F4230]">Save Appeal Decision</Button><Button onClick={() => { setSelectedAppeal(null); setAppealResponse(""); setAppealStatus("under_review"); }} variant="outline" className="border-[#D8C5B1] font-bold text-[#6F4E37]">Cancel</Button></div>{!appealArchiveView && canArchiveAppealStatus(selectedAppeal.status) && <Button variant="outline" onClick={() => setCaseAction({ type: "archive-appeal", id: text(selectedAppeal.id), label: selectedAppeal.reason || text(selectedAppeal.id) })} className="mt-3 w-full border-[#E8DED1] font-bold text-[#756A60]"><Archive className="mr-2 h-4 w-4" />Archive</Button>}</section>
+      </motion.div>;
+    }
+
+    return ((selectedAppeal: DashboardAppealRow | null) => (
       <div className="space-y-5">
-        <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mx-auto flex max-w-[1500px] flex-col gap-4 border-b border-slate-200/80 pb-5 md:flex-row md:items-center md:justify-between">
+        <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mx-auto flex max-w-[1500px] flex-col gap-4 pb-2 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-orange-200/60"><AlertTriangle className="h-5 w-5" /></span>
-            <div><div className="flex items-center gap-2"><h1 className="text-2xl font-black text-slate-950 md:text-3xl">Appeal Management</h1>{appeals.length > 0 && <span className="rounded-md bg-orange-50 px-2 py-1 text-xs font-black text-orange-700 ring-1 ring-orange-200">{appeals.length}</span>}</div><p className="text-sm font-medium text-slate-500">Review and take action on landlord appeals.</p></div>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#E8DED1] bg-[#FAF8F5] text-[#8B735B]"><Flag className="h-5 w-5" /></span>
+            <div><h1 className="text-2xl font-black text-[#302820] md:text-3xl">Appeals</h1><p className="text-sm font-medium text-[#756A60]">Review and manage landlord appeals.</p></div>
           </div>
           <div className="flex items-center gap-2 self-start md:self-auto">
-            <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-amber-300 hover:text-amber-600"><Bell className="h-4 w-4" />{unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}</button>
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm"><Calendar className="h-4 w-4 text-amber-600" />{currentDate}</div>
+            <button onClick={() => setActiveSection("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[#E8DED1] bg-white text-[#756A60] shadow-sm transition hover:border-[#D8C5B1] hover:text-[#6F4E37]"><Bell className="h-4 w-4" />{unreadNotifsCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-black leading-4 text-white">{unreadNotifsCount}</span>}</button>
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] shadow-sm"><Calendar className="h-4 w-4 text-[#8B735B]" />{currentDate}</div>
           </div>
         </motion.header>
 
@@ -3202,6 +3065,7 @@ export function AdminDashboard() {
                       {(["under_review", "needs_information", "approved", "rejected", "dismissed"] as const).map((status) => (
                         <Button
                           key={status}
+                          disabled={appealArchiveView}
                           onClick={() => setAppealStatus(status)}
                           className={`flex-1 text-xs font-bold py-2 ${
                             appealStatus === status
@@ -3222,6 +3086,7 @@ export function AdminDashboard() {
                   <div>
                     <label className="block text-xs font-bold text-slate-900 mb-1">Admin Response Message</label>
                     <textarea
+                      disabled={appealArchiveView}
                       value={appealResponse}
                       onChange={(e) => setAppealResponse(e.target.value)}
                       placeholder="Enter your decision and explanation..."
@@ -3231,6 +3096,7 @@ export function AdminDashboard() {
 
                   <div className="flex gap-2">
                     <Button
+                      disabled={appealArchiveView}
                       onClick={handleUpdateAppealStatus}
                       className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black text-xs hover:shadow-lg"
                     >
@@ -3248,13 +3114,13 @@ export function AdminDashboard() {
                       Cancel
                     </Button>
                   </div>
-                  {canArchiveAppealStatus(selectedAppeal.status) && (
+                  {!appealArchiveView && canArchiveAppealStatus(selectedAppeal.status) && (
                     <Button
                       variant="outline"
                       onClick={() => setCaseAction({ type: "archive-appeal", id: text(selectedAppeal.id), label: selectedAppeal.reason || text(selectedAppeal.id) })}
                       className="w-full border-rose-200 text-rose-700 hover:bg-rose-50 font-bold text-xs"
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />Delete to History
+                      <Archive className="h-4 w-4 mr-2" />Archive
                     </Button>
                   )}
                 </div>
@@ -3266,50 +3132,59 @@ export function AdminDashboard() {
           <div className="mx-auto max-w-[1500px] space-y-5">
             <section className="grid gap-3 md:grid-cols-3">
               {[
-                { label: "Active Appeals", value: pendingAppealCount, note: "Pending, reviewing, or awaiting info", icon: AlertTriangle, tone: "bg-orange-50 text-orange-600" },
-                { label: "Report Appeals", value: reportAppealCount, note: "Related to reports", icon: Flag, tone: "bg-blue-50 text-blue-600" },
-                { label: "Violation Appeals", value: violationAppealCount, note: "Related to violations", icon: ShieldAlert, tone: "bg-rose-50 text-rose-600" },
-              ].map(({ label, value, note, icon: Icon, tone }) => (
-                <motion.div key={label} whileHover={{ y: -3 }} className="flex min-h-[110px] items-center gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg"><span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${tone}`}><Icon className="h-5 w-5" /></span><span><span className="block text-2xl font-black text-slate-950">{value}</span><span className="block text-xs font-bold text-slate-700">{label}</span><span className="block text-[10px] font-semibold text-slate-400">{note}</span></span></motion.div>
+                { label: "Active Appeals", value: pendingAppealCount, note: "Awaiting Admin review", icon: AlertTriangle },
+                { label: "Report Appeals", value: reportAppealCount, note: "Related to reports", icon: Flag },
+                { label: "Violation Appeals", value: violationAppealCount, note: "Related to violations", icon: ShieldAlert },
+              ].map(({ label, value, note, icon: Icon }) => (
+                <motion.div key={label} whileHover={{ y: -2 }} className="flex min-h-[110px] items-center gap-4 rounded-lg border border-[#E8DED1] bg-white p-5 shadow-sm transition-shadow hover:shadow-md"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><Icon className="h-5 w-5" /></span><span><span className="block text-2xl font-black text-[#302820]">{value}</span><span className="block text-xs font-bold text-[#302820]">{label}</span><span className="block text-[10px] font-semibold text-[#756A60]">{note}</span></span></motion.div>
               ))}
             </section>
 
-            <section className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-[minmax(220px,1fr)_190px_150px]">
-              <label className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={appealSearch} onChange={(event) => setAppealSearch(event.target.value)} placeholder="Search by landlord, reason, email, or ID" className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm font-medium outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100" /></label>
-              <select value={appealTypeFilter} onChange={(event) => setAppealTypeFilter(event.target.value as typeof appealTypeFilter)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400"><option value="all">Type: All Appeals</option><option value="report">Report Appeals</option><option value="violation">Violation Appeals</option><option value="general">General Appeals</option></select>
-              <select value={appealSort} onChange={(event) => setAppealSort(event.target.value as typeof appealSort)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400"><option value="newest">Sort: Newest</option><option value="oldest">Sort: Oldest</option></select>
+            <section className="grid gap-3 rounded-lg border border-[#E8DED1] bg-white p-3 shadow-sm md:grid-cols-[minmax(220px,1fr)_190px_150px]">
+              <label className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#756A60]" /><input value={appealSearch} onChange={(event) => setAppealSearch(event.target.value)} placeholder="Search appeals by landlord, reason, email, or ID" className="h-10 w-full rounded-lg border border-[#E8DED1] bg-[#FAF8F5] pl-10 pr-3 text-sm font-medium text-[#302820] outline-none transition placeholder:text-[#756A60] focus:border-[#D8C5B1] focus:bg-white focus:ring-2 focus:ring-[#EEE6DC]" /></label>
+              <select value={appealTypeFilter} onChange={(event) => setAppealTypeFilter(event.target.value as typeof appealTypeFilter)} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#D8C5B1]"><option value="all">Type: All Appeals</option><option value="report">Report Appeals</option><option value="violation">Violation Appeals</option><option value="general">General Appeals</option></select>
+              <select value={appealSort} onChange={(event) => setAppealSort(event.target.value as typeof appealSort)} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#D8C5B1]"><option value="newest">Sort by: Newest</option><option value="oldest">Sort by: Oldest</option></select>
             </section>
 
-            {appeals.length === 0 ? (
+            <nav className="flex items-center gap-2">
+              <button onClick={() => setAppealArchiveView(false)} className={`flex h-9 min-w-28 items-center justify-center gap-2 rounded-lg border px-4 text-xs font-black transition ${!appealArchiveView ? "border-[#6F4E37] bg-[#6F4E37] text-white" : "border-[#E8DED1] bg-white text-[#756A60] hover:bg-[#FAF8F5]"}`}>Active <span className={`rounded-full px-1.5 py-0.5 text-[9px] ${!appealArchiveView ? "bg-white text-[#6F4E37]" : "bg-[#FAF8F5] text-[#756A60]"}`}>{appeals.length}</span></button>
+              <button onClick={() => setAppealArchiveView(true)} className={`flex h-9 min-w-28 items-center justify-center gap-2 rounded-lg border px-4 text-xs font-black transition ${appealArchiveView ? "border-[#6F4E37] bg-[#6F4E37] text-white" : "border-[#E8DED1] bg-white text-[#756A60] hover:bg-[#FAF8F5]"}`}>Archived <span className={`rounded-full px-1.5 py-0.5 text-[9px] ${appealArchiveView ? "bg-white text-[#6F4E37]" : "bg-[#FAF8F5] text-[#756A60]"}`}>{archivedAppeals.length}</span></button>
+            </nav>
+
+            {appealArchiveView && archivedAppeals.length === 0 ? (
+              <section className="overflow-hidden rounded-lg border border-[#e7d8c9] bg-white shadow-sm"><ArchiveEmpty kind="appeals" icon={FileText} /></section>
+            ) : !appealArchiveView && appeals.length === 0 ? (
               <section className="flex min-h-[420px] flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm"><span className="mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-orange-50 text-orange-500"><AlertTriangle className="h-10 w-10" /></span><h3 className="text-xl font-black text-slate-900">No appeals submitted.</h3><p className="mt-1 max-w-sm text-sm font-medium text-slate-500">Landlord appeals will appear here when submitted.</p></section>
             ) : visibleAppeals.length === 0 ? (
               <section className="rounded-lg border border-slate-200 bg-white shadow-sm"><OverviewEmpty icon={Search} text="No appeals match the selected filters." /></section>
             ) : (
-              <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-                <div className="divide-y divide-slate-100">{visibleAppeals.map((appeal) => {
+              <section className="overflow-hidden rounded-lg border border-[#E8DED1] bg-white shadow-sm">
+                <div className="hidden grid-cols-[minmax(200px,1fr)_125px_minmax(160px,0.8fr)_minmax(180px,1fr)_110px_130px_160px] gap-4 border-b border-[#E8DED1] bg-[#FFFEFC] px-5 py-4 text-[9px] font-black uppercase tracking-wide text-[#756A60] xl:grid"><span>Landlord</span><span>Appeal Type</span><span>Related Record</span><span>Reason</span><span>Status</span><span>Submitted</span><span>Actions</span></div>
+                <div className="divide-y divide-[#E8DED1]">{visibleAppeals.map((appeal) => {
                   const landlord = landlordMap.get(appeal.landlord_id ?? "");
                   const context = getAppealContext(appeal);
                   const type = appeal.report_id ? "Report Appeal" : appeal.violation_id ? context.violation?.mode === "notice" ? "Notice Appeal" : "Violation Appeal" : "General Appeal";
-                  const typeClass = appeal.report_id ? "bg-blue-50 text-blue-700 border-blue-100" : appeal.violation_id ? "bg-rose-50 text-rose-700 border-rose-100" : "bg-slate-100 text-slate-700 border-slate-200";
-                  return <motion.article key={appeal.id} whileHover={{ backgroundColor: "rgba(248, 250, 252, 0.85)" }} onClick={() => setSelectedAppeal(appeal)} className="grid cursor-pointer gap-4 p-4 md:p-5 xl:grid-cols-[minmax(240px,1fr)_minmax(220px,1.2fr)_170px_110px] xl:items-center">
-                    <div className="flex min-w-0 items-center gap-3">{landlord?.avatar_url ? <img src={landlord.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" /> : <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-sm font-black text-amber-700">{landlord?.name?.[0]?.toUpperCase() ?? "L"}</span>}<div className="min-w-0"><h3 className="truncate text-sm font-black text-slate-900">{landlord?.name || "Landlord unavailable"}</h3><p className="truncate text-xs font-medium text-slate-500">{landlord?.email || "Contact unavailable"}</p></div></div>
-                    <div className="min-w-0"><span className={`inline-flex rounded-md border px-2 py-1 text-[9px] font-black uppercase ${typeClass}`}>{type}</span><p className="mt-2 truncate text-xs font-black text-slate-800">{context.apartment?.title || String(context.source?.apartment_title ?? "Apartment unavailable")}</p><p className="mt-1 line-clamp-2 text-xs font-medium text-slate-600">{appeal.description || appeal.reason || "No appeal message provided."}</p></div>
-                    <div><span className="inline-flex rounded-md border border-orange-100 bg-orange-50 px-2 py-1 text-[9px] font-black uppercase text-orange-700">{appeal.status || "Pending"}</span><p className="mt-2 text-[10px] font-semibold text-slate-400">{formatOptionalDate(appeal.submitted_at ?? appeal.created_at, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p></div>
+                  const relatedRecord = appeal.report_id ? `Report: ${context.apartment?.title || String(context.source?.apartment_title ?? "Unavailable")}` : appeal.violation_id ? `${context.violation?.mode === "notice" ? "Notice" : "Violation"}: ${context.apartment?.title || "Unavailable"}` : String(context.source?.related_label ?? "Unavailable");
+                  const statusClass = appeal.status === "approved" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : appeal.status === "rejected" || appeal.status === "dismissed" ? "border-slate-200 bg-slate-100 text-slate-600" : "border-[#E8DED1] bg-[#FAF8F5] text-[#6F4E37]";
+                  return <motion.article key={appeal.id} whileHover={{ backgroundColor: "#FFFEFC" }} onClick={() => setSelectedAppeal(appeal)} className="grid cursor-pointer gap-4 p-4 transition-colors md:p-5 xl:grid-cols-[minmax(200px,1fr)_125px_minmax(160px,0.8fr)_minmax(180px,1fr)_110px_130px_160px] xl:items-center">
+                    <div className="flex min-w-0 items-center gap-3">{landlord?.avatar_url ? <img src={landlord.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" /> : <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FAF8F5] text-sm font-black text-[#6F4E37]">{landlord?.name?.[0]?.toUpperCase() ?? "L"}</span>}<div className="min-w-0"><p className="text-[9px] font-black uppercase tracking-wide text-[#756A60] xl:hidden">Landlord</p><h3 className="mt-1 truncate text-sm font-black text-[#302820]">{landlord?.name || "Landlord unavailable"}</h3><p className="mt-1 truncate text-[10px] font-medium text-[#756A60]">{landlord?.email || "Contact unavailable"}</p>{landlord?.mobile && <p className="mt-1 flex items-center gap-1 truncate text-[10px] font-medium text-[#756A60]"><Phone className="h-3 w-3" />{landlord.mobile}</p>}</div></div>
+                    <div><p className="text-[9px] font-black uppercase tracking-wide text-[#756A60] xl:hidden">Appeal Type</p><span className="mt-2 inline-flex rounded-md border border-[#E8DED1] bg-[#FAF8F5] px-2 py-1 text-[9px] font-black text-[#6F4E37] xl:mt-0">{type}</span></div>
+                    <div className="min-w-0"><p className="text-[9px] font-black uppercase tracking-wide text-[#756A60] xl:hidden">Related Record</p><p className="mt-2 line-clamp-2 text-xs font-bold text-[#302820] xl:mt-0">{relatedRecord}</p>{(appeal.report_id || appeal.violation_id) && <p className="mt-1 truncate text-[9px] font-medium text-[#756A60]">{appeal.report_id ? `Report ID: ${appeal.report_id}` : `Record ID: ${appeal.violation_id}`}</p>}</div>
+                    <div className="min-w-0"><p className="text-[9px] font-black uppercase tracking-wide text-[#756A60] xl:hidden">Reason</p><p className="mt-2 line-clamp-2 text-xs font-medium leading-relaxed text-[#302820] xl:mt-0">{appeal.reason || appeal.description || "No appeal reason provided."}</p></div>
+                    <div><p className="text-[9px] font-black uppercase tracking-wide text-[#756A60] xl:hidden">Status</p><span className={`mt-2 inline-flex rounded-md border px-2 py-1 text-[9px] font-black capitalize xl:mt-0 ${statusClass}`}>{String(appeal.status || "Pending").replace(/_/g, " ")}</span></div>
+                    <div><p className="text-[9px] font-black uppercase tracking-wide text-[#756A60] xl:hidden">Submitted</p><p className="mt-2 text-[10px] font-semibold leading-relaxed text-[#302820] xl:mt-0">{formatOptionalDate(appeal.submitted_at ?? appeal.created_at, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p></div>
                     <div className="grid gap-2" onClick={(event) => event.stopPropagation()}>
-                      <Button size="sm" variant="outline" onClick={() => setSelectedAppeal(appeal)} className="h-8 rounded-md border-orange-200 text-[10px] font-black text-orange-700 hover:bg-orange-50"><Eye className="mr-1 h-3 w-3" />Review</Button>
-                      {canArchiveAppealStatus(appeal.status) && <Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "archive-appeal", id: text(appeal.id), label: appeal.reason || text(appeal.id) })} className="h-8 rounded-md border-rose-200 text-[10px] font-black text-rose-700 hover:bg-rose-50"><Trash2 className="mr-1 h-3 w-3" />Delete</Button>}
+                      <Button size="sm" onClick={() => setSelectedAppeal(appeal)} className="h-8 rounded-md bg-[#6F4E37] text-[10px] font-black text-white hover:bg-[#5F4230]"><Eye className="mr-1 h-3 w-3" />Review Appeal</Button>
+                      {appealArchiveView ? <><Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "restore-appeal", id: text(appeal.id), label: appeal.reason || text(appeal.id) })} className="h-8 rounded-md border-emerald-200 text-[10px] font-black text-emerald-700"><RotateCcw className="mr-1 h-3 w-3" />Restore</Button><Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "delete-appeal", id: text(appeal.id), label: appeal.reason || text(appeal.id) })} className="h-8 rounded-md border-rose-200 text-[10px] font-black text-rose-700"><Trash2 className="mr-1 h-3 w-3" />Delete Permanently</Button></> : canArchiveAppealStatus(appeal.status) && <Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "archive-appeal", id: text(appeal.id), label: appeal.reason || text(appeal.id) })} className="h-8 rounded-md border-[#dfcdbb] text-[10px] font-black text-[#6f4525]"><Archive className="mr-1 h-3 w-3" />Archive</Button>}
                     </div>
                   </motion.article>;
                 })}</div>
               </section>
             )}
-
-            <section className="grid gap-4 rounded-lg border border-amber-200 bg-amber-50/60 p-4 md:grid-cols-3">{[{ icon: Shield, title: "Fair decisions", text: "Each appeal is reviewed from its stored evidence and context." }, { icon: Clock, title: "Timely review", text: "Pending appeals remain visible until an admin decision is saved." }, { icon: FileText, title: "Transparent process", text: "Admin responses and final outcomes stay attached to each appeal." }].map(({ icon: Icon, title, text: description }) => <div key={title} className="flex gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-amber-600 shadow-sm"><Icon className="h-4 w-4" /></span><div><p className="text-xs font-black text-slate-800">{title}</p><p className="mt-0.5 text-[11px] font-medium leading-relaxed text-slate-500">{description}</p></div></div>)}</section>
-
           </div>
         )}
       </div>
-    );
+    ))(selectedAppeal);
   };
 
   const renderAdminInfo = () => {
@@ -3518,6 +3393,114 @@ export function AdminDashboard() {
     );
   };
 
+  const renderLandlordDetails = () => {
+    if (!selectedLandlord || !selectedLandlordDetails) return renderLandlords();
+
+    const verified = selectedLandlord.isVerified || selectedLandlord.is_verified;
+    const closeDetails = () => setSelectedLandlord(null);
+
+    return (
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1500px] space-y-5">
+        <button type="button" onClick={closeDetails} className="inline-flex items-center gap-1.5 text-sm font-bold text-[#302820] transition hover:text-[#8B735B]">
+          <ChevronRight className="h-4 w-4 rotate-180" />Back to Landlords
+        </button>
+
+        <header className="flex items-center justify-between gap-4 border-b border-[#E8DED1] pb-5">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#8B735B] text-xl font-black text-white">
+              {selectedLandlord.name?.[0]?.toUpperCase() ?? "L"}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-2xl font-black text-slate-950 md:text-3xl">{selectedLandlord.name}</h1>
+                <Badge className="border border-[#E8DED1] bg-[#FAF8F5] text-xs font-bold text-[#6F4E37]">
+                  {verified ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : <Clock className="mr-1 h-3.5 w-3.5" />}
+                  {verified ? "Verified" : "Pending Review"}
+                </Badge>
+              </div>
+              <p className="mt-1 truncate text-sm font-medium text-slate-600">{selectedLandlord.email}</p>
+            </div>
+          </div>
+          <button type="button" onClick={closeDetails} aria-label="Close landlord details" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E8DED1] bg-white text-[#756A60] transition hover:bg-[#FAF8F5] hover:text-[#302820]">
+            <X className="h-4 w-4" />
+          </button>
+        </header>
+
+        {isLoadingLandlordDetails && <div className="flex items-center gap-2 rounded-xl border border-[#E8DED1] bg-[#FAF8F5] px-4 py-3 text-xs font-bold text-[#756A60]"><RefreshCw className="h-3.5 w-3.5 animate-spin" />Loading landlord details…</div>}
+
+        <section className="border-b border-[#E8DED1] pb-5">
+          <h2 className="mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#8B735B]"><UserIcon className="h-4 w-4" />Account Information</h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-[#E8DED1] bg-white p-4"><p className="text-xs font-semibold text-slate-500">Phone</p><p className="mt-2 flex items-center gap-1.5 text-base font-bold text-slate-900"><Phone className="h-4 w-4 text-[#8B735B]" />{selectedLandlord.mobile || "Not provided"}</p></div>
+            <div className="rounded-xl border border-[#E8DED1] bg-white p-4"><p className="text-xs font-semibold text-slate-500">Account Status</p><p className="mt-2 text-base font-bold text-slate-900">Active</p></div>
+            <div className="rounded-xl border border-[#E8DED1] bg-white p-4"><p className="text-xs font-semibold text-slate-500">Registered</p><p className="mt-2 flex items-center gap-1.5 text-base font-bold text-slate-900"><Calendar className="h-4 w-4 text-[#8B735B]" />{formatOptionalDate(selectedLandlord.created_at as string | undefined, { month: "short", day: "numeric", year: "numeric" })}</p></div>
+          </div>
+        </section>
+
+        <section className="border-b border-[#E8DED1] pb-5">
+          <h2 className="mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#8B735B]"><Shield className="h-4 w-4" />Verification Details</h2>
+          <div className="grid gap-5 rounded-xl border border-[#E8DED1] bg-white p-5 sm:grid-cols-2">
+            <div><p className="text-xs font-semibold text-slate-500">Verification Status</p><Badge className="mt-3 border border-[#E8DED1] bg-[#FAF8F5] text-xs font-bold text-[#6F4E37]">{verified ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : <Clock className="mr-1 h-3.5 w-3.5" />}{verified ? "Verified" : "Pending Review"}</Badge></div>
+            <div className="border-[#E8DED1] sm:border-l sm:pl-5"><p className="text-xs font-semibold text-slate-500">Submitted Credential</p><p className="mt-2 text-base font-black text-slate-900">Business Permit</p><p className="mt-1 text-sm font-medium text-slate-600">Permit #{selectedLandlordDetails.profile?.business_permit_number || selectedLandlordDetails.profile?.permit_number || selectedLandlord.permit_number || selectedLandlord.permitNumber || "Not provided"}</p>{selectedLandlordDetails.profile?.verification_document_url ? <a href={selectedLandlordDetails.profile.verification_document_url} target="_blank" rel="noreferrer" className="mt-3 inline-flex h-9 items-center rounded-lg border border-[#D8C5B1] bg-white px-3 text-xs font-bold text-[#6F4E37] transition hover:bg-[#FAF8F5]"><FileText className="mr-1.5 h-3.5 w-3.5" />View Document</a> : <Button type="button" variant="outline" size="sm" disabled title="No uploaded verification document is available" className="mt-3 h-9 rounded-lg border-[#D8C5B1] bg-white text-xs font-bold text-[#756A60]"><FileText className="mr-1.5 h-3.5 w-3.5" />View Document</Button>}</div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#8B735B]"><ClipboardList className="h-4 w-4" />Administrative Record</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-[#E8DED1] bg-white p-4"><p className="text-xs font-semibold text-slate-500">Violations</p><p className="mt-2 text-xl font-black text-slate-900">{selectedLandlordDetails.violations.filter((item) => item.mode === "violation").length}</p></div>
+            <div className="rounded-xl border border-[#E8DED1] bg-white p-4"><p className="text-xs font-semibold text-slate-500">Notices</p><p className="mt-2 text-xl font-black text-slate-900">{selectedLandlordDetails.violations.filter((item) => item.mode === "notice").length}</p></div>
+          </div>
+        </section>
+
+        <section className="grid gap-2 border-t border-[#E8DED1] pt-5 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]">
+          {verified ? <Button variant="outline" onClick={(e) => { e.stopPropagation(); setVerifyAction({ landlordId: text(selectedLandlord.id), verify: false }); setSelectedLandlord(null); }} className="h-11 rounded-xl border-[#E8DED1] font-bold text-[#302820] hover:bg-white"><XCircle className="mr-2 h-4 w-4" />Revoke Verification</Button> : <Button onClick={(e) => { e.stopPropagation(); setVerifyAction({ landlordId: text(selectedLandlord.id), verify: true }); setSelectedLandlord(null); }} className="h-11 rounded-xl bg-[#8B735B] font-bold text-white hover:bg-[#765F4A]"><CheckCircle2 className="mr-2 h-4 w-4" />Verify Landlord</Button>}
+          <Button variant="outline" onClick={(e) => { e.stopPropagation(); openViolationModal("violation", text(selectedLandlord.id), text(selectedLandlord.name, "Landlord"), "General"); }} className="h-11 rounded-xl border-[#E8DED1] font-bold text-[#302820] hover:bg-white"><AlertOctagon className="mr-2 h-4 w-4" />Issue Violation</Button>
+          <Button variant="outline" onClick={(e) => { e.stopPropagation(); openViolationModal("notice", text(selectedLandlord.id), text(selectedLandlord.name, "Landlord"), "General"); }} className="h-11 rounded-xl border-[#E8DED1] font-bold text-[#302820] hover:bg-white"><BellRing className="mr-2 h-4 w-4" />Send Notice</Button>
+        </section>
+      </motion.div>
+    );
+  };
+
+  const renderAdministrativeAction = () => {
+    if (!violationModal?.open) return renderLandlords();
+    const isViolation = violationModal.mode === "violation";
+    const subject = selectedLandlord ?? landlords.find((landlord) => text(landlord.id) === violationModal.landlordId) ?? null;
+    const closeAction = () => setViolationModal(null);
+
+    return (
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1500px] space-y-5">
+        <button type="button" onClick={closeAction} disabled={isIssuingViolation} className="inline-flex items-center gap-1.5 text-sm font-bold text-[#302820] transition hover:text-[#8B735B] disabled:opacity-50"><ChevronRight className="h-4 w-4 rotate-180" />Back to Landlord Details</button>
+
+        <header className="flex min-w-0 items-center gap-4 border-b border-[#E8DED1] pb-5">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#8B735B] text-xl font-black text-white">{subject?.name?.[0]?.toUpperCase() ?? violationModal.landlordName?.[0]?.toUpperCase() ?? "L"}</div>
+          <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h1 className="truncate text-2xl font-black text-slate-950 md:text-3xl">{subject?.name || violationModal.landlordName || "Landlord"}</h1>{subject && <Badge className="border border-[#E8DED1] bg-[#FAF8F5] text-xs font-bold text-[#6F4E37]">{subject.isVerified || subject.is_verified ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : <Clock className="mr-1 h-3.5 w-3.5" />}{subject.isVerified || subject.is_verified ? "Verified" : "Pending Review"}</Badge>}</div><p className="mt-1 truncate text-sm font-medium text-slate-600">{subject?.email || "Email unavailable"}</p></div>
+        </header>
+
+        <section className="rounded-xl border border-[#E8DED1] bg-white p-4 sm:p-5">
+          <div className="mb-5 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FAF8F5] text-[#8B735B]">{isViolation ? <ShieldAlert className="h-5 w-5" /> : <BellRing className="h-5 w-5" />}</span><div><h2 className="text-xl font-black text-slate-950">{isViolation ? "Issue Violation" : "Send Notice"}</h2><p className="mt-0.5 text-sm font-medium text-slate-500">{isViolation ? "Issue an administrative violation for this landlord." : "Send a formal administrative notice to this landlord."}</p></div></div>
+
+          <div className="grid gap-4 border-y border-[#E8DED1] py-4 sm:grid-cols-2">
+            <div><p className="text-xs font-semibold text-slate-500">Landlord</p><p className="mt-2 text-base font-black text-slate-900">{subject?.name || violationModal.landlordName || "Landlord unavailable"}</p><p className="mt-1 text-sm text-slate-500">{subject?.email || "Email unavailable"}</p></div>
+            <div className="border-[#E8DED1] sm:border-l sm:pl-5"><p className="text-xs font-semibold text-slate-500">Linked Apartment</p><p className="mt-2 text-base font-black text-slate-900">{violationModal.apartmentId ? violationModal.apartmentTitle : "None"}</p>{!violationModal.apartmentId && <p className="mt-1 text-sm text-slate-500">No apartment linked to this record.</p>}</div>
+          </div>
+
+          <div className="mt-5 space-y-5">
+            <div className="space-y-2"><label htmlFor="violation-type" className="text-xs font-black uppercase tracking-wide text-[#6F4E37]">{isViolation ? "Violation Type" : "Notice Type"}</label><div className="relative"><select id="violation-type" value={isViolation ? vType : nType} onChange={(e) => isViolation ? setVType(e.target.value) : setNType(e.target.value)} disabled={isIssuingViolation} className="h-11 w-full appearance-none rounded-lg border border-[#E8DED1] bg-white px-4 pr-10 text-sm font-bold text-slate-900 outline-none transition focus:border-[#8B735B] focus:ring-2 focus:ring-[#EEE6DC] disabled:opacity-60">{(isViolation ? VIOLATION_TYPES : NOTICE_TYPES).map((type) => <option key={type} value={type}>{type}</option>)}</select><ChevronRight className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 rotate-90 text-slate-500" /></div><p className="text-xs font-medium text-slate-500">Select the type of {isViolation ? "violation you are issuing" : "notice you are sending"} to this landlord.</p></div>
+
+            <div className="space-y-2"><div className="flex items-center justify-between"><label htmlFor="violation-description" className="text-xs font-black uppercase tracking-wide text-[#6F4E37]">{isViolation ? "Violation Details" : "Notice Details"} <span className="font-semibold text-slate-400">(optional)</span></label><span className="text-xs font-semibold tabular-nums text-slate-400">{(isViolation ? vMessage : nMessage).length}/500</span></div><textarea id="violation-description" rows={5} maxLength={500} value={isViolation ? vMessage : nMessage} onChange={(e) => isViolation ? setVMessage(e.target.value) : setNMessage(e.target.value)} disabled={isIssuingViolation} placeholder={isViolation ? "Provide additional details about this violation..." : "Provide additional context or instructions for the landlord..."} className="w-full resize-none rounded-lg border border-[#E8DED1] bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#8B735B] focus:ring-2 focus:ring-[#EEE6DC] disabled:opacity-60"/><p className="text-xs font-medium text-slate-500">Additional context helps ensure accurate review and follow-up.</p></div>
+
+            {isViolation && <div className="space-y-2"><label htmlFor="violation-expiration" className="text-xs font-black uppercase tracking-wide text-[#6F4E37]">Days Until Expiration</label><input id="violation-expiration" type="number" min="1" max="365" value={vExpirationDays} step="1" onChange={(e) => setVExpirationDays(Number(e.target.value))} disabled={isIssuingViolation} placeholder="Days" className="h-11 w-full rounded-lg border border-[#E8DED1] bg-white px-4 text-sm font-bold text-slate-900 outline-none transition focus:border-[#8B735B] focus:ring-2 focus:ring-[#EEE6DC] disabled:opacity-60"/><p className="text-xs font-medium text-slate-500">Number of days before this violation expires.<br />Enter a whole number from 1 to 365.</p></div>}
+
+            <div className="flex gap-3 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] p-4"><AlertTriangle className="h-5 w-5 shrink-0 text-[#8B735B]" /><p className="text-sm font-semibold leading-5 text-[#756A60]">{isViolation ? "This action will be recorded in the landlord's administrative record." : "This notice will be sent to the landlord as a formal warning on record."}</p></div>
+          </div>
+
+          <div className="mt-5 grid gap-3 border-t border-[#E8DED1] pt-5 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]"><Button onClick={() => void issueViolation()} disabled={isIssuingViolation} className="h-11 rounded-lg bg-[#8B735B] font-black text-white hover:bg-[#765F4A] disabled:cursor-not-allowed disabled:opacity-60">{isIssuingViolation ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Saving...</> : isViolation ? <><ShieldAlert className="mr-2 h-4 w-4" />Issue Violation</> : <><BellRing className="mr-2 h-4 w-4" />Send Notice</>}</Button><Button type="button" variant="outline" onClick={closeAction} disabled={isIssuingViolation} className="h-11 rounded-lg border-[#E8DED1] bg-white font-black text-slate-700 hover:bg-[#FAF8F5] disabled:opacity-60">Cancel</Button></div>
+        </section>
+      </motion.div>
+    );
+  };
+
   const sectionMap: Record<string, () => ReactElement> = {
     overview:      renderOverview,
     notifications: renderNotifications,
@@ -3548,7 +3531,7 @@ export function AdminDashboard() {
         </button>
         <div className="app-shell-main flex-1 min-w-0 h-full overflow-y-auto">
           <main className="app-shell-content app-shell-content-mobile-nav px-4 py-5 pt-16 md:px-6 lg:px-8 lg:pt-6">
-            {(sectionMap[activeSection] ?? renderOverview)()}
+            {violationModal?.open ? renderAdministrativeAction() : selectedLandlord && selectedLandlordDetails ? renderLandlordDetails() : (sectionMap[activeSection] ?? renderOverview)()}
           </main>
         </div>
       </div>
@@ -3607,421 +3590,6 @@ export function AdminDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Violation / Notice modal */}
-      {violationModal?.open && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-slate-950/70 p-4 backdrop-blur-md" onClick={() => !isIssuingViolation && setViolationModal(null)}>
-          <motion.div
-            initial={{ opacity: 0, y: 18, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="violation-modal-title"
-            className="relative z-10 my-6 w-full max-w-2xl overflow-hidden rounded-2xl border border-white/70 bg-white shadow-[0_30px_90px_rgba(2,6,23,0.42)]"
-            onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div className="flex items-start gap-4 border-b border-slate-200 px-5 py-5 sm:px-7 sm:py-6">
-              <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-lg ${
-                  violationModal.mode === "violation" ? "bg-gradient-to-br from-rose-500 to-red-600 shadow-rose-200" : "bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-200"
-                }`}>
-                {violationModal.mode === "violation" ? <ShieldAlert className="h-7 w-7 text-white" /> : <BellRing className="h-7 w-7 text-white" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 id="violation-modal-title" className="text-xl font-black text-slate-950 sm:text-2xl">{violationModal.mode === "violation" ? "Issue Violation" : "Send Notice"}</h2>
-                <p className="mt-1 truncate text-sm font-bold text-slate-700">{violationModal.landlordName || "Landlord unavailable"}</p>
-                <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-slate-500">
-                  <Building2 className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{violationModal.apartmentId ? violationModal.apartmentTitle : "No listing linked"}</span>
-                </p>
-              </div>
-              <button type="button" aria-label="Close modal" disabled={isIssuingViolation} onClick={() => setViolationModal(null)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            {/* Body */}
-            <div className="max-h-[calc(100vh-220px)] space-y-5 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
-              {/* Type Selection */}
-              <div className="space-y-2">
-                <label htmlFor="violation-type" className="text-xs font-black uppercase text-slate-600">
-                  {violationModal.mode === "violation" ? "Violation Type" : "Notice Type"}
-                </label>
-                <div className="relative">
-                  <AlertTriangle className={`pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 ${violationModal.mode === "violation" ? "text-rose-500" : "text-amber-500"}`} />
-                  <select
-                    id="violation-type"
-                    value={violationModal.mode === "violation" ? vType : nType}
-                    onChange={(e) => violationModal.mode === "violation" ? setVType(e.target.value) : setNType(e.target.value)}
-                    disabled={isIssuingViolation}
-                    className={`h-14 w-full appearance-none rounded-lg border bg-white pl-12 pr-10 text-sm font-bold text-slate-900 outline-none transition focus:ring-4 disabled:opacity-60 ${violationModal.mode === "violation" ? "border-rose-200 focus:border-rose-400 focus:ring-rose-100" : "border-amber-200 focus:border-amber-400 focus:ring-amber-100"}`}
-                  >
-                    {(violationModal.mode === "violation" ? VIOLATION_TYPES : NOTICE_TYPES).map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                  <ChevronRight className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 rotate-90 text-slate-500" />
-                </div>
-              </div>
-
-              {/* Message */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="violation-description" className="text-xs font-black uppercase text-slate-600">
-                    {violationModal.mode === "violation" ? "Violation Description" : "Message"} <span className="font-semibold text-slate-400">(optional)</span>
-                  </label>
-                  <span className="text-xs font-semibold tabular-nums text-slate-400">
-                    {(violationModal.mode === "violation" ? vMessage : nMessage).length}/500
-                  </span>
-                </div>
-                <textarea
-                  id="violation-description" rows={5} maxLength={500}
-                  value={violationModal.mode === "violation" ? vMessage : nMessage}
-                  onChange={(e) => violationModal.mode === "violation" ? setVMessage(e.target.value) : setNMessage(e.target.value)}
-                  disabled={isIssuingViolation}
-                  placeholder={violationModal.mode === "violation"
-                    ? "Describe the violation in detail…"
-                    : "Provide additional context or instructions for the landlord…"}
-                  className="w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-rose-300 focus:ring-4 focus:ring-rose-100 disabled:opacity-60"
-                />
-              </div>
-
-              {/* Expiration (violations only) */}
-              {violationModal.mode === "violation" && (
-                <div className="space-y-2">
-                  <label htmlFor="violation-expiration" className="text-xs font-black uppercase text-slate-600">
-                    <Calendar className="h-3.5 w-3.5 inline mr-1" />
-                    Expiration Days
-                  </label>
-                  <input
-                    id="violation-expiration"
-                    type="number"
-                    min="1"
-                    max="365"
-                    value={vExpirationDays}
-                    step="1"
-                    onChange={(e) => setVExpirationDays(Number(e.target.value))}
-                    disabled={isIssuingViolation}
-                    placeholder="Days"
-                    className="h-14 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-900 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100 disabled:opacity-60"
-                  />
-                  <p className="text-xs font-medium text-slate-400">Enter a whole number from 1 to 365.</p>
-                </div>
-              )}
-
-              {/* Info Alert */}
-              <div className={`flex gap-3 rounded-lg border p-4 ${
-                violationModal.mode === "violation" ? "bg-red-50 border-red-100" : "bg-amber-50 border-amber-100"
-              }`}>
-                <AlertTriangle className={`h-5 w-5 shrink-0 ${violationModal.mode === "violation" ? "text-red-500" : "text-amber-600"}`} />
-                <p className={`text-sm font-semibold leading-5 ${violationModal.mode === "violation" ? "text-red-800" : "text-amber-800"}`}>
-                  {violationModal.mode === "violation"
-                    ? `This violation will be recorded on the landlord's profile${violationModal.apartmentId ? " and linked to this listing" : ""}.`
-                    : "This notice will be sent to the landlord as a formal warning on record."}
-                </p>
-              </div>
-            </div>
-            {/* Footer */}
-            <div className="grid gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:grid-cols-2 sm:px-7">
-              <Button onClick={() => void issueViolation()} disabled={isIssuingViolation}
-                className={`h-12 rounded-lg font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 ${
-                  violationModal.mode === "violation"
-                    ? "bg-gradient-to-r from-rose-600 to-red-500 hover:from-rose-700 hover:to-red-600 shadow-rose-200"
-                    : "bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-amber-200"
-                }`}>
-                {isIssuingViolation
-                  ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Saving...</>
-                  : violationModal.mode === "violation"
-                    ? <><ShieldAlert className="mr-2 h-4 w-4" />Issue Violation</>
-                    : <><BellRing className="mr-2 h-4 w-4" />Send Notice</>}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => setViolationModal(null)} disabled={isIssuingViolation} className="h-12 rounded-lg border-slate-300 bg-white font-black text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60">
-                Cancel
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      {/* Landlord Details Modal - Enhanced */}
-      {selectedLandlord && selectedLandlordDetails && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={() => setSelectedLandlord(null)}>
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="relative z-10 w-full max-w-4xl max-h-[90vh] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-amber-100 overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 shrink-0">
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shrink-0 font-black text-white text-2xl shadow-lg">
-                  {selectedLandlord.name?.[0]?.toUpperCase() ?? "L"}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h2 className="text-xl font-black text-slate-900">{selectedLandlord.name}</h2>
-                    {selectedLandlord.isVerified || selectedLandlord.is_verified
-                      ? <Badge className="bg-green-100 text-green-800 border border-green-200 font-bold text-xs"><CheckCircle2 className="h-3 w-3 mr-1" />Verified</Badge>
-                      : <Badge className="bg-orange-100 text-orange-700 border border-orange-200 font-bold text-xs"><Clock className="h-3 w-3 mr-1" />Pending</Badge>}
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium">{selectedLandlord.email}</p>
-                </div>
-              </div>
-              <button onClick={() => setSelectedLandlord(null)} className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
-                <X className="h-4 w-4 text-slate-500" />
-              </button>
-            </div>
-
-            {/* Body - scrollable */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-              {isLoadingLandlordDetails && (
-                <div className="flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  Loading property history and activity…
-                </div>
-              )}
-              {/* Account Information */}
-              <div>
-                <h3 className="text-xs font-black text-amber-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <UserIcon className="h-4 w-4" />
-                  Account Information
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Email</p>
-                    <p className="text-sm font-bold text-slate-900">{selectedLandlord.email}</p>
-                  </div>
-                  <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Phone</p>
-                    <p className="text-sm font-bold text-slate-900 flex items-center gap-1">
-                      <Phone className="h-3.5 w-3.5 text-amber-600" />
-                      {selectedLandlord.mobile || "Not provided"}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Account Status</p>
-                    <Badge className="inline-block bg-green-100 text-green-800 font-bold text-xs">Active</Badge>
-                  </div>
-                  <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Verification</p>
-                    <Badge className={`inline-block font-bold text-xs ${
-                      selectedLandlord.isVerified || selectedLandlord.is_verified
-                        ? "bg-green-100 text-green-800 border border-green-200"
-                        : "bg-amber-100 text-amber-800 border border-amber-200"
-                    }`}>
-                      {selectedLandlord.isVerified || selectedLandlord.is_verified ? "Verified" : "Pending"}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              {/* Verification Documents */}
-              {selectedLandlordDetails.profile && (
-                <div>
-                  <h3 className="text-xs font-black text-green-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Verification Information
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-green-50/30 border border-green-100 rounded-xl">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Business Permit</p>
-                      <p className="text-sm font-bold text-slate-900">
-                        {selectedLandlordDetails.profile.business_permit_number
-                          || selectedLandlordDetails.profile.permit_number
-                          || selectedLandlord.permit_number
-                          || selectedLandlord.permitNumber
-                          || "Not provided"}
-                      </p>
-                      {selectedLandlordDetails.profile.permit_expiry && (
-                        <p className="text-xs text-slate-500 mt-1">Expires: {new Date(selectedLandlordDetails.profile.permit_expiry).toLocaleDateString()}</p>
-                      )}
-                    </div>
-                    {selectedLandlordDetails.profile.tin_number && (
-                      <div className="p-3 bg-green-50/30 border border-green-100 rounded-xl">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">TIN Number</p>
-                        <p className="text-sm font-bold text-slate-900">{selectedLandlordDetails.profile.tin_number}</p>
-                      </div>
-                    )}
-                    {selectedLandlordDetails.profile.id_type && (
-                      <div className="p-3 bg-blue-50/30 border border-blue-100 rounded-xl">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Valid ID Type</p>
-                        <p className="text-sm font-bold text-slate-900">{selectedLandlordDetails.profile.id_type}</p>
-                      </div>
-                    )}
-                    {selectedLandlordDetails.profile.id_number && (
-                      <div className="p-3 bg-blue-50/30 border border-blue-100 rounded-xl">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">ID Number</p>
-                        <p className="text-sm font-bold text-slate-900">{selectedLandlordDetails.profile.id_number}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Property Information */}
-              <div>
-                <h3 className="text-xs font-black text-amber-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Properties ({selectedLandlordDetails.properties.length})
-                </h3>
-                {selectedLandlordDetails.properties.length > 0 ? (
-                  <div className="space-y-2">
-                    {selectedLandlordDetails.properties.map((apt) => (
-                      <div
-                        key={apt.id}
-                        onClick={() => {
-                          navigate(`/admin/apartment/${apt.id}`, { state: { returnTo: "/dashboard?section=landlords", backLabel: "Back to Landlord Details" } });
-                          setSelectedLandlord(null);
-                        }}
-                        className="p-3 bg-white border border-amber-100 rounded-xl hover:shadow-md transition-all cursor-pointer">
-                        <div className="flex items-start gap-3">
-                          <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center shrink-0">
-                            <Building2 className="h-6 w-6 text-amber-400" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-slate-900 text-sm truncate">{String(apt.title || "—")}</p>
-                            <p className="text-xs text-slate-500 font-medium flex items-center gap-1">
-                              <Badge variant="outline" className="text-[9px] font-bold">
-                                {(apt.is_published ?? apt.isPublished) ? "Published" : "Draft"}
-                              </Badge>
-                            </p>
-                          </div>
-                          <span className="text-sm font-black text-amber-700 shrink-0">₱{(apt.price || 0)?.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-8 text-center bg-amber-50/30 border border-amber-100 rounded-xl">
-                    <Building2 className="h-8 w-8 text-amber-300 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-slate-400">No properties listed yet</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Property Statistics */}
-              <div>
-                <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <Eye className="h-4 w-4" />
-                  Statistics
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-blue-50/30 border border-blue-100 rounded-xl">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Views</p>
-                    <p className="text-lg font-black text-blue-700">{selectedLandlordDetails.propertyStats.totalViews}</p>
-                  </div>
-                  <div className="p-3 bg-pink-50/30 border border-pink-100 rounded-xl">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Favorites</p>
-                    <p className="text-lg font-black text-pink-700">{selectedLandlordDetails.propertyStats.totalFavorites}</p>
-                  </div>
-                  <div className="p-3 bg-purple-50/30 border border-purple-100 rounded-xl">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Avg Price</p>
-                    <p className="text-lg font-black text-purple-700">₱{selectedLandlordDetails.propertyStats.averagePrice?.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-                  </div>
-                  <div className="p-3 bg-emerald-50/30 border border-emerald-100 rounded-xl">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Published</p>
-                    <p className="text-lg font-black text-emerald-700">{selectedLandlordDetails.propertyStats.publishedProperties}/{selectedLandlordDetails.propertyStats.totalProperties}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Reports */}
-              {selectedLandlordDetails.reports.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-black text-red-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <Flag className="h-4 w-4" />
-                    Reports ({selectedLandlordDetails.reports.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {selectedLandlordDetails.reports.map((report) => (
-                      <div
-                        key={report.id}
-                        onClick={() => {
-                          setSelectedReport(report);
-                          setSelectedLandlord(null);
-                        }}
-                        className="p-3 bg-red-50/30 border border-red-200 rounded-xl hover:shadow-md transition-all cursor-pointer">
-                        <div className="flex items-start gap-2 justify-between">
-                          <div className="flex-1">
-                            <Badge className={`text-xs font-bold mb-1 ${
-                              report.severity === "high" ? "bg-red-600 text-white" : report.severity === "med" ? "bg-amber-600 text-white" : "bg-green-600 text-white"
-                            }`}>
-                              {report.severity?.toUpperCase() || "MEDIUM"}
-                            </Badge>
-                            <p className="text-xs font-bold text-slate-900">{report.issue_type || "Reported Issue"}</p>
-                            <p className="text-[10px] text-slate-500 mt-1">Status: {report.status || "pending"}</p>
-                          </div>
-                          <Badge className={`text-[10px] font-bold shrink-0 ${
-                            report.status === "resolved" ? "bg-green-100 text-green-800" : report.status === "dismissed" ? "bg-gray-100 text-gray-800" : "bg-yellow-100 text-yellow-800"
-                          }`}>
-                            {report.status === "resolved" ? "Resolved" : report.status === "dismissed" ? "Dismissed" : "Pending"}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Violations & Notices */}
-              {selectedLandlordDetails.violations.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-black text-red-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <AlertOctagon className="h-4 w-4" />
-                    Violations & Notices ({selectedLandlordDetails.violations.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {selectedLandlordDetails.violations.map((v) => (
-                      <div key={v.id} className={`p-3 border rounded-xl ${
-                        v.mode === "violation" ? "bg-red-50/50 border-red-200" : "bg-amber-50/50 border-amber-200"
-                      }`}>
-                        <div className="flex items-start gap-2 mb-2">
-                          <Badge className={`text-[10px] font-black uppercase ${
-                            v.mode === "violation" ? "bg-red-600 text-white" : "bg-amber-600 text-white"
-                          }`}>
-                            {v.mode}
-                          </Badge>
-                          <Badge variant="outline" className="text-[10px] font-bold border-slate-300 text-slate-700">
-                            {v.type}
-                          </Badge>
-                        </div>
-                        {v.message && <p className="text-xs font-medium text-slate-700 mb-1">{v.message}</p>}
-                        <p className="text-[10px] text-slate-400 font-medium">
-                          Issued on {new Date(v.issuedAt ?? v.issued_at ?? "").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer - actions */}
-            <div className="px-6 py-4 border-t border-amber-100 bg-amber-50/30 shrink-0 flex gap-2">
-              {selectedLandlord.isVerified || selectedLandlord.is_verified ? (
-                <Button variant="outline" size="sm"
-                  onClick={(e) => { e.stopPropagation(); setVerifyAction({ landlordId: text(selectedLandlord.id), verify: false }); setSelectedLandlord(null); }}
-                  className="flex-1 border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl">
-                  <XCircle className="h-4 w-4 mr-2" />Revoke Verification
-                </Button>
-              ) : (
-                <Button size="sm"
-                  onClick={(e) => { e.stopPropagation(); setVerifyAction({ landlordId: text(selectedLandlord.id), verify: true }); setSelectedLandlord(null); }}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-md">
-                  <CheckCircle2 className="h-4 w-4 mr-2" />Verify Landlord
-                </Button>
-              )}
-              <Button variant="outline" size="sm"
-                onClick={(e) => { e.stopPropagation(); openViolationModal("violation", text(selectedLandlord.id), text(selectedLandlord.name, "Landlord"), "General"); setSelectedLandlord(null); }}
-                className="border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl">
-                <AlertOctagon className="h-4 w-4 mr-2" />Issue Violation
-              </Button>
-              <Button variant="outline" size="sm"
-                onClick={(e) => { e.stopPropagation(); openViolationModal("notice", text(selectedLandlord.id), text(selectedLandlord.name, "Landlord"), "General"); setSelectedLandlord(null); }}
-                className="border-amber-200 text-amber-700 hover:bg-amber-50 font-bold rounded-xl">
-                <BellRing className="h-4 w-4 mr-2" />Send Notice
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {activityLogOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={() => setActivityLogOpen(false)}>
@@ -4203,6 +3771,31 @@ export function AdminDashboard() {
         </div>
       )}
 
+      <AlertDialog open={Boolean(notificationToDelete)} onOpenChange={(open) => !open && !deletingNotifId && setNotificationToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this notification permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone.
+              {notificationToDelete?.title ? <span className="mt-2 block font-semibold text-stone-700">{safeNotificationText(notificationToDelete.title, "Notification")}</span> : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={Boolean(deletingNotifId)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={Boolean(deletingNotifId)}
+              onClick={(event) => {
+                event.preventDefault();
+                if (notificationToDelete?.id) void deleteNotif(notificationToDelete.id);
+              }}
+              className="bg-rose-600 text-white hover:bg-rose-700"
+            >
+              {deletingNotifId ? "Deleting..." : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={Boolean(caseAction)} onOpenChange={(open) => !open && !processingCaseAction && setCaseAction(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -4211,7 +3804,7 @@ export function AdminDashboard() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {caseAction?.type.startsWith("archive")
-                ? "Are you sure you want to remove this item from the active list? It will remain available in History."
+                ? "This item will move to the Archived view in its current module and can be restored later."
                 : caseAction?.type.startsWith("restore")
                   ? "This item will return to the active admin list with its existing resolution status preserved."
                   : "This permanently removes the archived database record after confirmation. Related notifications, notices, and violations are not removed by this action."}
@@ -4228,7 +3821,7 @@ export function AdminDashboard() {
               }}
               className={caseAction?.type.startsWith("delete") ? "bg-rose-600 text-white hover:bg-rose-700" : "bg-orange-600 text-white hover:bg-orange-700"}
             >
-              {processingCaseAction ? "Working..." : caseAction?.type.startsWith("archive") ? "Move to History" : caseAction?.type.startsWith("restore") ? "Restore" : "Permanent Delete"}
+              {processingCaseAction ? "Working..." : caseAction?.type.startsWith("archive") ? "Archive" : caseAction?.type.startsWith("restore") ? "Restore" : "Delete Permanently"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
