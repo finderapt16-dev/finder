@@ -11,6 +11,9 @@ import { Label } from "@/app/shared/components/ui/label";
 import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
 import { getTenantType, isTenantRole } from "@/app/shared/services/authService";
+import { getTimeBasedGreeting } from "@/app/tenant/utils/tenantGreeting";
+import { TenantNotifications } from "@/app/tenant/components/TenantNotifications";
+import { useTenantNotifications } from "@/app/tenant/hooks/useTenantNotifications";
 import { fetchApartmentRatings, subscribeToApartmentRatings, summarizeApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import { Settings as AccountSettings } from "@/app/shared/pages/settings/Settings";
@@ -32,6 +35,7 @@ import { getAvailableRoomCount, isTenantVisibleApartment } from "@/app/shared/ut
 import { rankApartments, type TenantPreferences } from "@/app/shared/utils/rankingEngine";
 import {
   AlertTriangle,
+  Bell,
   Bath,
   Bed,
   Bookmark,
@@ -137,6 +141,7 @@ const NAV_MAIN = [
   { icon: Heart,       label: "My Favorites", href: "/favorites", section: "favorites" },
   { icon: Sparkles,    label: "Suggested",    section: "suggested" },
   { icon: TrendingUp,  label: "Popular",      section: "popular" },
+  { icon: Bell,        label: "Notifications", section: "notifications" },
 ];
 
 const NAV_ACCOUNT = [
@@ -145,13 +150,14 @@ const NAV_ACCOUNT = [
   { icon: HelpCircle,    label: "Help",               section: "help",    isLink: false },
 ];
 
-const DASHBOARD_SECTIONS = ["overview", "favorites", "suggested", "popular", "recent", "settings", "report", "help"];
+const DASHBOARD_SECTIONS = ["overview", "favorites", "suggested", "popular", "notifications", "recent", "settings", "report", "help"];
 
 export function StudentEmployeeDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { favorites: favoriteIds, toggleFavorite, refreshFavorites } = useFavorites();
+  const tenantNotifications = useTenantNotifications();
   const [activeSection, setActiveSection] = useState("suggested");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [favoriteFilter, setFavoriteFilter] = useState<"all" | "available" | "unavailable">("all");
@@ -381,6 +387,7 @@ export function StudentEmployeeDashboard() {
       });
   }, [favoriteApartments, favoriteFilter, favoriteSort]);
   const displayName = user?.name?.trim();
+  const tenantGreeting = getTimeBasedGreeting(user?.name);
   const tenantType = getTenantType(user);
   const portalLabel = tenantType === "student" ? "Student Portal" : tenantType === "employee" ? "Employee Portal" : "Tenant Portal";
   const dashboardSubtitle = tenantType === "student"
@@ -540,11 +547,13 @@ export function StudentEmployeeDashboard() {
             <Link key={section} to={href} onClick={() => setSidebarOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] transition hover:bg-[#faf8f5] hover:text-[#8b735b]">
               <Icon className="h-4 w-4 shrink-0" />{label}
               {label === "My Favorites" && favoriteIds.length > 0 && <span className="app-sidebar-badge ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#8b735b] px-1.5 text-[10px] font-bold text-white">{favoriteIds.length}</span>}
+              {label === "Notifications" && tenantNotifications.unreadCount > 0 && <span className="app-sidebar-badge ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#8b735b] px-1.5 text-[10px] font-bold text-white">{tenantNotifications.unreadCount}</span>}
             </Link>
           ) : (
             <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => { setActiveSection(section); setSidebarOpen(false); }} className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition ${activeSection === section ? "bg-[#f3efeA] text-[#8b735b]" : "text-[#302820] hover:bg-[#faf8f5] hover:text-[#8b735b]"}`}>
               <Icon className="h-4 w-4 shrink-0" />{label}
               {label === "My Favorites" && favoriteIds.length > 0 && <span className="app-sidebar-badge ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#8b735b] px-1.5 text-[10px] font-bold text-white">{favoriteIds.length}</span>}
+              {label === "Notifications" && tenantNotifications.unreadCount > 0 && <span className="app-sidebar-badge ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#8b735b] px-1.5 text-[10px] font-bold text-white">{tenantNotifications.unreadCount}</span>}
             </button>
           ))}
         </div>
@@ -822,10 +831,7 @@ export function StudentEmployeeDashboard() {
             <LayoutDashboard className="h-4 w-4" />
             Your Dashboard
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-950 md:text-6xl">
-            Welcome back{displayName ? "," : ""}
-            {displayName && <span className="block text-[#756A60]">{displayName}</span>}
-          </h1>
+          <h1 className="text-4xl font-black tracking-tight text-slate-950 md:text-6xl">{tenantGreeting}</h1>
           <p className="mt-5 text-lg font-medium text-slate-600">{dashboardSubtitle}</p>
         </div>
         <div className="pointer-events-none absolute right-6 top-6 hidden h-48 w-72 rounded-full bg-[#F3EFEA] md:block" />
@@ -1339,6 +1345,7 @@ export function StudentEmployeeDashboard() {
     favorites: renderFavorites,
     suggested: renderSuggested,
     popular:   renderPopular,
+    notifications: () => <TenantNotifications state={tenantNotifications} />,
     recent:    renderRecent,
     report:    renderReportPremium,
     settings:  renderSettings,

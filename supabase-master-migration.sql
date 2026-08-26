@@ -3221,6 +3221,175 @@ create policy "avatar_storage_owner_write" on storage.objects for all to authent
   using (bucket_id = 'user-avatars' and (storage.foldername(name))[1] = public.current_app_user_id()::text)
   with check (bucket_id = 'user-avatars' and (storage.foldername(name))[1] = public.current_app_user_id()::text);
 
+-- =============================================================================
+-- 15D_tenant_notification_preferences
+-- Event-driven notifications honor each tenant's independent JSONB settings.
+-- Missing settings default to enabled for backward compatibility.
+-- =============================================================================
+create or replace function public.notify_tenants_of_new_apartment()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.is_published = true
+     and old.is_published is distinct from true
+     and new.approval_status = 'approved'
+     and new.is_archived = false
+     and new.deleted_at is null
+     and new.status = 'available' then
+    insert into public.notifications (user_id, type, title, message, payload, read, action_url, action_target_id, action_target_type)
+    select tenant.id,
+      'new_apartment_available',
+      'New apartment available',
+      format('"%s" is now available in AptFindr.', coalesce(nullif(new.title, ''), 'A new apartment')),
+      jsonb_build_object('apartment_id', new.id, 'event', 'published'),
+      false,
+      '/apartment/' || new.id::text,
+      new.id,
+      'apartment'
+    from public.app_users tenant
+    where tenant.role::text in ('tenant', 'student', 'employee')
+      and tenant.status <> 'disabled'
+      and tenant.preferences #> '{notifications,newApartments}' is distinct from 'false'::jsonb
+      and not exists (
+        select 1 from public.notifications existing
+        where existing.user_id = tenant.id
+          and existing.type = 'new_apartment_available'
+          and existing.action_target_id = new.id
+      );
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_notify_tenants_of_new_apartment on public.apartments;
+create trigger trg_notify_tenants_of_new_apartment
+after update of is_published on public.apartments
+for each row execute function public.notify_tenants_of_new_apartment();
+
+create or replace function public.notify_favorites_of_apartment_availability()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare v_event_key text := 'apartment:' || new.id::text || ':' || txid_current()::text;
+begin
+  if new.status = 'available'
+     and old.status is distinct from 'available'
+     and new.is_published = true
+     and new.approval_status = 'approved'
+     and new.is_archived = false
+     and new.deleted_at is null then
+    insert into public.notifications (user_id, type, title, message, payload, read, action_url, action_target_id, action_target_type)
+    select favorite.user_id,
+      'favorite_availability',
+      'Saved apartment available',
+      format('"%s" is available again.', coalesce(nullif(new.title, ''), 'A saved apartment')),
+      jsonb_build_object('apartment_id', new.id, 'availability_event', v_event_key),
+      false, '/apartment/' || new.id::text, new.id, 'apartment'
+    from public.favorites favorite
+    join public.app_users tenant on tenant.id = favorite.user_id
+    where favorite.apartment_id = new.id
+      and tenant.status <> 'disabled'
+      and tenant.preferences #> '{notifications,favoriteAvailability}' is distinct from 'false'::jsonb
+      and not exists (
+        select 1 from public.notifications existing
+        where existing.user_id = favorite.user_id
+          and existing.type = 'favorite_availability'
+          and existing.payload ->> 'availability_event' = v_event_key
+      );
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_notify_favorites_of_apartment_availability on public.apartments;
+create trigger trg_notify_favorites_of_apartment_availability
+after update of status on public.apartments
+for each row execute function public.notify_favorites_of_apartment_availability();
+
+-- Report updates are transactional and intentionally ignore optional apartment
+-- alert preferences. This fires only on a real transition to resolved.
+create or replace function public.notify_tenant_of_resolved_report()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_tenant_id uuid := coalesce(new.reporter_id, new.user_id);
+  v_apartment_title text;
+begin
+  if new.status::text = 'resolved' and old.status::text is distinct from 'resolved' and v_tenant_id is not null then
+    select nullif(trim(title), '') into v_apartment_title
+    from public.apartments where id = new.apartment_id;
+
+    insert into public.notifications (
+      user_id, type, title, message, payload, read,
+      action_url, action_target_id, action_target_type
+    )
+    select
+      v_tenant_id,
+      'report_resolved',
+      'Report Resolved',
+      case when v_apartment_title is not null
+        then format('Your report regarding %s has been resolved by the administrator.', v_apartment_title)
+        else 'Your submitted report has been resolved by the administrator.'
+      end,
+      jsonb_build_object('report_id', new.id, 'apartment_id', new.apartment_id, 'status', new.status),
+      false,
+      '/dashboard?section=notifications&reportId=' || new.id::text,
+      new.id,
+      'report'
+    where not exists (
+      select 1 from public.notifications existing
+      where existing.user_id = v_tenant_id
+        and existing.type = 'report_resolved'
+        and existing.action_target_id = new.id
+    );
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_notify_tenant_of_resolved_report on public.reports;
+create trigger trg_notify_tenant_of_resolved_report
+after update of status on public.reports
+for each row execute function public.notify_tenant_of_resolved_report();
+
+create or replace function public.notify_favorites_of_room_availability()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_apartment public.apartments%rowtype;
+  v_event_key text := 'room:' || new.id::text || ':' || txid_current()::text;
+begin
+  if new.status = 'available'
+     and new.is_occupied = false
+     and (old.status is distinct from 'available' or old.is_occupied is distinct from false) then
+    select * into v_apartment from public.apartments where id = new.apartment_id;
+    if v_apartment.is_published = true and v_apartment.approval_status = 'approved'
+       and v_apartment.is_archived = false and v_apartment.deleted_at is null
+       and v_apartment.status = 'available' then
+      insert into public.notifications (user_id, type, title, message, payload, read, action_url, action_target_id, action_target_type)
+      select favorite.user_id,
+        'favorite_availability',
+        'Room available in a saved apartment',
+        format('A room in "%s" is now available.', coalesce(nullif(v_apartment.title, ''), 'a saved apartment')),
+        jsonb_build_object('apartment_id', v_apartment.id, 'room_id', new.id, 'availability_event', v_event_key),
+        false, '/apartment/' || v_apartment.id::text, v_apartment.id, 'apartment'
+      from public.favorites favorite
+      join public.app_users tenant on tenant.id = favorite.user_id
+      where favorite.apartment_id = v_apartment.id
+        and tenant.status <> 'disabled'
+        and tenant.preferences #> '{notifications,favoriteAvailability}' is distinct from 'false'::jsonb
+        and not exists (
+          select 1 from public.notifications existing
+          where existing.user_id = favorite.user_id
+            and existing.type = 'favorite_availability'
+            and existing.payload ->> 'availability_event' = v_event_key
+        );
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_notify_favorites_of_room_availability on public.apartment_rooms;
+create trigger trg_notify_favorites_of_room_availability
+after update of status, is_occupied on public.apartment_rooms
+for each row execute function public.notify_favorites_of_room_availability();
+
 commit;
 
 -- =============================================================================

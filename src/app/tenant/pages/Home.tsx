@@ -50,6 +50,7 @@ import { Switch } from "@/app/shared/components/ui/switch";
 import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
 import { getTenantType, isTenantRole } from "@/app/shared/services/authService";
+import { getTimeBasedGreeting } from "@/app/tenant/utils/tenantGreeting";
 import { fetchApartmentRatings, subscribeToApartmentRatings, summarizeApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
 import type { Apartment } from "@/app/shared/data/apartments";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
@@ -415,6 +416,8 @@ function TenantBrowse() {
   const activeBudgetFilter = budgetFilterEnabled && (priceRange[0] !== DEFAULT_PRICE_RANGE[0] || priceRange[1] !== DEFAULT_PRICE_RANGE[1]);
   const activeFilterCount = [petFriendly, parking, furnished, bedrooms !== "any", activeBudgetFilter].filter(Boolean).length;
   const mappedApartmentCount = filteredApartments.filter((apartment) => hasValidApartmentCoordinates(apartment.lat, apartment.lng)).length;
+  const tenantGreeting = getTimeBasedGreeting(user?.name);
+  const hasActiveApartmentFilters = Boolean(searchQuery.trim() || activeNearbySearch || activeFilterCount > 0);
   const realPriceValues = useMemo(
     () =>
       allApartments
@@ -829,6 +832,7 @@ function TenantBrowse() {
 
             <section className="relative mt-8 overflow-hidden rounded-lg bg-gradient-to-r from-white via-[#FAF8F5] to-[#F3EFEA] p-7">
               <div className="relative z-10">
+                <p className="mb-3 text-lg font-black text-[#6F4E37] sm:text-xl">{tenantGreeting}</p>
                 <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-[#F3EFEA] bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-[#756A60] shadow-sm">
                   <Sparkles className="h-4 w-4" />
                   Find Your Next Home
@@ -882,11 +886,11 @@ function TenantBrowse() {
                   </Button>
                 </div>
               ) : filteredApartments.length === 0 ? (
-                <div className="flex min-h-96 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
+                <div className="flex min-h-72 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
                   <LocateFixed className="mb-4 h-12 w-12 text-slate-300" />
-                  <h2 className="text-2xl font-black text-slate-950">No apartments match your filters.</h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500">Try adjusting your search criteria to find your perfect home.</p>
-                  <Button onClick={resetFilters} className="mt-6 rounded-lg bg-[#8B735B] font-black text-white hover:bg-[#756A60]">Reset Filters</Button>
+                  <h2 className="text-2xl font-black text-slate-950">No apartments found</h2>
+                  <p className="mt-2 max-w-lg text-sm font-medium text-slate-500">Try adjusting your search, filters, or preferences to discover other available apartments.</p>
+                  {hasActiveApartmentFilters && <Button onClick={resetFilters} className="mt-6 rounded-lg bg-[#8B735B] font-black text-white hover:bg-[#756A60]">Reset Search &amp; Filters</Button>}
                 </div>
               ) : viewMode === "grid" ? (
                 <>

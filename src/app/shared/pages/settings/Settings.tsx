@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { Badge } from "@/app/shared/components/ui/badge";
 import { Button } from "@/app/shared/components/ui/button";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
-import { deleteUser as deleteUserAccount, getTenantType } from "@/app/shared/services/authService";
+import { deleteUser as deleteUserAccount, getTenantType, isTenantRole } from "@/app/shared/services/authService";
 import { fetchUserPreferenceSections, fetchUserProfileDetails, saveUserPreferenceSection, updateUserProfile, uploadUserAvatar } from "@/app/shared/services/dashboardSupabaseService";
 
 type UserSettingsProfile = {
@@ -59,6 +59,11 @@ type UserAlerts = {
   quietStart: string;
   quietEnd: string;
   quietEnabled: boolean;
+};
+
+type TenantNotificationPreferences = {
+  newApartments: boolean;
+  favoriteAvailability: boolean;
 };
 
 const inputClass = "h-12 w-full rounded-xl border border-[#e8ded1] bg-white px-4 text-base font-medium text-[#302820] outline-none transition duration-200 placeholder:text-[#8b8178] focus:border-[#8b735b] focus:ring-2 focus:ring-[#8b735b]/10";
@@ -148,6 +153,7 @@ const AlertRow = ({ label, hint, pushVal, onPush }: { label: string; hint?: stri
 export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const { user, updateUser, logout } = useAuth();
+  const isTenantAccount = isTenantRole(user?.role);
   const [settingsTab, setSettingsTab] = useState<"profile" | "alerts" | "security">("profile");
   const [settingsMenu, setSettingsMenu] = useState<"personal" | "employment">("personal");
 
@@ -166,6 +172,9 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
       quietEnabled: true,
     };
   });
+  const [tenantNotifications, setTenantNotifications] = useState<TenantNotificationPreferences>({ newApartments: true, favoriteAvailability: true });
+  const [preferencesLoading, setPreferencesLoading] = useState(true);
+  const [notificationSaving, setNotificationSaving] = useState(false);
 
   const [security, setSecurity] = useState(() => {
     return { passwordLastChanged: "" };
@@ -216,12 +225,23 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
         if (sections.alerts && typeof sections.alerts === "object" && !Array.isArray(sections.alerts)) {
           setAlerts((current) => ({ ...current, ...sections.alerts as Partial<UserAlerts> }));
         }
+        if (sections.notifications && typeof sections.notifications === "object" && !Array.isArray(sections.notifications)) {
+          const saved = sections.notifications as Record<string, unknown>;
+          setTenantNotifications({
+            newApartments: typeof saved.newApartments === "boolean" ? saved.newApartments : true,
+            favoriteAvailability: typeof saved.favoriteAvailability === "boolean" ? saved.favoriteAvailability : true,
+          });
+        }
         if (sections.security && typeof sections.security === "object" && !Array.isArray(sections.security)) {
           const saved = sections.security as Record<string, unknown>;
           if (typeof saved.passwordLastChanged === "string") setSecurity({ passwordLastChanged: saved.passwordLastChanged });
         }
       })
-      .catch((error) => console.error("Unable to load account preferences:", error));
+      .catch((error) => {
+        console.error("Unable to load account preferences:", error);
+        toast.error("Unable to load your saved settings.");
+      })
+      .finally(() => { if (active) setPreferencesLoading(false); });
     return () => { active = false; };
   }, [user?.id]);
 
@@ -446,6 +466,19 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
     }
   };
 
+  const handleSaveTenantNotifications = async () => {
+    if (!user?.id || notificationSaving) return;
+    setNotificationSaving(true);
+    try {
+      await saveUserPreferenceSection(user.id, "notifications", tenantNotifications);
+      toast.success("Notification preferences saved.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save notification preferences.");
+    } finally {
+      setNotificationSaving(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
       if (!user) return;
@@ -527,8 +560,8 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
                 </Field>
               </div>
               <div className="mt-4 space-y-4">
-                <Field label="Email Address" hint="Used for account login and notifications">
-                  <input className={inputClass} type="email" value={profile.email} onChange={(e) => updateProfile((p) => ({ ...p, email: e.target.value }))} placeholder="Not provided" />
+                <Field label="Email Address" hint={isTenantAccount ? "Managed securely through your authenticated account" : "Used for account login and notifications"}>
+                  <input className={inputClass} type="email" value={profile.email} onChange={(e) => updateProfile((p) => ({ ...p, email: e.target.value }))} placeholder="Not provided" readOnly={isTenantAccount} disabled={isTenantAccount} />
                 </Field>
                 <Field label="Mobile Number" hint="Optional contact number">
                   <input className={inputClass} type="tel" value={profile.mobile} onChange={(e) => updateProfile((p) => ({ ...p, mobile: e.target.value }))} placeholder="Not provided" />
@@ -563,8 +596,8 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
                   <Field label="Mobile Number">
                     <input className={inputClass} type="tel" value={profile.mobile} onChange={(e) => updateProfile((p) => ({ ...p, mobile: e.target.value }))} placeholder="Not provided" />
                   </Field>
-                  <Field label="Email Address">
-                    <input className={inputClass} type="email" value={profile.email} onChange={(e) => updateProfile((p) => ({ ...p, email: e.target.value }))} placeholder="Not provided" />
+                  <Field label="Email Address" hint="Managed securely through your authenticated account">
+                    <input className={inputClass} type="email" value={profile.email} placeholder="Not provided" readOnly disabled />
                   </Field>
                 </div>
               ) : tenantType === "employee" ? (
@@ -609,6 +642,17 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
 
   const renderAlertsTab = () => (
     <div className="space-y-6">
+      {isTenantAccount ? <>
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <CardTitle icon={Bell} title="Apartment Notification Preferences" subtitle="Choose which optional apartment updates you want to receive." />
+          {preferencesLoading ? <div className="space-y-4 py-2" aria-label="Loading notification preferences"><div className="h-16 animate-pulse rounded-lg bg-[#faf8f5]" /><div className="h-16 animate-pulse rounded-lg bg-[#faf8f5]" /></div> : <>
+            <AlertRow label="New Apartment Updates" hint="Notify me when new apartments become available." pushVal={tenantNotifications.newApartments} onPush={(newApartments) => setTenantNotifications((current) => ({ ...current, newApartments }))} />
+            <AlertRow label="Favorite Availability" hint="Notify me when a saved apartment or room becomes available." pushVal={tenantNotifications.favoriteAvailability} onPush={(favoriteAvailability) => setTenantNotifications((current) => ({ ...current, favoriteAvailability }))} />
+          </>}
+          <p className="mt-4 rounded-lg border border-[#e8ded1] bg-[#faf8f5] px-4 py-3 text-xs font-semibold leading-5 text-[#756a60]">Important account and report-status updates are always sent and cannot be disabled.</p>
+        </section>
+        <div className="flex justify-end"><Button disabled={preferencesLoading || notificationSaving} onClick={() => void handleSaveTenantNotifications()} className="rounded-lg bg-[#8b735b] px-6 font-black text-white hover:bg-[#75614e]">{notificationSaving ? "Saving..." : "Save Notification Preferences"}</Button></div>
+      </> : <>
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <CardTitle icon={Bell} title="Apartment Alerts" subtitle="Get notified about new listings and updates." />
         <AlertRow label="New Listings" hint="Notify when new apartments match your preferences" pushVal={alerts.newListings} onPush={(v) => setA("newListings", v)} />
@@ -648,6 +692,7 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
       </section>
 
       <SaveBar onSave={() => void handleSaveAlerts()} />
+      </>}
     </div>
   );
 
@@ -701,14 +746,14 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
         </div>
       </section>
 
-      <section className="settings-danger-zone rounded-lg border border-red-100 bg-red-50 p-6 shadow-sm">
+      {isTenantAccount ? <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"><CardTitle icon={ArrowLeft} title="Account Session" subtitle="Sign out of your account on this device." /><Button variant="outline" onClick={() => { logout(); navigate("/login", { replace: true }); }} className="rounded-lg border-[#e8ded1] font-black text-[#8b735b] hover:bg-[#faf8f5]">Log Out</Button></section> : <section className="settings-danger-zone rounded-lg border border-red-100 bg-red-50 p-6 shadow-sm">
         <CardTitle icon={Trash2} title="Danger Zone" subtitle="Irreversible account actions." tone="bg-white text-red-600" />
         <p className="text-sm font-medium text-slate-600">Once you delete your account, there is no going back. Please be certain.</p>
         <Button variant="destructive" onClick={handleDeleteAccount} className="mt-4 rounded-lg font-black">
           <Trash2 className="mr-2 h-4 w-4" />
           Delete My Account
         </Button>
-      </section>
+      </section>}
     </div>
   );
 
@@ -730,22 +775,22 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
                 Account Management
               </div>
               <h1 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">Settings</h1>
-              <p className="mt-3 text-base font-medium text-[#756a60]">Manage your profile, preferences, security, and account options.</p>
-              <div className="mt-4 flex gap-2">
+              <p className="mt-3 text-base font-medium text-[#756a60]">{isTenantAccount ? "Manage your profile, notification preferences, and account security." : "Manage your profile, preferences, security, and account options."}</p>
+              {!isTenantAccount && <div className="mt-4 flex gap-2">
               <button className="relative flex h-11 w-11 items-center justify-center rounded-lg border border-[#e8ded1] bg-white text-[#756a60] transition hover:bg-[#faf8f5] hover:text-[#8b735b]">
                 <Bell className="h-5 w-5" />
               </button>
               <button onClick={() => navigate("/dashboard?section=help")} className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#e8ded1] bg-white text-[#756a60] transition hover:bg-[#faf8f5] hover:text-[#8b735b]">
                 <HelpCircle className="h-5 w-5" />
               </button>
-              </div>
+              </div>}
             </div>
             <div className="pointer-events-none absolute inset-y-0 right-3 hidden w-[43%] items-end text-[#b9a58f] md:flex"><SettingsLineArt /></div>
           </header>
 
           <nav className="grid rounded-xl border border-[#e8ded1] bg-white p-1 shadow-sm sm:grid-cols-3">
             <TabButton icon={User} label="Profile" active={settingsTab === "profile"} onClick={() => setSettingsTab("profile")} />
-            <TabButton icon={Bell} label="Alerts" active={settingsTab === "alerts"} onClick={() => setSettingsTab("alerts")} />
+            <TabButton icon={Bell} label={isTenantAccount ? "Notifications" : "Alerts"} active={settingsTab === "alerts"} onClick={() => setSettingsTab("alerts")} />
             <TabButton icon={Shield} label="Security" active={settingsTab === "security"} onClick={() => setSettingsTab("security")} />
           </nav>
 
