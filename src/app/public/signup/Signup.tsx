@@ -153,7 +153,7 @@ export function Signup() {
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", middleInitial: "",
-    email: "", mobileNumber: "", address: "",
+    username: "", email: "", mobileNumber: "", address: "",
     password: "", confirmPassword: "",
     role: "" as UserRole | "",
     tenantType: "" as TenantType | "",
@@ -170,7 +170,7 @@ export function Signup() {
   /* ── Section completion checks ─────────────────────────── */
   const donePersonal =
     !!formData.firstName && !!formData.lastName && !!formData.address;
-  const doneContact = !!formData.email && !!formData.mobileNumber;
+  const doneContact = !!formData.mobileNumber;
   const doneRole = (() => {
     if (!formData.role) return false;
     if (formData.role === "tenant" && formData.tenantType === "student")
@@ -183,6 +183,8 @@ export function Signup() {
     return false;
   })();
   const doneSecurity =
+    /^[A-Za-z0-9_]{4,30}$/.test(formData.username) &&
+    /^\S+@\S+\.\S+$/.test(formData.email.trim()) &&
     !!formData.password &&
     formData.password.length >= 6 &&
     formData.password === formData.confirmPassword;
@@ -201,8 +203,9 @@ export function Signup() {
     if (!formData.firstName || !formData.lastName) { setError("Full name is required."); return; }
     if (!formData.address) { setError("Home address is required."); return; }
     if (!formData.mobileNumber) { setError("Mobile number is required."); return; }
-    if (!formData.email) { setError("Email is required."); return; }
-    if (!/^\S+@\S+\.\S+$/.test(formData.email.trim())) { setError("Enter a valid email address."); return; }
+    if (!/^[A-Za-z0-9_]{4,30}$/.test(formData.username.trim()) || formData.username.includes("@")) { setError("Username must be 4–30 characters using only letters, numbers, or underscores."); return; }
+    if (!formData.email) { setError("Recovery email is required."); return; }
+    if (!/^\S+@\S+\.\S+$/.test(formData.email.trim())) { setError("Enter a valid recovery email address."); return; }
     if (formData.password.length < 6) { setError("Password must be at least 6 characters."); return; }
     if (formData.password !== formData.confirmPassword) { setError("Passwords do not match."); return; }
 
@@ -212,6 +215,7 @@ export function Signup() {
     try {
       const result = await signup({
         name: fullName,
+        username: formData.username.trim(),
         email: formData.email,
         password: formData.password,
         role: formData.role as UserRole,
@@ -493,7 +497,6 @@ export function Signup() {
                 onToggle={() => toggle("contact")}
                 done={doneContact}
               >
-                <FloatInput id="email" label="Email Address" type="email" value={formData.email} onChange={(v) => set("email", v)} required icon={<Mail className="h-4 w-4" />} />
                 <FloatInput id="mobile" label="Mobile Number" type="tel" value={formData.mobileNumber} onChange={(v) => set("mobileNumber", v)} required icon={<Phone className="h-4 w-4" />} />
                 <div className="flex justify-end">
                   <button type="button" onClick={() => toggle("role-details")}
@@ -602,6 +605,14 @@ export function Signup() {
                 onToggle={() => toggle("security")}
                 done={doneSecurity}
               >
+                <div className="space-y-2">
+                  <FloatInput id="username" label="Username" value={formData.username} onChange={(v) => set("username", v)} required placeholder="Choose a unique username" icon={<User className="h-4 w-4" />} />
+                  <p className="px-1 text-xs font-medium text-slate-500">You will use this username when signing in. Use 4–30 letters, numbers, or underscores with no spaces.</p>
+                </div>
+                <div className="space-y-2">
+                  <FloatInput id="email" label="Recovery Email" type="email" value={formData.email} onChange={(v) => set("email", v)} required placeholder="you@example.com" icon={<Mail className="h-4 w-4" />} />
+                  <p className="px-1 text-xs font-medium text-slate-500">Used for account verification, password recovery, and important account notices.</p>
+                </div>
                 {/* Password field */}
                 <div>
                   <FloatInput

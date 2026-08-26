@@ -185,7 +185,7 @@ export function ForgotPassword() {
             {/* Page heading */}
             <div className="mb-8">
               <h1 className="text-2xl lg:text-3xl font-black text-slate-900 leading-tight">
-                {sent ? "Check your email" : "Forgot your password?"}
+                {sent ? "Check your email" : "Reset your password"}
               </h1>
               <p className="text-slate-500 text-sm mt-1.5">
                 Remember your password?{" "}
@@ -230,7 +230,7 @@ export function ForgotPassword() {
                       <div className="px-5 py-5 space-y-4">
                         <FloatInput
                           id="email"
-                          label="Email Address"
+                          label="Registered Email Address"
                           type="email"
                           value={email}
                           onChange={setEmail}
@@ -238,7 +238,7 @@ export function ForgotPassword() {
                           icon={<Mail className="h-4 w-4" />}
                         />
                         <p className="text-xs text-slate-400 font-medium px-1">
-                          Enter the email associated with your account. If eligible, reset instructions will be sent to that address.
+                          Enter the email address linked to your AptFindr account.
                         </p>
                       </div>
 

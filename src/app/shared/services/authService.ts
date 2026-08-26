@@ -9,6 +9,7 @@ export interface User {
   authId?: string;
   name: string;
   email: string;
+  username?: string;
   middleInitial?: string;
   address?: string;
   role: UserRole;
@@ -45,6 +46,7 @@ type AppUserRow = {
   name?: string;
   full_name?: string;
   email?: string;
+  username?: string | null;
   middle_initial?: string | null;
   address?: string | null;
   role?: string;
@@ -67,11 +69,14 @@ type AppUserRow = {
 };
 
 export interface AuthCredentials {
-  email: string;
+  username: string;
   password: string;
 }
 
-export interface CreateUserInput extends AuthCredentials {
+export interface CreateUserInput {
+  username: string;
+  email: string;
+  password: string;
   name: string;
   role: UserRole;
   tenantType?: TenantType;
@@ -227,6 +232,7 @@ function normalizeUser(row: AppUserRow): User {
     authId: getStringValue(record, ['auth_id']) || undefined,
     name: getStringValue(record, ['name', 'full_name']),
     email: getStringValue(record, ['email']),
+    username: getStringValue(record, ['username']) || undefined,
     middleInitial: getStringValue(record, ['middle_initial']),
     address: getStringValue(record, ['address']),
     role: role as UserRole,
@@ -616,6 +622,7 @@ function pendingSignupUser(input: CreateUserInput, authId: string, role: UserRol
     authId,
     name: input.name,
     email: input.email.trim().toLowerCase(),
+    username: input.username.trim().toLowerCase(),
     role,
     tenantType,
     status: role === 'landlord' ? 'pending' : 'active',
@@ -627,11 +634,13 @@ function pendingSignupUser(input: CreateUserInput, authId: string, role: UserRol
 
 export async function signupUser(input: CreateUserInput): Promise<SignupResult> {
   const email = input.email.trim().toLowerCase();
+  const username = input.username.trim().toLowerCase();
   const role: UserRole = isTenantRole(input.role) ? 'tenant' : input.role;
   const tenantType = normalizeTenantType(input.tenantType, input.role);
   if (role !== 'tenant' && role !== 'landlord') throw new SignupFlowError('Public registration supports tenant and landlord accounts only.', 'validation', 'invalid_public_role');
   if (role === 'tenant' && !tenantType) throw new SignupFlowError('Please select a tenant type.', 'validation', 'missing_tenant_type');
   if (tenantType === 'other' && !nonEmptyString(input.otherOccupation)) throw new SignupFlowError('Occupation / Tenant Type is required.', 'validation', 'missing_occupation');
+  if (!/^[a-z0-9_]{4,30}$/.test(username)) throw new SignupFlowError('Username must be 4–30 characters using only letters, numbers, or underscores.', 'validation', 'invalid_username');
   if (!/^\S+@\S+\.\S+$/.test(email)) throw new SignupFlowError('Enter a valid email address.', 'validation', 'invalid_email');
 
   signupLog('[AUTH] Signup started', { email, role, tenantType });
@@ -642,6 +651,7 @@ export async function signupUser(input: CreateUserInput): Promise<SignupResult> 
     options: {
       emailRedirectTo: `${window.location.origin}/auth/callback`,
       data: {
+        username,
         name: input.name,
         role,
         tenantType,
@@ -721,32 +731,44 @@ export async function signupUser(input: CreateUserInput): Promise<SignupResult> 
 }
 
 export async function loginUser(credentials: AuthCredentials): Promise<User> {
-  const email = credentials.email?.trim().toLowerCase();
+  const username = credentials.username?.trim().toLowerCase();
   const password = credentials.password;
 
-  if (!email || !password) {
-    throw new Error('Email and password are required.');
+  if (!username || !password) {
+    throw new Error('Username and password are required.');
   }
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password,
+  // Username resolution stays server-side. The function authenticates against
+  // Supabase Auth and returns only session tokens; it must never return a user's
+  // recovery email to an anonymous caller.
+  const { data: response, error } = await supabaseClient.functions.invoke('username-login', {
+    body: { username, password },
   });
+  const result = isRecord(response) ? response : {};
 
-  if (error) {
-    console.error('[AUTH] Sign-in failed', { message: error.message, status: error.status, code: error.code });
-    if (/email.*not.*confirm|confirm.*email/i.test(error.message)) {
+  if (error || result.success === false) {
+    const message = getStringValue(result, ['error'], error?.message ?? '');
+    console.error('[AUTH] Username sign-in failed', { message });
+    if (/email.*not.*confirm|confirm.*email|verify.*email/i.test(message)) {
       throw new Error('Please verify your email before signing in.');
     }
-    if (error.status === 429 || /rate|too many/i.test(error.message)) {
+    if (/rate|too many/i.test(message)) {
       throw new Error('Too many sign-in attempts. Please wait before trying again.');
     }
-    throw new Error('Invalid email or password.');
+    if (/function.*not.*found|failed to send|edge function|fetch/i.test(message)) {
+      throw new Error('Username sign-in is temporarily unavailable. Please try again later.');
+    }
+    throw new Error('Invalid username or password.');
   }
 
-  if (!data.user) {
-    throw new Error('Invalid email or password.');
+  const accessToken = getStringValue(result, ['access_token', 'accessToken']);
+  const refreshToken = getStringValue(result, ['refresh_token', 'refreshToken']);
+  if (!accessToken || !refreshToken) {
+    throw new Error('Invalid username or password.');
   }
+
+  const { data, error: sessionError } = await supabaseClient.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+  if (sessionError || !data.user) throw new Error('Invalid username or password.');
 
   if (requiresPendingEmailVerification(data.user)) {
     await supabaseClient.auth.signOut();
@@ -755,7 +777,7 @@ export async function loginUser(credentials: AuthCredentials): Promise<User> {
 
   const profile = await ensureProfileForAuthUser(data.user);
   assertActiveAccount(profile);
-  await recordLogin(profile, data.user.id, true, { email });
+  await recordLogin(profile, data.user.id, true, { username });
   persistCurrentUser(profile);
   return profile;
 }

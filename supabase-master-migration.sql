@@ -73,6 +73,7 @@ create table if not exists public.app_users (
   id uuid primary key default gen_random_uuid(),
   auth_id uuid unique,
   legacy_id text unique,
+  username text,
   email text not null unique,
   name text not null,
   middle_initial text,
@@ -99,6 +100,7 @@ create table if not exists public.app_users (
 
 alter table public.app_users add column if not exists auth_id uuid;
 alter table public.app_users add column if not exists legacy_id text;
+alter table public.app_users add column if not exists username text;
 alter table public.app_users add column if not exists middle_initial text;
 alter table public.app_users add column if not exists address text;
 alter table public.app_users add column if not exists status text default 'active';
@@ -110,10 +112,60 @@ alter table public.app_users add column if not exists department text;
 alter table public.app_users add column if not exists admin_level text;
 alter table public.app_users add column if not exists signup_source text;
 alter table public.app_users add column if not exists preferences jsonb not null default '{}'::jsonb;
+
+-- Username login identifier.
+-- Existing accounts are backfilled without changing their email, auth UUID,
+-- role, verification state, or password. Email remains the Supabase Auth /
+-- recovery address.
+with normalized as (
+  select
+    id,
+    lower(regexp_replace(split_part(email, '@', 1), '[^a-zA-Z0-9_]', '', 'g')) as base_username
+  from public.app_users
+  where username is null
+),
+unique_bases as (
+  select base_username
+  from normalized
+  where base_username ~ '^[a-z0-9_]{4,30}$'
+  group by base_username
+  having count(*) = 1
+)
+update public.app_users app_user
+set username = normalized.base_username
+from normalized
+join unique_bases using (base_username)
+where app_user.id = normalized.id
+  and app_user.username is null
+  and not exists (
+    select 1
+    from public.app_users existing
+    where existing.username is not null
+      and lower(existing.username) = normalized.base_username
+      and existing.id <> app_user.id
+  );
+
+-- Any remaining legacy account receives a deterministic unique username.
+-- These can later be changed through a controlled account-management flow.
+update public.app_users
+set username = 'user_' || substr(replace(id::text, '-', ''), 1, 12)
+where username is null;
+
+alter table public.app_users drop constraint if exists app_users_username_format_check;
+alter table public.app_users add constraint app_users_username_format_check
+check (
+  username is null
+  or username ~ '^[A-Za-z0-9_]{4,30}$'
+);
+
 -- Authentication secrets belong exclusively to Supabase Auth.
 alter table public.app_users drop column if exists password;
 
 create unique index if not exists app_users_legacy_id_key on public.app_users (legacy_id) where legacy_id is not null;
+create unique index if not exists app_users_username_unique
+  on public.app_users (lower(username))
+  where username is not null;
+create index if not exists idx_app_users_username on public.app_users (username);
 create index if not exists idx_app_users_role on public.app_users (role);
 create index if not exists idx_app_users_email on public.app_users (email);
 create index if not exists idx_app_users_status on public.app_users (status);
@@ -1567,6 +1619,7 @@ as $$
 declare
   v_role public.app_user_role;
   v_name text;
+  v_username text;
   v_user_id uuid;
 begin
   v_role := case
@@ -1578,10 +1631,16 @@ begin
     else 'student'::public.app_user_role
   end;
   v_name := coalesce(nullif(trim(new.raw_user_meta_data ->> 'name'), ''), split_part(coalesce(new.email, ''), '@', 1), 'User');
+  v_username := lower(nullif(trim(new.raw_user_meta_data ->> 'username'), ''));
 
-  insert into public.app_users (auth_id, email, name, role, status, mobile, middle_initial, address, is_verified, email_verified, verification_status, permit_number, signup_source)
+  if v_username is null
+     or v_username !~ '^[a-z0-9_]{4,30}$' then
+    raise exception 'A valid username is required (4-30 letters, numbers, or underscores).';
+  end if;
+
+  insert into public.app_users (auth_id, username, email, name, role, status, mobile, middle_initial, address, is_verified, email_verified, verification_status, permit_number, signup_source)
   values (
-    new.id, new.email, v_name, v_role,
+    new.id, v_username, new.email, v_name, v_role,
     case when v_role = 'landlord' then 'pending' else 'active' end,
     nullif(new.raw_user_meta_data ->> 'mobile', ''),
     nullif(new.raw_user_meta_data ->> 'middleInitial', ''),
@@ -1594,6 +1653,7 @@ begin
   )
   on conflict (email) do update set
     auth_id = excluded.auth_id,
+    username = coalesce(app_users.username, excluded.username),
     permit_number = coalesce(app_users.permit_number, excluded.permit_number)
   returning id into v_user_id;
 
@@ -1659,9 +1719,14 @@ create trigger on_auth_user_email_verified
   execute function public.sync_auth_email_verification();
 
 -- Repair profiles for Auth users created before this trigger existed.
-insert into public.app_users (auth_id, email, name, role, status, is_verified, email_verified, verification_status, signup_source)
+insert into public.app_users (auth_id, username, email, name, role, status, is_verified, email_verified, verification_status, signup_source)
 select
   u.id,
+  case
+    when lower(coalesce(u.raw_user_meta_data ->> 'username', '')) ~ '^[a-z0-9_]{4,30}$'
+      then lower(u.raw_user_meta_data ->> 'username')
+    else 'user_' || substr(replace(u.id::text, '-', ''), 1, 12)
+  end,
   u.email,
   coalesce(nullif(trim(u.raw_user_meta_data ->> 'name'), ''), split_part(coalesce(u.email, ''), '@', 1), 'User'),
   case when u.raw_user_meta_data ->> 'role' in ('student', 'employee', 'landlord', 'admin')
@@ -1675,6 +1740,7 @@ from auth.users u
 where u.email is not null
 on conflict (email) do update set
   auth_id = excluded.auth_id,
+  username = coalesce(app_users.username, excluded.username),
   email_verified = excluded.email_verified,
   verification_status = excluded.verification_status;
 
@@ -1727,7 +1793,7 @@ left join (select report_id, count(*) as evidence_count from public.report_evide
 -- App users by role view
 drop view if exists public.vw_app_users_by_role;
 create view public.vw_app_users_by_role with (security_invoker = true) as
-select u.id, u.email, u.name, u.role, u.status, u.mobile, u.is_verified, u.permit_number, u.created_at, u.updated_at
+select u.id, u.username, u.email, u.name, u.role, u.status, u.mobile, u.is_verified, u.permit_number, u.created_at, u.updated_at
 from public.app_users u;
 
 -- Public listing contact projection. Never expose auth IDs, preferences,
@@ -2765,6 +2831,7 @@ grant execute on function public.fn_consume_backup_code(text) to authenticated;
 begin;
 
 alter table public.app_users
+  add column if not exists username text,
   add column if not exists tenant_type text,
   add column if not exists other_occupation text,
   add column if not exists other_organization text,
@@ -2789,6 +2856,21 @@ create index if not exists idx_app_users_tenant_type
 on public.app_users (tenant_type)
 where role = 'tenant'::public.app_user_role;
 
+-- Final username reconciliation. At this point every existing application
+-- profile must have a login username before the final auth trigger is installed.
+update public.app_users
+set username = 'user_' || substr(replace(id::text, '-', ''), 1, 12)
+where username is null;
+
+alter table public.app_users drop constraint if exists app_users_username_format_check;
+alter table public.app_users add constraint app_users_username_format_check
+check (username ~ '^[A-Za-z0-9_]{4,30}$');
+
+create unique index if not exists app_users_username_unique
+  on public.app_users (lower(username));
+
+alter table public.app_users alter column username set not null;
+
 -- =============================================================================
 -- 15A_super_admin_bootstrap
 -- Pre-create the trusted Super Admin application profile before creating the
@@ -2799,6 +2881,7 @@ where role = 'tenant'::public.app_user_role;
 alter type public.app_user_role add value if not exists 'super_admin';
 
 insert into public.app_users (
+  username,
   email,
   name,
   role,
@@ -2811,6 +2894,7 @@ insert into public.app_users (
   department
 )
 values (
+  'superadmin',
   'superadmin@aptfindr.com',
   'Super Administrator',
   'super_admin'::public.app_user_role,
@@ -2823,6 +2907,10 @@ values (
   'Platform Administration'
 )
 on conflict (email) do update set
+  username = case
+    when app_users.role = 'super_admin' then excluded.username
+    else app_users.username
+  end,
   name = case
     when app_users.role = 'super_admin' then excluded.name
     else app_users.name
@@ -2851,15 +2939,17 @@ declare
   v_role public.app_user_role;
   v_tenant_type text;
   v_name text;
+  v_username text;
   v_user_id uuid;
   v_existing_role public.app_user_role;
   v_existing_tenant_type text;
+  v_existing_username text;
 begin
   -- Preserve trusted roles on existing linked profiles. For a brand-new Auth
   -- identity, public metadata may request tenant or landlord only; admin is
   -- never accepted from user-controlled signup metadata.
-  select role, tenant_type
-    into v_existing_role, v_existing_tenant_type
+  select role, tenant_type, username
+    into v_existing_role, v_existing_tenant_type, v_existing_username
   from public.app_users
   where auth_id = new.id
      or (
@@ -2895,15 +2985,38 @@ begin
     raise exception 'Occupation / Tenant Type is required for Other tenant accounts';
   end if;
 
+  -- Username is the AptFindr sign-in identifier. Email remains the verified
+  -- Supabase Auth / recovery address. Privileged pre-created profiles preserve
+  -- their trusted stored username.
+  v_username := coalesce(
+    v_existing_username,
+    lower(nullif(trim(new.raw_user_meta_data ->> 'username'), ''))
+  );
+
+  if v_username is null
+     or v_username !~ '^[a-z0-9_]{4,30}$' then
+    raise exception 'A valid username is required (4-30 letters, numbers, or underscores).';
+  end if;
+
+  if exists (
+    select 1
+    from public.app_users username_owner
+    where lower(username_owner.username) = lower(v_username)
+      and username_owner.auth_id is distinct from new.id
+      and lower(username_owner.email) <> lower(new.email)
+  ) then
+    raise exception 'Username is already in use.';
+  end if;
+
   v_name := coalesce(nullif(trim(new.raw_user_meta_data ->> 'name'), ''), split_part(coalesce(new.email, ''), '@', 1), 'User');
 
   insert into public.app_users (
-    auth_id, email, name, role, tenant_type, status, mobile, middle_initial,
+    auth_id, username, email, name, role, tenant_type, status, mobile, middle_initial,
     address, is_verified, permit_number, signup_source, other_occupation,
     other_organization, other_workplace
   )
   values (
-    new.id, new.email, v_name, v_role, v_tenant_type,
+    new.id, v_username, new.email, v_name, v_role, v_tenant_type,
     case when v_role = 'landlord' then 'pending' else 'active' end,
     nullif(new.raw_user_meta_data ->> 'mobile', ''),
     nullif(new.raw_user_meta_data ->> 'middleInitial', ''),
@@ -2917,6 +3030,7 @@ begin
   )
   on conflict (email) do update set
     auth_id = excluded.auth_id,
+    username = coalesce(app_users.username, excluded.username),
     email_verified = excluded.email_verified,
     verification_status = excluded.verification_status,
     -- Never replace a stored privileged role from public metadata.
@@ -3066,9 +3180,20 @@ create policy "app_users_delete_own_or_admin" on public.app_users for delete to 
   using (id = public.current_app_user_id() or public.current_user_is_super_admin());
 
 drop policy if exists "admin_profiles_own_or_admin" on public.admin_profiles;
-create policy "admin_profiles_own_or_super_admin" on public.admin_profiles for all to authenticated
-  using (user_id = public.current_app_user_id() or public.current_user_is_super_admin())
-  with check (user_id = public.current_app_user_id() or public.current_user_is_super_admin());
+drop policy if exists "admin_profiles_own_or_super_admin" on public.admin_profiles;
+
+create policy "admin_profiles_own_or_super_admin"
+on public.admin_profiles
+for all
+to authenticated
+using (
+  user_id = public.current_app_user_id()
+  or public.current_user_is_super_admin()
+)
+with check (
+  user_id = public.current_app_user_id()
+  or public.current_user_is_super_admin()
+);
 
 grant execute on function public.current_user_is_super_admin() to authenticated, service_role;
 grant execute on function public.current_app_user_role() to authenticated, service_role;
@@ -3081,6 +3206,7 @@ grant execute on function public.current_app_user_role() to authenticated, servi
 select
   id,
   auth_id,
+  username,
   email,
   name,
   role,
@@ -3413,5 +3539,7 @@ commit;
 -- =============================================================================
 -- MIGRATION COMPLETE
 -- All 15 labeled SQL Editor blocks have been created/updated.
+-- Username support is integrated in 01, 09, and 15/15A.
+-- Email remains the Supabase Auth verification/recovery address.
 -- Safe to re-run. Run the blocks in numeric order.
 -- =============================================================================

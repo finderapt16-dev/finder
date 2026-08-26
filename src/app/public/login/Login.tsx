@@ -10,7 +10,7 @@ import {
   CheckCircle2, Eye, EyeOff,
   Home,
   Key,
-  Mail,
+  UserRound,
   MapPin,
   ShieldCheck,
   Sparkles,
@@ -64,7 +64,7 @@ export function Login() {
   const location = useLocation();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
@@ -113,14 +113,13 @@ export function Login() {
     setError("");
     setLoading(true);
     try {
-      const result = await login({ email, password });
+      const result = await login({ username, password });
       if (result.success) {
         const hasRequestedRedirect = requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//");
         navigate(hasRequestedRedirect ? redirectTo : result.user?.role === "super_admin" ? "/super-admin" : result.user?.role === "admin" ? "/admin" : isTenantRole(result.user?.role) ? "/browse" : "/dashboard", { replace: true });
       } else {
-        const message = result.error || "Invalid email or password.";
+        const message = result.error || "Invalid username or password.";
         setError(message);
-        if (message === "Please verify your email before signing in.") setVerificationEmail(email.trim().toLowerCase());
       }
     } catch {
       setError("Unable to sign in. Check your connection and try again.");
@@ -220,13 +219,7 @@ export function Login() {
 
             {/* Page heading */}
             <div className="mb-8">
-              <h1 className="text-2xl lg:text-3xl font-black text-slate-900 leading-tight">Sign in to your account</h1>
-              <p className="text-slate-500 text-sm mt-1.5">
-                New to AptFindr?{" "}
-                <Link to={signupPath} className="text-amber-600 font-bold hover:text-amber-700 transition-colors">
-                  Create an account
-                </Link>
-              </p>
+              <h1 className="text-2xl lg:text-3xl font-black text-slate-900 leading-tight">Sign in to AptFindr</h1>
             </div>
 
             {/* Alerts */}
@@ -269,13 +262,12 @@ export function Login() {
               <div>
                 <div className="space-y-5">
                   <FloatInput
-                    id="email"
-                    label="Email Address"
-                    type="email"
-                    value={email}
-                    onChange={setEmail}
+                    id="username"
+                    label="Username"
+                    value={username}
+                    onChange={setUsername}
                     required
-                    icon={<Mail className="h-4 w-4" />}
+                    icon={<UserRound className="h-4 w-4" />}
                   />
 
                   <div className="space-y-1">
@@ -331,6 +323,8 @@ export function Login() {
                   </>
                 )}
               </Button>
+
+              <p className="text-center text-sm font-medium text-slate-500">Don't have an account? <Link to={signupPath} className="font-bold text-amber-600 hover:text-amber-700">Create account</Link></p>
 
               {/* Trust badges — same as Signup */}
               {/* Back to Home */}

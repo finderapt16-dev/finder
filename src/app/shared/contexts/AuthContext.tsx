@@ -199,7 +199,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       });
       return { success: true, user };
     } catch (error) {
-      return { success: false, error: getErrorMessage(error, 'Invalid email or password.') };
+      return { success: false, error: getErrorMessage(error, 'Invalid username or password.') };
     } finally {
       if (requestId === authRequestIdRef.current) {
         setIsLoading(false);
