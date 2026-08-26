@@ -1,6 +1,6 @@
 import { supabase as supabaseClient } from '../../../lib/supabaseclient';
 
-export type UserRole = 'tenant' | 'landlord' | 'admin' | 'student' | 'employee';
+export type UserRole = 'tenant' | 'landlord' | 'admin' | 'super_admin' | 'student' | 'employee';
 export type TenantType = 'student' | 'employee' | 'other';
 export type UserStatus = 'pending' | 'verified' | 'approved' | 'active' | 'disabled' | string;
 
@@ -145,7 +145,7 @@ export interface UpdateUserInput {
 }
 
 const APP_USERS_TABLE = 'app_users';
-const VALID_ROLES = new Set<UserRole>(['tenant', 'student', 'employee', 'landlord', 'admin']);
+const VALID_ROLES = new Set<UserRole>(['tenant', 'student', 'employee', 'landlord', 'admin', 'super_admin']);
 const VALID_TENANT_TYPES = new Set<TenantType>(['student', 'employee', 'other']);
 let latestAuthProfileRequestId = 0;
 
@@ -323,7 +323,7 @@ async function ensureRoleProfile(userId: string, role: UserRole, input: Partial<
     if (typeof input.isVerified === 'boolean') payload.is_verified = input.isVerified;
   }
 
-  if (role === 'admin') {
+  if (role === 'admin' || role === 'super_admin') {
     table = 'admin_profiles';
     if (typeof input.adminLevel === 'string') payload.admin_level = input.adminLevel;
     if (typeof input.department === 'string') payload.department = input.department;
@@ -522,6 +522,12 @@ function requiresPendingEmailVerification(authUser: { email_confirmed_at?: strin
   return !authUser.email_confirmed_at;
 }
 
+function assertActiveAccount(user: User): void {
+  if (String(user.status).toLowerCase() === 'disabled') {
+    throw new Error('This account has been deactivated. Contact the Super Administrator.');
+  }
+}
+
 export async function getCurrentAuthenticatedUser(): Promise<User | null> {
   const { data, error } = await supabaseClient.auth.getSession();
 
@@ -542,6 +548,7 @@ export async function getCurrentAuthenticatedUser(): Promise<User | null> {
   }
 
   const profile = await ensureProfileForAuthUser(authUser);
+  assertActiveAccount(profile);
   persistCurrentUser(profile);
   return profile;
 }
@@ -567,6 +574,7 @@ export function onAuthStateChange(callback: (user: User | null) => void): () => 
     void ensureProfileForAuthUser(authUser)
       .then((profile) => {
         if (requestId !== latestAuthProfileRequestId) return;
+        assertActiveAccount(profile);
         persistCurrentUser(profile);
         callback(profile);
       })
@@ -746,6 +754,7 @@ export async function loginUser(credentials: AuthCredentials): Promise<User> {
   }
 
   const profile = await ensureProfileForAuthUser(data.user);
+  assertActiveAccount(profile);
   await recordLogin(profile, data.user.id, true, { email });
   persistCurrentUser(profile);
   return profile;

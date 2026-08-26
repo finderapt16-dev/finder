@@ -4,6 +4,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { isTenantRole } from "@/app/shared/services/authService";
 
 const AdminDashboard = lazy(() => import("@/app/admin/pages/AdminDashboard").then((module) => ({ default: module.AdminDashboard })));
+const SuperAdminDashboard = lazy(() => import("@/app/super-admin/pages/SuperAdminDashboard").then((module) => ({ default: module.SuperAdminDashboard })));
 const LandlordDashboard = lazy(() => import("@/app/landlord/pages/LandlordDashboard").then((module) => ({ default: module.LandlordDashboard })));
 const StudentEmployeeDashboard = lazy(() => import("@/app/tenant/pages/StudentEmployeeDashboard").then((module) => ({ default: module.StudentEmployeeDashboard })));
 
@@ -25,6 +26,13 @@ export function Dashboard() {
   }
 
   // Show appropriate dashboard based on role
+  if (user?.role === "super_admin") {
+    if (!location.pathname.startsWith("/super-admin")) {
+      return <Navigate to={`/super-admin${location.search}`} replace />;
+    }
+    return <Suspense fallback={<DashboardLoader />}><SuperAdminDashboard /></Suspense>;
+  }
+
   if (user?.role === "admin") {
     return <Suspense fallback={<DashboardLoader />}><AdminDashboard /></Suspense>;
   }

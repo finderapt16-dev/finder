@@ -93,6 +93,7 @@ import {
   LayoutDashboard,
   LayoutGrid, List,
   Lock,
+  LifeBuoy,
   LogOut,
   Mail, MailOpen,
   MapPin,
@@ -115,14 +116,22 @@ import {
   User as UserIcon,
   Users,
   Wifi,
+  Wrench,
   X,
   XCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState, type ComponentType, type ReactElement, type ReactNode } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { clearAdminNavigationMemory, getAdminModuleLocation, getAdminModulePath, rememberAdminModuleLocation, type AdminModule } from "@/app/admin/utils/adminNavigationMemory";
+import { AdminManagement } from "@/app/super-admin/pages/AdminManagement";
+import { AuditLogs } from "@/app/super-admin/pages/AuditLogs";
+import { UserManagement } from "@/app/super-admin/pages/UserManagement";
+import { HelpCenter } from "@/app/super-admin/pages/HelpCenter";
+import { SystemControl } from "@/app/super-admin/pages/SystemControl";
+import { SuperAdminProfile } from "@/app/super-admin/pages/SuperAdminProfile";
+import { fetchMaintenanceState, fetchSupportRequests, type MaintenanceState, type SupportTicketRow } from "@/app/super-admin/services/superAdminService";
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
 const NAV_MAIN = [
@@ -165,6 +174,7 @@ const NOTICE_TYPES = [
 ];
 const ADMIN_DASHBOARD_SECTIONS = new Set(["overview", "notifications", "landlords", "apartments", "reports", "appeals", "admininfo"]);
 const isAdminModule = (value: string): value is AdminModule => ADMIN_DASHBOARD_SECTIONS.has(value);
+type PortalSection = AdminModule | "admin-management" | "user-management" | "help-center" | "audit-logs" | "system-control" | "profile";
 
 type AdminProfileState = {
   firstName: string;
@@ -349,21 +359,30 @@ function SettingsField({ label, wide = false, children }: { label: string; wide?
   return <label className={`space-y-1.5 ${wide ? "sm:col-span-2" : ""}`}><span className="text-xs font-bold text-slate-600">{label}</span>{children}</label>;
 }
 
-export function AdminDashboard() {
+export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" | "super_admin" }) {
   const { user, verifyLandlord, updateUser, refreshUsers, logout } = useAuth();
   const navigate = useNavigate();
+  const routeLocation = useLocation();
+  const isSuperAdminPortal = portalMode === "super_admin";
+  const portalBasePath = isSuperAdminPortal ? "/super-admin" : "/dashboard";
+  const apartmentDetailBasePath = isSuperAdminPortal ? "/super-admin/apartment" : "/admin/apartment";
   const [searchParams] = useSearchParams();
-  const requestedSection = searchParams.get("section") ?? "overview";
-  const [activeSection, setActiveSection] = useState<AdminModule>(() => isAdminModule(requestedSection) ? requestedSection : "overview");
+  const requestedSection = searchParams.get("section")
+    ?? (routeLocation.pathname.endsWith("/admin-management") ? "admin-management" : routeLocation.pathname.endsWith("/user-management") ? "user-management" : routeLocation.pathname.endsWith("/help-center") ? "help-center" : routeLocation.pathname.endsWith("/audit-logs") ? "audit-logs" : routeLocation.pathname.endsWith("/system-control") ? "system-control" : routeLocation.pathname.endsWith("/profile") ? "profile" : "overview");
+  const isAvailableSection = (value: string): value is PortalSection => isAdminModule(value) || (isSuperAdminPortal && ["admin-management", "user-management", "help-center", "audit-logs", "system-control", "profile"].includes(value));
+  const [activeSection, setActiveSection] = useState<PortalSection>(() => isAvailableSection(requestedSection) ? requestedSection : "overview");
 
   useEffect(() => {
-    if (isAdminModule(requestedSection)) setActiveSection(requestedSection);
+    if (isAvailableSection(requestedSection)) setActiveSection(requestedSection);
   }, [requestedSection]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [navigationDataReady, setNavigationDataReady] = useState(false);
 
   // landlords
   const [landlords, setLandlords] = useState<DashboardUserRow[]>([]);
+  const [platformUsers, setPlatformUsers] = useState<DashboardUserRow[]>([]);
+  const [supportRequests, setSupportRequests] = useState<SupportTicketRow[]>([]);
+  const [platformStatus, setPlatformStatus] = useState<MaintenanceState | null>(null);
   const [verifyAction, setVerifyAction] = useState<{ landlordId: string; verify: boolean } | null>(null);
   const [landlordSearch, setLandlordSearch] = useState("");
   const [landlordStatusFilter, setLandlordStatusFilter] = useState<"all" | "pending" | "verified" | "violations">("all");
@@ -621,7 +640,7 @@ export function AdminDashboard() {
     if (user?.id) rememberAdminModuleLocation(user.id, "appeals", { view: "appeal-review", appealId });
     setSelectedAppeal(appeal);
     setActiveSection("appeals");
-    navigate("/dashboard?section=appeals");
+    navigate(`${portalBasePath}?section=appeals`);
   };
 
   const refreshAdminNotifications = async () => {
@@ -876,7 +895,7 @@ export function AdminDashboard() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [loadedReports, loadedViolations, loadedNotifications, loadedApartments, loadedAppeals, loadedArchivedReports, loadedArchivedAppeals, loadedActivityLogs] = await Promise.all([
+      const [loadedReports, loadedViolations, loadedNotifications, loadedApartments, loadedAppeals, loadedArchivedReports, loadedArchivedAppeals, loadedActivityLogs, loadedUsers] = await Promise.all([
         fetchAdminReports(),
         fetchViolations(),
         user?.id ? fetchNotifications(user.id, true) : Promise.resolve([]),
@@ -885,6 +904,7 @@ export function AdminDashboard() {
         fetchArchivedReports(),
         fetchArchivedAppeals(),
         fetchRecentActivityLogs(),
+        fetchUsers(),
       ]);
 
       setReports(loadedReports);
@@ -895,7 +915,13 @@ export function AdminDashboard() {
       setArchivedReports(loadedArchivedReports);
       setArchivedAppeals(loadedArchivedAppeals);
       setRecentActivityLogs(loadedActivityLogs);
-      await loadLandlords();
+      setPlatformUsers(loadedUsers);
+      setLandlords(loadedUsers.filter((account) => account.role === "landlord"));
+      if (isSuperAdminPortal) {
+        const [tickets, status] = await Promise.all([fetchSupportRequests(), fetchMaintenanceState()]);
+        setSupportRequests(tickets);
+        setPlatformStatus(status);
+      }
       setNavigationDataReady(true);
     };
 
@@ -922,7 +948,7 @@ export function AdminDashboard() {
   }, [activeSection, loadAdminNotifications]);
 
   useEffect(() => {
-    if (user?.role !== "admin") return;
+    if (user?.role !== "admin" && user?.role !== "super_admin") return;
     const channel = supabase
       .channel(`admin-dashboard-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "reports" }, () => {
@@ -1279,7 +1305,7 @@ export function AdminDashboard() {
     apartmentTitle: string,
     reportId?: string,
     apartmentId?: string,
-    sourceModule: AdminModule = activeSection,
+    sourceModule: AdminModule = isAdminModule(activeSection) ? activeSection : "overview",
   ) => {
     setVType(VIOLATION_TYPES[0]);
     setNType(NOTICE_TYPES[0]);
@@ -1348,16 +1374,29 @@ export function AdminDashboard() {
     }
   };
 
-  const navigateToAdminModule = (section: AdminModule) => {
+  const navigateToAdminModule = (section: PortalSection) => {
     setSidebarOpen(false);
-    if (!user?.id) {
+    if (!isAdminModule(section)) {
+      if (!isSuperAdminPortal) return;
       setActiveSection(section);
-      navigate(`/dashboard?section=${section}`);
+      navigate(`${portalBasePath}/${section}`);
       return;
     }
-    const path = getAdminModulePath(user.id, section);
+    if (!user?.id) {
+      setActiveSection(section);
+      navigate(`${portalBasePath}?section=${section}`);
+      return;
+    }
+    const rememberedPath = getAdminModulePath(user.id, section);
+    const path = isSuperAdminPortal && rememberedPath.startsWith("/admin/apartment/")
+      ? rememberedPath.replace("/admin/apartment/", `${apartmentDetailBasePath}/`)
+      : rememberedPath.startsWith("/dashboard") ? rememberedPath.replace("/dashboard", portalBasePath) : rememberedPath;
     if (path.startsWith("/admin/apartment/")) {
-      navigate(path, { state: { returnTo: "/dashboard?section=apartments", backLabel: "Back to Apartments" } });
+      navigate(path, { state: { returnTo: `${portalBasePath}?section=apartments`, backLabel: "Back to Apartments" } });
+      return;
+    }
+    if (path.startsWith("/super-admin/apartment/")) {
+      navigate(path, { state: { returnTo: `${portalBasePath}?section=apartments`, backLabel: "Back to Apartments" } });
       return;
     }
     restoreAdminModule(section);
@@ -1384,7 +1423,7 @@ export function AdminDashboard() {
       rememberAdminModuleLocation(user.id, "reports", selectedReport?.id ? { view: "report-review", reportId: text(selectedReport.id) } : { view: "overview" });
     } else if (activeSection === "appeals") {
       rememberAdminModuleLocation(user.id, "appeals", selectedAppeal?.id ? { view: "appeal-review", appealId: text(selectedAppeal.id) } : { view: "overview" });
-    } else {
+    } else if (isAdminModule(activeSection)) {
       rememberAdminModuleLocation(user.id, activeSection, { view: "overview" });
     }
   }, [activeSection, navigationDataReady, selectedAppeal?.id, selectedLandlord?.id, selectedReport?.id, user?.id, violationModal]);
@@ -1550,19 +1589,19 @@ export function AdminDashboard() {
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#E8DED1] bg-[#FAF8F5] text-[#8B735B]">
               <Home className="h-6 w-6" />
             </span>
-            <span><strong className="block text-xl font-bold tracking-tight text-[#302820]">AptFindr</strong><small className="text-xs font-medium text-[#756A60]">Admin Portal</small></span>
+            <span><strong className="block text-xl font-bold tracking-tight text-[#302820]">AptFindr</strong><small className="text-xs font-medium text-[#756A60]">{isSuperAdminPortal ? "Super Admin Portal" : "Admin Portal"}</small></span>
           </div>
         </div>
         <div className="px-4 pb-5">
           <div className="app-sidebar-profile flex items-center gap-3 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] px-3 py-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#8B735B] text-sm font-bold text-white">{user?.name?.[0]?.toUpperCase() ?? "A"}</div>
-            <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-[#302820]">{user?.name ?? "Admin"}</p><p className="mt-0.5 truncate text-xs text-[#756A60]">{user?.email ?? ""}</p></div>
-            <Shield className="h-4 w-4 shrink-0 text-[#8B735B]" aria-label="Administrator account" />
+            <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-[#302820]">{user?.name ?? (isSuperAdminPortal ? "Super Administrator" : "Admin")}</p><p className="mt-0.5 truncate text-xs text-[#756A60]">{user?.email ?? ""}</p>{isSuperAdminPortal && <span className="mt-1 inline-flex rounded bg-[#8B735B] px-1.5 py-0.5 text-[9px] font-black tracking-wider text-white">SUPER ADMIN</span>}</div>
+            <Shield className="h-4 w-4 shrink-0 text-[#8B735B]" aria-label={isSuperAdminPortal ? "Super Administrator account" : "Administrator account"} />
           </div>
         </div>
         <nav className="space-y-1 px-3 py-3">
           <p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]"><span>Main</span><span className="h-px w-5 bg-[#8B735B]/45" /></p>
-          {NAV_MAIN.map(({ icon: Icon, label, section }) => {
+          {(isSuperAdminPortal ? NAV_MAIN.filter(({ section }) => section === "overview") : NAV_MAIN).map(({ icon: Icon, label, section }) => {
             const count = label === "Reports" ? pendingReports : label === "Appeals" ? activeAppealsCount : label === "Landlords" ? pendingCount : label === "Notifications" ? unreadNotifsCount : 0;
             return (
               <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => navigateToAdminModule(section as AdminModule)} className={navItemClass(section)}>
@@ -1571,9 +1610,17 @@ export function AdminDashboard() {
               </button>
             );
           })}
+          {isSuperAdminPortal && <>
+            <button aria-current={activeSection === "admin-management" ? "page" : undefined} onClick={() => navigateToAdminModule("admin-management")} className={navItemClass("admin-management")}><Users className="h-4 w-4 shrink-0" /><span className="flex-1 text-left">Admins</span></button>
+            <button aria-current={activeSection === "user-management" ? "page" : undefined} onClick={() => navigateToAdminModule("user-management")} className={navItemClass("user-management")}><UserIcon className="h-4 w-4 shrink-0" /><span className="flex-1 text-left">Users</span></button>
+            <button aria-current={activeSection === "help-center" ? "page" : undefined} onClick={() => navigateToAdminModule("help-center")} className={navItemClass("help-center")}><LifeBuoy className="h-4 w-4 shrink-0" /><span className="flex-1 text-left">Help Center</span></button>
+            <button aria-current={activeSection === "audit-logs" ? "page" : undefined} onClick={() => navigateToAdminModule("audit-logs")} className={navItemClass("audit-logs")}><ClipboardList className="h-4 w-4 shrink-0" /><span className="flex-1 text-left">Audit Logs</span></button>
+            <button aria-current={activeSection === "system-control" ? "page" : undefined} onClick={() => navigateToAdminModule("system-control")} className={navItemClass("system-control")}><Wrench className="h-4 w-4 shrink-0" /><span className="flex-1 text-left">System Control</span></button>
+          </>}
         </nav>
         <nav className="space-y-1 border-t border-[#E8DED1] px-3 py-4">
           <p className="mb-2 flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756A60]"><span>Account</span><span className="h-px w-5 bg-[#8B735B]/45" /></p>
+          {isSuperAdminPortal && <button aria-current={activeSection === "profile" ? "page" : undefined} onClick={() => navigateToAdminModule("profile")} className={navItemClass("profile")}><UserIcon className="h-4 w-4 shrink-0" /><span className="flex-1 text-left">Profile</span></button>}
           {NAV_ACCOUNT.map(({ icon: Icon, label, section }) => (
             <button key={section} aria-current={activeSection === section ? "page" : undefined} onClick={() => navigateToAdminModule(section as AdminModule)} className={navItemClass(section)}>
               <Icon className="h-4 w-4 shrink-0" /><span className="flex-1 text-left">{label}</span>
@@ -1678,6 +1725,38 @@ export function AdminDashboard() {
       .slice(0, 5);
     const itemMotion = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
+    if (isSuperAdminPortal) {
+      const admins = platformUsers.filter((account) => account.role === "admin" || account.role === "super_admin");
+      const tenants = platformUsers.filter((account) => ["tenant", "student", "employee"].includes(String(account.role)));
+      const activeAdmins = admins.filter((account) => String(account.status ?? "active").toLowerCase() !== "disabled");
+      const publishedApartments = allApartments.filter((apartment) => apartment.isPublished ?? apartment.is_published);
+      const verifiedLandlords = landlords.filter((landlord) => landlord.isVerified ?? landlord.is_verified);
+      const openHelpRequests = supportRequests.filter((ticket) => ["open", "in_progress"].includes(String(ticket.status ?? "open"))).length;
+      const stats = [
+        { label: "Total Users", value: platformUsers.length, icon: Users },
+        { label: "Total Admins", value: admins.length, icon: ShieldCheck },
+        { label: "Active Admins", value: activeAdmins.length, icon: CheckCircle2 },
+        { label: "Total Landlords", value: landlords.length, icon: Users },
+        { label: "Total Tenants", value: tenants.length, icon: UserIcon },
+        { label: "Total Apartments", value: allApartments.length, icon: Building2 },
+        { label: "Open Help Requests", value: openHelpRequests, icon: LifeBuoy },
+        { label: "Platform Status", value: platformStatus?.status === "maintenance" ? "Maintenance" : "Operational", icon: Wrench },
+      ];
+      return <motion.div initial={false} animate="show" variants={{ show: { transition: { staggerChildren: 0.04 } } }} className="mx-auto max-w-[1500px] space-y-5 text-[#302820]">
+        <motion.header variants={itemMotion}><h1 className="text-2xl font-black md:text-3xl">Super Admin Dashboard</h1><p className="mt-1 text-sm text-[#756A60]">Platform administration and user oversight</p></motion.header>
+        <motion.section variants={itemMotion} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{stats.map(({ label, value, icon: Icon }) => <article key={label} className="rounded-xl border border-[#E8DED1] bg-white p-4"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F3EFEA] text-[#8B735B]"><Icon className="h-5 w-5" /></span><p className="mt-3 text-xs font-semibold text-[#756A60]">{label}</p><strong className="mt-1 block text-2xl">{value}</strong></article>)}</motion.section>
+        <div className="grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
+          <motion.section variants={itemMotion} className="rounded-xl border border-[#E8DED1] bg-white p-5"><div className="mb-4 flex items-center justify-between"><SectionHeading title="Admin Management" description="Recently registered administrator accounts." /><button onClick={() => navigateToAdminModule("admin-management")} className="text-xs font-bold text-[#8B735B]">Manage Admins →</button></div>{admins.length === 0 ? <OverviewEmpty icon={ShieldCheck} text="No administrators found." /> : <div className="divide-y divide-[#EEE6DC]">{admins.slice(0, 5).map((admin) => <div key={String(admin.id)} className="flex items-center gap-3 py-3"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F3EFEA] font-bold text-[#8B735B]">{String(admin.name ?? "A")[0]}</span><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{String(admin.name ?? "Administrator")}</strong><span className="block truncate text-xs text-[#756A60]">{String(admin.email ?? "")}</span></span><Badge className={String(admin.status).toLowerCase() === "disabled" ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"}>{String(admin.status).toLowerCase() === "disabled" ? "Inactive" : "Active"}</Badge></div>)}</div>}</motion.section>
+          <motion.section variants={itemMotion} className="rounded-xl border border-[#E8DED1] bg-white p-5"><SectionHeading title="Platform Overview" description="Current platform-wide totals." /><dl className="divide-y divide-[#EEE6DC]">{[["Total Tenants", tenants.length], ["Total Landlords", landlords.length], ["Verified Landlords", verifiedLandlords.length], ["Total Apartments", allApartments.length], ["Published Apartments", publishedApartments.length]].map(([label, value]) => <div key={String(label)} className="flex justify-between py-3 text-sm"><dt className="text-[#756A60]">{label}</dt><dd className="font-black">{value}</dd></div>)}</dl></motion.section>
+        </div>
+        <div className="grid gap-5 xl:grid-cols-2">
+          <motion.section variants={itemMotion} className="rounded-xl border border-[#E8DED1] bg-white p-5"><SectionHeading title="System Attention" description="Operational workload handled by normal Administrators." /><div className="grid gap-3 sm:grid-cols-2">{[["Landlord Verifications", pendingCount], ["Apartment Reviews", pendingReviewCount], ["Open Reports", pendingReports], ["Pending Appeals", pendingAppealCount]].map(([label, value]) => <div key={String(label)} className="rounded-lg border border-[#EEE6DC] p-4"><p className="text-xs text-[#756A60]">{label}</p><strong className="mt-1 block text-xl">{value}</strong></div>)}</div></motion.section>
+          <motion.section variants={itemMotion} className="rounded-xl border border-[#E8DED1] bg-white p-5"><div className="mb-3 flex items-center justify-between"><SectionHeading title="Recent Administrative Activity" description="Latest real actions from audit logs." /><button onClick={() => navigateToAdminModule("audit-logs")} className="text-xs font-bold text-[#8B735B]">View Audit Logs →</button></div>{recentActivityLogs.length === 0 ? <OverviewEmpty icon={ClipboardList} text="No audit activity yet." /> : <div className="divide-y divide-[#EEE6DC]">{recentActivityLogs.slice(0, 5).map((log) => { const display = formatAuditLogForDisplay(log); return <div key={String(log.id)} className="py-3"><strong className="block text-xs">{display.title}</strong><p className="truncate text-xs text-[#756A60]">{display.detail}</p></div>; })}</div>}</motion.section>
+        </div>
+        <motion.section variants={itemMotion} className="rounded-xl border border-[#E8DED1] bg-white p-5"><div className="flex items-center justify-between"><SectionHeading title="User Overview" description="All registered user groups." /><button onClick={() => navigateToAdminModule("user-management")} className="text-xs font-bold text-[#8B735B]">View All Users →</button></div><div className="mt-4 grid gap-3 sm:grid-cols-3">{[["Admins", admins.length], ["Landlords", landlords.length], ["Tenants", tenants.length]].map(([label, value]) => <div key={String(label)} className="rounded-lg bg-[#FAF8F5] p-4"><p className="text-xs text-[#756A60]">{label}</p><strong className="text-2xl">{value}</strong></div>)}</div></motion.section>
+      </motion.div>;
+    }
+
     return (
       <motion.div
         initial={false}
@@ -1687,8 +1766,8 @@ export function AdminDashboard() {
       >
         <motion.header variants={itemMotion} className="flex flex-col gap-4 pb-1 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl font-black text-[#302820] md:text-3xl">Admin Dashboard</h1>
-            <p className="mt-1 text-sm text-[#756A60]">Monitor platform activity and manage items that require administrative attention.</p>
+            <h1 className="text-2xl font-black text-[#302820] md:text-3xl">{isSuperAdminPortal ? "Super Admin Dashboard" : "Admin Dashboard"}</h1>
+            <p className="mt-1 text-sm text-[#756A60]">{isSuperAdminPortal ? "Platform administration and user oversight" : "Monitor platform activity and manage items that require administrative attention."}</p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => navigateToAdminModule("notifications")} title="Notifications" className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-amber-300 hover:text-amber-600">
@@ -1842,7 +1921,7 @@ export function AdminDashboard() {
                 const rawActionUrl = String(notification.action_url ?? notification.payload?.action_url ?? "");
                 const actionUrl = rawActionUrl.startsWith("/")
                   ? rawActionUrl
-                  : apartment ? `/admin/apartment/${apartmentId}` : "";
+                  : apartment ? `${apartmentDetailBasePath}/${apartmentId}` : "";
                 const supportTicketId = String(notification.payload?.ticket_id ?? notification.payload?.support_ticket_id ?? notification.action_target_id ?? "");
                 const isSupportRequest = String(notification.type ?? "").toLowerCase() === "support_request"
                   || Boolean(notification.payload?.ticket_id ?? notification.payload?.support_ticket_id);
@@ -1866,7 +1945,7 @@ export function AdminDashboard() {
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                       {!archived && isSupportRequest && <Button size="sm" variant="outline" disabled={supportRequestLoading} onClick={() => void openSupportRequest(notification)} className="h-9 rounded-lg border-[#dfcdbb] text-xs font-bold text-[#6f4525]"><Eye className="mr-1.5 h-3.5 w-3.5" />{supportRequestLoading ? "Loading..." : "View Details"}</Button>}
                       {!archived && isAppealNotification && <Button size="sm" variant="outline" onClick={() => void openAppealNotification(notification)} className="h-9 rounded-lg border-[#dfcdbb] text-xs font-bold text-[#6f4525]"><Eye className="mr-1.5 h-3.5 w-3.5" />View Details</Button>}
-                      {actionUrl && !archived && !isSupportRequest && !isAppealNotification && <Button size="sm" variant="outline" onClick={() => { if (!read && notification.id) void markNotificationRead(notification.id, user?.id); navigate(actionUrl, { state: { returnTo: "/dashboard?section=notifications", backLabel: "Back to Notifications" } }); }} className="h-9 rounded-lg border-[#dfcdbb] text-xs font-bold text-[#6f4525]"><Eye className="mr-1.5 h-3.5 w-3.5" />View Details</Button>}
+                      {actionUrl && !archived && !isSupportRequest && !isAppealNotification && <Button size="sm" variant="outline" onClick={() => { if (!read && notification.id) void markNotificationRead(notification.id, user?.id); navigate(actionUrl, { state: { returnTo: `${portalBasePath}?section=notifications`, backLabel: "Back to Notifications" } }); }} className="h-9 rounded-lg border-[#dfcdbb] text-xs font-bold text-[#6f4525]"><Eye className="mr-1.5 h-3.5 w-3.5" />View Details</Button>}
                       {!archived && <button onClick={() => void toggleNotifReadStatus(notification.id || "", read)} title={read ? "Mark as unread" : "Mark as read"} aria-label={read ? "Mark as unread" : "Mark as read"} className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e7d8c9] text-stone-600 hover:bg-[#f7f1eb]">{read ? <Mail className="h-4 w-4" /> : <MailOpen className="h-4 w-4" />}</button>}
                       {!archived && <button onClick={() => void archiveNotif(notification.id || "")} title="Archive" aria-label="Archive notification" className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e7d8c9] text-stone-600 hover:bg-[#f7f1eb]"><Archive className="h-4 w-4" /></button>}
                       {archived && <Button size="sm" variant="outline" disabled={deletingNotifId === notification.id} onClick={() => void unarchiveNotif(notification.id || "")} className="h-9 rounded-lg border-[#dfcdbb] text-xs font-bold text-[#6f4525]"><RotateCcw className="mr-1.5 h-3.5 w-3.5" />Restore</Button>}
@@ -2100,7 +2179,7 @@ export function AdminDashboard() {
                       <div><span className="inline-flex items-center gap-1.5 rounded-md border border-[#E8DED1] bg-[#FAF8F5] px-3 py-2 text-xs font-bold text-[#6F4E37]"><ShieldCheck className="h-3.5 w-3.5" />{status}</span>{reportCount > 0 && <p className="mt-2 flex items-center gap-1 text-[10px] font-bold text-rose-600"><Flag className="h-3 w-3" />{reportCount} {reportCount === 1 ? "report" : "reports"}</p>}</div>
                     </div>
                     <div className="flex items-center p-4">
-                      <Button variant="outline" size="sm" onClick={(event) => { event.stopPropagation(); navigate(`/admin/apartment/${apartment.id}`, { state: { returnTo: "/dashboard?section=apartments", backLabel: "Back to Apartments" } }); }} className="h-10 w-full rounded-md border-[#D8C5B1] text-xs font-black text-[#6F4E37] hover:bg-[#FAF8F5]"><Eye className="mr-1.5 h-3.5 w-3.5" />Inspect</Button>
+                      <Button variant="outline" size="sm" onClick={(event) => { event.stopPropagation(); navigate(`${apartmentDetailBasePath}/${apartment.id}`, { state: { returnTo: `${portalBasePath}?section=apartments`, backLabel: "Back to Apartments" } }); }} className="h-10 w-full rounded-md border-[#D8C5B1] text-xs font-black text-[#6F4E37] hover:bg-[#FAF8F5]"><Eye className="mr-1.5 h-3.5 w-3.5" />Inspect</Button>
                     </div>
                   </motion.article>
                 );
@@ -2497,7 +2576,7 @@ export function AdminDashboard() {
                       {publishingApartmentId === selectedApt.id ? "Publishing..." : "Approve & Publish"}
                     </Button>
                   )}
-                  <Button onClick={() => navigate(`/admin/apartment/${selectedApt.id}`, { state: { returnTo: "/dashboard?section=apartments", backLabel: "Back to Apartments" } })}
+                  <Button onClick={() => navigate(`${apartmentDetailBasePath}/${selectedApt.id}`, { state: { returnTo: `${portalBasePath}?section=apartments`, backLabel: "Back to Apartments" } })}
                     className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md">
                     <Eye className="h-4 w-4 mr-2" />Full Inspection
                   </Button>
@@ -2595,7 +2674,7 @@ export function AdminDashboard() {
 
             <section className={sectionClass}>
               <h2 className={sectionTitleClass}>3. Reported Apartment</h2>
-              {reportApartment || apartmentName ? <><div className="mt-5 flex items-center gap-4"><span className="flex h-20 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#FAF8F5]">{reportApartment?.image ? <ImageWithFallback src={reportApartment.image} alt={apartmentName || "Reported apartment"} className="h-full w-full object-cover" /> : <Building2 className="h-6 w-6 text-[#D8C5B1]" />}</span><div className="min-w-0"><p className="truncate font-black text-[#302820]">{apartmentName || "Apartment unavailable"}</p>{reportApartment && <p className="mt-1 text-xs leading-relaxed text-[#756A60]">{formatApartmentLocation(reportApartment) || "Location not provided"}</p>}</div></div><Button variant="outline" disabled={!reportApartment?.id} onClick={() => { if (reportApartment?.id) { setSelectedReport(null); navigate(`/admin/apartment/${reportApartment.id}`, { state: { returnTo: "/dashboard?section=reports", backLabel: "Back to Reports" } }); } }} className="mt-5 w-full border-[#D8C5B1] font-bold text-[#6F4E37] hover:bg-[#FAF8F5]"><Eye className="mr-2 h-4 w-4" />View Apartment</Button></> : <div className="mt-5"><p className="font-black text-[#302820]">Apartment unavailable</p><p className="mt-1 text-sm text-[#756A60]">The linked apartment information is currently unavailable.</p></div>}
+              {reportApartment || apartmentName ? <><div className="mt-5 flex items-center gap-4"><span className="flex h-20 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#FAF8F5]">{reportApartment?.image ? <ImageWithFallback src={reportApartment.image} alt={apartmentName || "Reported apartment"} className="h-full w-full object-cover" /> : <Building2 className="h-6 w-6 text-[#D8C5B1]" />}</span><div className="min-w-0"><p className="truncate font-black text-[#302820]">{apartmentName || "Apartment unavailable"}</p>{reportApartment && <p className="mt-1 text-xs leading-relaxed text-[#756A60]">{formatApartmentLocation(reportApartment) || "Location not provided"}</p>}</div></div><Button variant="outline" disabled={!reportApartment?.id} onClick={() => { if (reportApartment?.id) { setSelectedReport(null); navigate(`${apartmentDetailBasePath}/${reportApartment.id}`, { state: { returnTo: `${portalBasePath}?section=reports`, backLabel: "Back to Reports" } }); } }} className="mt-5 w-full border-[#D8C5B1] font-bold text-[#6F4E37] hover:bg-[#FAF8F5]"><Eye className="mr-2 h-4 w-4" />View Apartment</Button></> : <div className="mt-5"><p className="font-black text-[#302820]">Apartment unavailable</p><p className="mt-1 text-sm text-[#756A60]">The linked apartment information is currently unavailable.</p></div>}
             </section>
           </div>
 
@@ -2715,7 +2794,7 @@ export function AdminDashboard() {
                       <div className="min-w-0"><div className="flex flex-wrap gap-1.5"><span className={`inline-flex rounded-md border px-2 py-1 text-[9px] font-black capitalize ${statusClass}`}>{report.status || "Pending"}</span><span className={`inline-flex rounded-md border px-2 py-1 text-[9px] font-bold ${severity.class}`}>{severity.label}</span></div>
                       <div className="mt-3 grid grid-cols-2 gap-2" onClick={(event) => event.stopPropagation()}>
                         <Button size="sm" onClick={() => setSelectedReport(report)} className="col-span-2 h-8 rounded-md bg-[#6F4E37] text-[10px] font-black text-white hover:bg-[#5F4230]"><Eye className="mr-1 h-3 w-3" />Review Report</Button>
-                        {reportArchiveView ? <><Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "restore-report", id: text(report.id), label: getReportApartmentTitle(report) })} className="h-8 rounded-md border-emerald-200 text-[10px] font-black text-emerald-700"><RotateCcw className="mr-1 h-3 w-3" />Restore</Button><Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "delete-report", id: text(report.id), label: getReportApartmentTitle(report) })} className="h-8 rounded-md border-rose-200 text-[10px] font-black text-rose-700"><Trash2 className="mr-1 h-3 w-3" />Delete</Button></> : <><Button size="sm" variant="outline" disabled={!apartment?.id} onClick={() => apartment?.id && navigate(`/admin/apartment/${apartment.id}`, { state: { returnTo: "/dashboard?section=reports", backLabel: "Back to Reports" } })} className="col-span-2 h-8 rounded-md border-[#D8C5B1] text-[10px] font-black text-[#6F4E37] hover:bg-[#FAF8F5]"><Building2 className="mr-1 h-3 w-3" />View Apartment</Button>{canArchiveReportStatus(report.status) && <Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "archive-report", id: text(report.id), label: getReportApartmentTitle(report) })} className="col-span-2 h-8 rounded-md border-[#E8DED1] text-[10px] font-black text-[#756A60]"><Archive className="mr-1 h-3 w-3" />Archive</Button>}</>}
+                        {reportArchiveView ? <><Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "restore-report", id: text(report.id), label: getReportApartmentTitle(report) })} className="h-8 rounded-md border-emerald-200 text-[10px] font-black text-emerald-700"><RotateCcw className="mr-1 h-3 w-3" />Restore</Button><Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "delete-report", id: text(report.id), label: getReportApartmentTitle(report) })} className="h-8 rounded-md border-rose-200 text-[10px] font-black text-rose-700"><Trash2 className="mr-1 h-3 w-3" />Delete</Button></> : <><Button size="sm" variant="outline" disabled={!apartment?.id} onClick={() => apartment?.id && navigate(`${apartmentDetailBasePath}/${apartment.id}`, { state: { returnTo: `${portalBasePath}?section=reports`, backLabel: "Back to Reports" } })} className="col-span-2 h-8 rounded-md border-[#D8C5B1] text-[10px] font-black text-[#6F4E37] hover:bg-[#FAF8F5]"><Building2 className="mr-1 h-3 w-3" />View Apartment</Button>{canArchiveReportStatus(report.status) && <Button size="sm" variant="outline" onClick={() => setCaseAction({ type: "archive-report", id: text(report.id), label: getReportApartmentTitle(report) })} className="col-span-2 h-8 rounded-md border-[#E8DED1] text-[10px] font-black text-[#756A60]"><Archive className="mr-1 h-3 w-3" />Archive</Button>}</>}
                       </div></div>
                     </motion.article>
                   );
@@ -3272,82 +3351,62 @@ export function AdminDashboard() {
   };
 
   const renderAdminInfo = () => {
-    const inputClass = "h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
+    const inputClass = "h-11 w-full rounded-lg border border-[#E8DED1] bg-white px-3 text-sm font-semibold text-[#302820] outline-none transition focus:border-[#8B735B] focus:ring-2 focus:ring-[#EEE6DC] disabled:cursor-not-allowed disabled:bg-[#FAF8F5] disabled:text-[#756A60]";
     const adminName = `${adminProfile.firstName} ${adminProfile.lastName}`.trim();
-    const platformStats = [
-      { label: "Violations Issued", value: violations.length, icon: AlertTriangle, tone: "bg-rose-50 text-rose-600" },
-      { label: "Total Landlords", value: landlords.length, icon: Users, tone: "bg-violet-50 text-violet-600" },
-      { label: "Total Apartments", value: allApartments.length, icon: Building2, tone: "bg-orange-50 text-orange-600" },
-      { label: "Open Reports", value: reports.filter((report) => report.status === "pending").length, icon: Flag, tone: "bg-blue-50 text-blue-600" },
-    ];
+    const accountStatus = user?.status || "Unavailable";
+    const ViewField = ({ label, value, wide = false }: { label: string; value?: string; wide?: boolean }) => <div className={wide ? "sm:col-span-2" : ""}><p className="text-xs font-semibold text-[#756A60]">{label}</p><p className="mt-1.5 whitespace-pre-wrap text-sm font-bold leading-6 text-[#302820]">{value?.trim() || (label === "Bio" ? "No bio provided" : "Not provided")}</p></div>;
+
+    if (isSuperAdminPortal) return <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1000px] space-y-5"><header className="border-b border-[#E8DED1] pb-5"><p className="text-xs font-black uppercase tracking-[.16em] text-[#8B735B]">Account</p><h1 className="mt-1 text-2xl font-black text-[#302820]">Super Admin Settings</h1><p className="mt-1 text-sm text-[#756A60]">Manage secure account options. Personal information is managed from Profile.</p></header><Card className="rounded-xl border-[#E8DED1] bg-white shadow-sm"><CardContent className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between"><SettingsSectionTitle icon={Lock} tone="bg-[#FAF8F5] text-[#8B735B]" title="Password Security" description="Use AptFindr’s authenticated password-change flow." /><Button onClick={() => setPasswordModal(true)} variant="outline" className="h-10 rounded-lg border-[#D8C5B1] font-bold text-[#6F4E37] hover:bg-[#FAF8F5]"><Lock className="mr-2 h-4 w-4" />Change Password</Button></CardContent></Card><Card className="rounded-xl border-[#E8DED1] bg-white shadow-sm"><CardContent className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between"><SettingsSectionTitle icon={UserIcon} tone="bg-[#FAF8F5] text-[#8B735B]" title="Profile Information" description="Name, avatar, and department are managed on your protected profile page." /><Button onClick={() => navigateToAdminModule("profile")} className="bg-[#8B735B] text-white hover:bg-[#756A60]"><UserIcon className="mr-2 h-4 w-4" />Open Profile</Button></CardContent></Card></motion.div>;
 
     return (
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1400px] space-y-5 pb-8">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1200px] space-y-5 pb-8">
+        <header className="flex flex-col gap-4 border-b border-[#E8DED1] pb-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-orange-500 text-white shadow-sm"><Settings className="h-5 w-5" /></span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#E8DED1] bg-[#FAF8F5] text-[#8B735B]"><Settings className="h-5 w-5" /></span>
             <div>
-              <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">Admin Settings</h2>
-              <p className="mt-0.5 text-sm font-medium text-slate-500">Manage your account, security, and preferences.</p>
+              <h2 className="text-2xl font-black text-[#302820] sm:text-3xl">Admin Settings</h2>
+              <p className="mt-0.5 text-sm font-medium text-[#756A60]">Manage your admin profile, account information, and security.</p>
             </div>
           </div>
-          <Button variant="outline" onClick={() => void openActivityLog()} className="h-10 rounded-md border-orange-200 bg-white font-bold text-orange-700 hover:bg-orange-50"><History className="mr-2 h-4 w-4" />View Activity Log</Button>
+          <Button variant="outline" onClick={() => void openActivityLog()} className="h-10 rounded-lg border-[#D8C5B1] bg-white font-bold text-[#6F4E37] hover:bg-[#FAF8F5]"><History className="mr-2 h-4 w-4" />View Activity Log</Button>
         </header>
 
-        <Card className="rounded-lg border-slate-200 bg-white shadow-sm">
+        <Card className="rounded-xl border-[#E8DED1] bg-white shadow-sm">
           <CardContent className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-orange-500 text-3xl font-black text-white">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#8B735B] text-3xl font-black text-white">
               {adminProfile.avatar ? <img src={adminProfile.avatar} alt={adminName || "Admin profile"} className="h-full w-full object-cover" /> : (adminProfile.firstName[0]?.toUpperCase() || <UserIcon className="h-8 w-8" />)}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="truncate text-xl font-black text-slate-950">{isLoadingAdminProfile ? "Loading profile..." : (adminName || "Profile name unavailable")}</h3>
-                {user?.role && <Badge className="rounded-md bg-orange-100 text-orange-700 hover:bg-orange-100">{user.role}</Badge>}
-              </div>
-              <p className="mt-1 truncate text-sm font-medium text-slate-500">{adminProfile.email || "Email unavailable"}</p>
-              <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs font-semibold text-slate-500">
-                <span>Department: <strong className="text-slate-700">{adminProfile.department || "Not provided"}</strong></span>
-                <span>Access: <strong className="text-slate-700">{adminProfile.adminLevel || "Not provided"}</strong></span>
-                <span>Status: <strong className="capitalize text-emerald-600">{user?.status || "Unavailable"}</strong></span>
-              </div>
+              <h3 className="truncate text-xl font-black text-[#302820]">{isLoadingAdminProfile ? "Loading profile..." : (adminName || "Profile name unavailable")}</h3>
+              <p className="mt-1 truncate text-sm font-medium text-[#756A60]">{adminProfile.email || "Email unavailable"}</p>
+              <p className="mt-3 text-xs font-bold text-[#6F4E37]">{adminProfile.adminLevel || "Administrator"} <span className="px-1.5 text-[#C9B8A5]">·</span> <span className="capitalize">{accountStatus}</span></p>
             </div>
-            <Button variant="outline" onClick={() => setIsEditingAdminProfile(true)} disabled={isEditingAdminProfile || isLoadingAdminProfile} className="h-10 shrink-0 rounded-md border-orange-200 font-bold text-orange-700 hover:bg-orange-50"><Edit2 className="mr-2 h-4 w-4" />Edit Profile</Button>
+            <Button onClick={() => setIsEditingAdminProfile(true)} disabled={isEditingAdminProfile || isLoadingAdminProfile} className="h-10 shrink-0 rounded-lg bg-[#8B735B] font-bold text-white hover:bg-[#756A60]"><Edit2 className="mr-2 h-4 w-4" />Edit Profile</Button>
           </CardContent>
         </Card>
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-          <div className="space-y-5">
-            <Card className="rounded-lg border-slate-200 bg-white shadow-sm">
-              <CardContent className="p-5 sm:p-6">
-                <SettingsSectionTitle icon={UserIcon} tone="bg-violet-50 text-violet-600" title="Personal Information" description="Your saved account and contact details." />
-                <fieldset disabled={!isEditingAdminProfile || isSavingAdminProfile} className="mt-5 grid gap-4 sm:grid-cols-2">
+        <Card className="rounded-xl border-[#E8DED1] bg-white shadow-sm"><CardContent className="p-5 sm:p-6">
+          <SettingsSectionTitle icon={UserIcon} tone="bg-[#FAF8F5] text-[#8B735B]" title="Personal Information" description="Your saved account and contact details." />
+          {isEditingAdminProfile ? <fieldset disabled={isSavingAdminProfile} className="mt-6 grid gap-4 sm:grid-cols-2">
                   <SettingsField label="First Name"><input value={adminProfile.firstName} onChange={(event) => updateAdminProfile((profile) => ({ ...profile, firstName: event.target.value }))} className={inputClass} /></SettingsField>
                   <SettingsField label="Last Name"><input value={adminProfile.lastName} onChange={(event) => updateAdminProfile((profile) => ({ ...profile, lastName: event.target.value }))} className={inputClass} /></SettingsField>
                   <SettingsField label="Email Address" wide><input type="email" value={adminProfile.email} onChange={(event) => updateAdminProfile((profile) => ({ ...profile, email: event.target.value }))} className={inputClass} /></SettingsField>
-                  <SettingsField label="Mobile Number" wide><div className="relative"><Smartphone className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" /><input type="tel" value={adminProfile.mobile} onChange={(event) => updateAdminProfile((profile) => ({ ...profile, mobile: event.target.value }))} placeholder="Not provided" className={`${inputClass} pl-9`} /></div></SettingsField>
+                  <SettingsField label="Mobile Number" wide><div className="relative"><Smartphone className="absolute left-3 top-3.5 h-4 w-4 text-[#8A8179]" /><input type="tel" value={adminProfile.mobile} onChange={(event) => updateAdminProfile((profile) => ({ ...profile, mobile: event.target.value }))} placeholder="Not provided" className={`${inputClass} pl-9`} /></div></SettingsField>
                   <SettingsField label="Bio" wide><textarea rows={4} value={adminProfile.bio} onChange={(event) => updateAdminProfile((profile) => ({ ...profile, bio: event.target.value.slice(0, 200) }))} placeholder="No bio provided" className={`${inputClass} h-auto resize-none py-3`} /><span className="block text-right text-[11px] font-semibold text-slate-400">{adminProfile.bio.length}/200</span></SettingsField>
-                </fieldset>
-              </CardContent>
-            </Card>
+                </fieldset> : <div className="mt-6 grid gap-x-10 gap-y-6 sm:grid-cols-2"><ViewField label="First Name" value={adminProfile.firstName} /><ViewField label="Last Name" value={adminProfile.lastName} /><ViewField label="Email Address" value={adminProfile.email} /><ViewField label="Mobile Number" value={adminProfile.mobile} /><ViewField label="Bio" value={adminProfile.bio} wide /></div>}
+        </CardContent></Card>
 
-            <Card className="rounded-lg border-slate-200 bg-white shadow-sm">
-              <CardContent className="p-5 sm:p-6">
-                <SettingsSectionTitle icon={Shield} tone="bg-blue-50 text-blue-600" title="Admin Information" description="Your stored administrative role details." />
-                <fieldset disabled={!isEditingAdminProfile || isSavingAdminProfile} className="mt-5 grid gap-4 sm:grid-cols-2">
+        <Card className="rounded-xl border-[#E8DED1] bg-white shadow-sm"><CardContent className="p-5 sm:p-6">
+          <SettingsSectionTitle icon={Shield} tone="bg-[#FAF8F5] text-[#8B735B]" title="Administrative Information" description="Your administrative role and access information." />
+          {isEditingAdminProfile ? <fieldset disabled={isSavingAdminProfile} className="mt-6 grid gap-4 sm:grid-cols-2">
                   <SettingsField label="Department"><input value={adminProfile.department} onChange={(event) => updateAdminProfile((profile) => ({ ...profile, department: event.target.value }))} placeholder="Not provided" className={inputClass} /></SettingsField>
                   <SettingsField label="Admin Level"><select value={adminProfile.adminLevel} onChange={(event) => updateAdminProfile((profile) => ({ ...profile, adminLevel: event.target.value }))} className={inputClass}><option value="">Not provided</option>{adminProfile.adminLevel && !["Full Administrator", "Senior Moderator", "Moderator"].includes(adminProfile.adminLevel) && <option value={adminProfile.adminLevel}>{adminProfile.adminLevel}</option>}<option value="Full Administrator">Full Administrator</option><option value="Senior Moderator">Senior Moderator</option><option value="Moderator">Moderator</option></select></SettingsField>
-                </fieldset>
-              </CardContent>
-            </Card>
+                </fieldset> : <div className="mt-6 grid gap-x-10 gap-y-6 sm:grid-cols-2"><ViewField label="Department" value={adminProfile.department} /><ViewField label="Admin Level" value={adminProfile.adminLevel} /></div>}
+        </CardContent></Card>
 
-            {isEditingAdminProfile && <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><Button variant="outline" onClick={handleResetAdminProfile} disabled={isSavingAdminProfile} className="h-10 rounded-md font-bold"><RotateCcw className="mr-2 h-4 w-4" />Reset Changes</Button><Button onClick={() => void handleUpdateAdminProfile()} disabled={isSavingAdminProfile} className="h-10 rounded-md bg-orange-500 px-6 font-bold text-white hover:bg-orange-600"><Save className="mr-2 h-4 w-4" />{isSavingAdminProfile ? "Saving..." : "Save Changes"}</Button></div>}
-          </div>
+        {isEditingAdminProfile && <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><Button variant="outline" onClick={handleResetAdminProfile} disabled={isSavingAdminProfile} className="h-10 rounded-lg border-[#D8C5B1] font-bold text-[#6F4E37] hover:bg-[#FAF8F5]"><RotateCcw className="mr-2 h-4 w-4" />Reset Changes</Button><Button onClick={() => void handleUpdateAdminProfile()} disabled={isSavingAdminProfile} className="h-10 rounded-lg bg-[#8B735B] px-6 font-bold text-white hover:bg-[#756A60]"><Save className="mr-2 h-4 w-4" />{isSavingAdminProfile ? "Saving..." : "Save Changes"}</Button></div>}
 
-          <div className="space-y-5">
-            <Card className="rounded-lg border-slate-200 bg-white shadow-sm"><CardContent className="p-5 sm:p-6"><SettingsSectionTitle icon={Lock} tone="bg-rose-50 text-rose-600" title="Security" description="Update the password for your authenticated admin account." /><Button onClick={() => setPasswordModal(true)} className="mt-5 h-10 w-full rounded-md bg-orange-500 font-bold text-white hover:bg-orange-600"><Lock className="mr-2 h-4 w-4" />Change Password</Button></CardContent></Card>
-            <Card className="rounded-lg border-slate-200 bg-white shadow-sm"><CardContent className="p-5 sm:p-6"><SettingsSectionTitle icon={BarChart3} tone="bg-orange-50 text-orange-600" title="Platform Statistics" description="Live totals from platform records." /><div className="mt-3 divide-y divide-slate-100">{platformStats.map(({ label, value, icon: Icon, tone }) => <div key={label} className="flex items-center gap-3 py-3"><span className={`flex h-9 w-9 items-center justify-center rounded-md ${tone}`}><Icon className="h-4 w-4" /></span><span className="flex-1 text-sm font-bold text-slate-600">{label}</span><strong className="text-lg text-slate-950">{value}</strong></div>)}</div></CardContent></Card>
-          </div>
-        </div>
+        <Card className="rounded-xl border-[#E8DED1] bg-white shadow-sm"><CardContent className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><SettingsSectionTitle icon={Lock} tone="bg-[#FAF8F5] text-[#8B735B]" title="Security" description="Manage the security of your administrator account." /><div className="sm:text-right"><p className="mb-3 max-w-md text-sm text-[#756A60]">Protect your administrator account with an updated password.</p><Button onClick={() => setPasswordModal(true)} variant="outline" className="h-10 rounded-lg border-[#D8C5B1] font-bold text-[#6F4E37] hover:bg-[#FAF8F5]"><Lock className="mr-2 h-4 w-4" />Change Password</Button></div></CardContent></Card>
       </motion.div>
     );
   };
@@ -3594,6 +3653,14 @@ export function AdminDashboard() {
     appeals:       renderAppeals,
     history:       renderHistory,
     admininfo:     renderAdminInfo,
+    ...(isSuperAdminPortal ? {
+      "admin-management": () => <AdminManagement />,
+      "user-management": () => <UserManagement />,
+      "help-center": () => <HelpCenter />,
+      "audit-logs": () => <AuditLogs />,
+      "system-control": () => <SystemControl />,
+      "profile": () => <SuperAdminProfile />,
+    } : {}),
   };
 
   // ── Render ────────────────────────────────────────────────────────────────

@@ -116,7 +116,7 @@ export function Login() {
       const result = await login({ email, password });
       if (result.success) {
         const hasRequestedRedirect = requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//");
-        navigate(hasRequestedRedirect ? redirectTo : isTenantRole(result.user?.role) ? "/browse" : "/dashboard", { replace: true });
+        navigate(hasRequestedRedirect ? redirectTo : result.user?.role === "super_admin" ? "/super-admin" : result.user?.role === "admin" ? "/admin" : isTenantRole(result.user?.role) ? "/browse" : "/dashboard", { replace: true });
       } else {
         const message = result.error || "Invalid email or password.";
         setError(message);

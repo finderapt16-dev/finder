@@ -86,6 +86,7 @@ const ROLE_LABEL: Record<Exclude<UserRole, null>, string> = {
   employee: "Employee",
   landlord: "Landlord",
   admin: "Admin",
+  super_admin: "Super Admin",
 };
 
 export const QUICK_PROMPTS: QuickPrompt[] = [
@@ -295,7 +296,7 @@ function detectIntent(message: string, history: ChatHistoryTurn[] = []): string 
 
 function roleCanAccess(intent: string, role: UserRole): boolean {
   if (!role) return false;
-  if (role === "admin") return true;
+  if (role === "admin" || role === "super_admin") return true;
 
   const landlordOnly = new Set(["add_property", "manage_rooms"]);
   const adminOnly = new Set(["admin_inspection", "violations"]);
@@ -713,7 +714,7 @@ function landlordDataAnswer(intent: string, ctx: ChatbotContext): ChatbotReply |
 }
 
 function adminDataAnswer(intent: string, ctx: ChatbotContext): ChatbotReply | null {
-  if (ctx.userRole !== "admin") return null;
+  if (ctx.userRole !== "admin" && ctx.userRole !== "super_admin") return null;
 
   const users = ctx.users ?? [];
   const landlords = users.filter((user) => user.role === "landlord");
@@ -766,7 +767,7 @@ function roleSummary(ctx: ChatbotContext): ChatbotReply {
   const listings = visibleListings(ctx.apartments);
   const owned = landlordListings(ctx.apartments, ctx.userId);
 
-  if (role === "admin") {
+  if (role === "admin" || role === "super_admin") {
     return reply(
       "I can help admins with landlord verification, apartment inspection, publishing, reports, appeals, notices, violations, notifications, and user-management guidance.",
       "project_answer",

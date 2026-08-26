@@ -6,12 +6,22 @@ import { ApartmentsProvider } from "../contexts/ApartmentsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { pageTransition } from "../utils/motionPresets";
 import { isTenantRole } from "../services/authService";
+import { supabase } from "@/lib/supabaseclient";
+import { useEffect, useState } from "react";
 
 function RootContent() {
   const location = useLocation();
   const outlet = useOutlet();
   const prefersReducedMotion = useReducedMotion();
   const { user } = useAuth();
+  const [maintenance, setMaintenance] = useState<{ status: string; title: string; message: string; expected_end_at?: string | null } | null>(null);
+  useEffect(() => {
+    if (!user) { setMaintenance(null); return; }
+    const load = () => void supabase.from("platform_status").select("status,title,message,expected_end_at").eq("id", true).maybeSingle().then(({ data }) => setMaintenance(data));
+    load();
+    const channel = supabase.channel("platform-maintenance-gate").on("postgres_changes", { event: "*", schema: "public", table: "platform_status" }, load).subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [user?.id]);
   const supportedRole = isTenantRole(user?.role) || user?.role === "landlord" || user?.role === "admin";
   const hideChatbot = location.pathname === "/" || location.pathname === "/login" || location.pathname === "/signup" || location.pathname === "/forgot-password" || !supportedRole;
 
@@ -37,7 +47,7 @@ function RootContent() {
         animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
         transition={pageTransition}
       >
-        {outlet}
+        {maintenance?.status === "maintenance" && user?.role !== "super_admin" ? <div className="flex min-h-screen items-center justify-center bg-[#FAF8F5] p-6"><section className="w-full max-w-xl rounded-2xl border border-[#E8DED1] bg-white p-8 text-center shadow-sm"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F3EFEA] text-2xl">🛠</div><h1 className="mt-5 text-2xl font-black text-[#302820]">{maintenance.title || "AptFindr is temporarily under maintenance"}</h1><p className="mt-3 leading-7 text-[#756A60]">{maintenance.message || "We're performing system updates to improve platform reliability. Please try again later."}</p>{maintenance.expected_end_at && <p className="mt-4 text-sm font-bold text-[#8B735B]">Expected availability: {new Date(maintenance.expected_end_at).toLocaleString("en-PH")}</p>}</section></div> : outlet}
       </motion.main>
       <Toaster />
       {!hideChatbot && (

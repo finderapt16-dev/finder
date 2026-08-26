@@ -217,6 +217,9 @@ export function AdminApartmentDetail() {
   const navigate = useNavigate();
   const routeLocation = useLocation();
   const { user, logout } = useAuth();
+  const isSuperAdminPortal = user?.role === "super_admin";
+  const portalBasePath = isSuperAdminPortal ? "/super-admin" : "/dashboard";
+  const apartmentDetailBasePath = isSuperAdminPortal ? "/super-admin/apartment" : "/admin/apartment";
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [apartment, setApartment] = useState<Apartment | null>(null);
   const [inspectionDetails, setInspectionDetails] = useState<ApartmentInspectionDetails | null>(null);
@@ -245,7 +248,7 @@ export function AdminApartmentDetail() {
   const [isUpdatingPublication, setIsUpdatingPublication] = useState(false);
   const returnTo = (() => {
     const value = (routeLocation.state as { returnTo?: unknown } | null)?.returnTo;
-    return typeof value === "string" && value.startsWith("/") ? value : "/dashboard?section=apartments";
+    return typeof value === "string" && value.startsWith("/") ? value : `${portalBasePath}?section=apartments`;
   })();
   const backLabel = (() => {
     const value = (routeLocation.state as { backLabel?: unknown } | null)?.backLabel;
@@ -259,8 +262,12 @@ export function AdminApartmentDetail() {
   };
 
   const navigateToAdminModule = (section: AdminModule) => {
-    if (!user?.id) return navigate(`/dashboard?section=${section}`);
-    navigate(getAdminModulePath(user.id, section));
+    if (!user?.id) return navigate(`${portalBasePath}?section=${section}`);
+    const rememberedPath = getAdminModulePath(user.id, section);
+    const destination = isSuperAdminPortal
+      ? rememberedPath.replace("/admin/apartment/", `${apartmentDetailBasePath}/`).replace("/dashboard", portalBasePath)
+      : rememberedPath;
+    navigate(destination);
     setSidebarOpen(false);
   };
 
@@ -288,7 +295,7 @@ export function AdminApartmentDetail() {
           rememberAdminModuleLocation(user.id, "apartments", { view: "apartment-inspection", apartmentId: loaded.id });
         } else if (!loaded && user?.id) {
           rememberAdminModuleLocation(user.id, "apartments", { view: "overview" });
-          navigate("/dashboard?section=apartments", { replace: true });
+          navigate(`${portalBasePath}?section=apartments`, { replace: true });
         }
 
         if (loaded?.landlordId) {
@@ -680,8 +687,8 @@ export function AdminApartmentDetail() {
     { label: "Appeals", section: "appeals", icon: AlertTriangle },
   ];
   const Sidebar = () => <div className="flex h-full flex-col overflow-y-auto bg-[#fffefc]">
-    <div className="px-5 pb-5 pt-6"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#e8ded1] bg-[#faf8f5] text-[#8b735b]"><Home className="h-6 w-6" /></span><span><strong className="block text-xl text-[#302820]">AptFindr</strong><small className="text-xs text-[#756a60]">Admin Portal</small></span></div></div>
-    <div className="px-4 pb-5"><div className="flex items-center gap-3 rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-3"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#8b735b] font-bold text-white">{user?.name?.[0]?.toUpperCase() ?? "A"}</span><span className="min-w-0 flex-1"><strong className="block truncate text-sm text-[#302820]">{user?.name ?? "Admin"}</strong><small className="block truncate text-[#756a60]">{user?.email ?? ""}</small></span><ShieldCheck className="h-4 w-4 text-[#8b735b]" /></div></div>
+    <div className="px-5 pb-5 pt-6"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#e8ded1] bg-[#faf8f5] text-[#8b735b]"><Home className="h-6 w-6" /></span><span><strong className="block text-xl text-[#302820]">AptFindr</strong><small className="text-xs text-[#756a60]">{isSuperAdminPortal ? "Super Admin Portal" : "Admin Portal"}</small></span></div></div>
+    <div className="px-4 pb-5"><div className="flex items-center gap-3 rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-3"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#8b735b] font-bold text-white">{user?.name?.[0]?.toUpperCase() ?? "A"}</span><span className="min-w-0 flex-1"><strong className="block truncate text-sm text-[#302820]">{user?.name ?? (isSuperAdminPortal ? "Super Administrator" : "Admin")}</strong><small className="block truncate text-[#756a60]">{user?.email ?? ""}</small>{isSuperAdminPortal && <small className="mt-1 inline-flex rounded bg-[#8b735b] px-1.5 py-0.5 text-[9px] font-black text-white">SUPER ADMIN</small>}</span><ShieldCheck className="h-4 w-4 text-[#8b735b]" /></div></div>
     <nav className="space-y-1 px-3 py-3"><p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[.14em] text-[#756a60]">Main</p>{adminNavItems.map(({ label, section, icon: Icon }) => <button key={section} onClick={() => navigateToAdminModule(section as AdminModule)} className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold ${section === "apartments" ? "bg-[#f3efea] text-[#8b735b]" : "text-[#302820] hover:bg-[#faf8f5]"}`}><Icon className="h-4 w-4" />{label}</button>)}</nav>
     <nav className="border-t border-[#e8ded1] px-3 py-4"><p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[.14em] text-[#756a60]">Account</p><button onClick={() => navigateToAdminModule("admininfo")} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#302820] hover:bg-[#faf8f5]"><Settings className="h-4 w-4" />Settings</button></nav>
     <div className="flex-1" /><div className="border-t border-[#e8ded1] p-4"><LogoutConfirmation onConfirm={() => { if (user?.id) clearAdminNavigationMemory(user.id); logout?.(); navigate("/"); }}><button className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#dfcdbb] px-4 py-3 text-sm font-bold text-[#6f4525] hover:bg-[#f7f1eb]"><LogOut className="h-4 w-4" />Log Out</button></LogoutConfirmation></div>
@@ -888,7 +895,7 @@ export function AdminApartmentDetail() {
               </CardContent>
             </Card>
 
-            {relatedAppeals.length > 0 && <Card className="order-10 border border-blue-200 lg:col-span-2"><CardContent className="pt-5"><div className="mb-3 flex items-center justify-between"><div><h2 className="font-black text-slate-900">Related Appeals</h2><p className="text-xs font-medium text-slate-500">Landlord appeals connected to this apartment or its reports.</p></div><Badge className="bg-blue-100 text-blue-700">{relatedAppeals.length}</Badge></div><div className="divide-y divide-slate-100">{relatedAppeals.map((appeal) => <div key={appeal.id} className="flex items-center gap-3 py-3"><FileText className="h-4 w-4 shrink-0 text-blue-600" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-slate-800">{appeal.reason || "Appeal"}</p><p className="line-clamp-2 text-xs font-medium text-slate-500">{appeal.description || "No explanation provided."}</p></div><Badge className="shrink-0 bg-slate-100 text-slate-700">{String(appeal.status || "pending").replace(/_/g, " ")}</Badge></div>)}</div><Button variant="outline" onClick={() => navigate("/dashboard?section=appeals")} className="mt-3 w-full border-blue-200 font-bold text-blue-700">Open Appeal Management</Button></CardContent></Card>}
+            {relatedAppeals.length > 0 && <Card className="order-10 border border-blue-200 lg:col-span-2"><CardContent className="pt-5"><div className="mb-3 flex items-center justify-between"><div><h2 className="font-black text-slate-900">Related Appeals</h2><p className="text-xs font-medium text-slate-500">Landlord appeals connected to this apartment or its reports.</p></div><Badge className="bg-blue-100 text-blue-700">{relatedAppeals.length}</Badge></div><div className="divide-y divide-slate-100">{relatedAppeals.map((appeal) => <div key={appeal.id} className="flex items-center gap-3 py-3"><FileText className="h-4 w-4 shrink-0 text-blue-600" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-slate-800">{appeal.reason || "Appeal"}</p><p className="line-clamp-2 text-xs font-medium text-slate-500">{appeal.description || "No explanation provided."}</p></div><Badge className="shrink-0 bg-slate-100 text-slate-700">{String(appeal.status || "pending").replace(/_/g, " ")}</Badge></div>)}</div><Button variant="outline" onClick={() => navigate(`${portalBasePath}?section=appeals`)} className="mt-3 w-full border-blue-200 font-bold text-blue-700">Open Appeal Management</Button></CardContent></Card>}
 
 
             {/* Apartment Info */}
@@ -1471,7 +1478,7 @@ export function AdminApartmentDetail() {
                         <Flag className="h-4 w-4 text-red-600" />
                         Active Reports: {activeReports.length}
                       </p>
-                      <Button variant="outline" onClick={() => navigate("/dashboard?section=reports")} className="w-full border-rose-200 text-xs font-bold text-rose-700">View Reports</Button>
+                      <Button variant="outline" onClick={() => navigate(`${portalBasePath}?section=reports`)} className="w-full border-rose-200 text-xs font-bold text-rose-700">View Reports</Button>
                     </div>
                   )}
                 </div>
@@ -1725,7 +1732,7 @@ export function AdminApartmentDetail() {
                   <div className="flex gap-2">
                     <Button
                       onClick={() => {
-                        if (id) navigate(`/admin/apartment/${id}`, { state: { returnTo, backLabel } });
+                        if (id) navigate(`${apartmentDetailBasePath}/${id}`, { state: { returnTo, backLabel } });
                       }}
                       className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
                     >
@@ -1734,7 +1741,7 @@ export function AdminApartmentDetail() {
                     </Button>
                     <Button
                       disabled={!apartment?.landlordId}
-                      onClick={() => navigate("/dashboard?section=landlords")}
+                      onClick={() => navigate(`${portalBasePath}?section=landlords`)}
                       className="flex-1 bg-slate-600 hover:bg-slate-700 text-white"
                     >
                       <Users className="h-4 w-4 mr-2" />

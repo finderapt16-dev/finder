@@ -36,6 +36,7 @@ do $$ begin
   create type public.app_user_role as enum ('student', 'employee', 'landlord', 'admin');
 exception when duplicate_object then null;
 end $$;
+alter type public.app_user_role add value if not exists 'super_admin';
 
 do $$ begin
   create type public.report_status as enum ('pending', 'resolved', 'dismissed');
@@ -716,7 +717,7 @@ begin
     v_document.apartment_id,
     'apartment'
   from public.app_users admin_user
-  where admin_user.role = 'admin'
+  where admin_user.role in ('admin', 'super_admin')
     and not exists (
       select 1 from public.notifications recent
       where recent.user_id = admin_user.id
@@ -1032,7 +1033,7 @@ begin
     new.target_id,
     case when v_room_id is null then 'apartment' else 'room' end
   from public.app_users admin_user
-  where admin_user.role = 'admin'
+  where admin_user.role in ('admin', 'super_admin')
     and not exists (
       select 1 from public.notifications existing
       where existing.user_id = admin_user.id
@@ -1207,7 +1208,7 @@ declare
   v_landlord_name text;
 begin
   select name into v_landlord_name from public.app_users where id = new.landlord_id;
-  select array_agg(id) into v_admin_ids from public.app_users where role = 'admin';
+  select array_agg(id) into v_admin_ids from public.app_users where role in ('admin', 'super_admin');
 
   if v_admin_ids is not null and array_length(v_admin_ids, 1) > 0 then
     foreach v_admin_id in array v_admin_ids loop
@@ -1297,7 +1298,7 @@ begin
   select id, 'support_request', 'New support request',
     coalesce(v_requester_name, 'A user') || ' requested help with ' || new.topic || '.',
     jsonb_build_object('ticket_id', new.id, 'topic', new.topic)
-  from public.app_users where role = 'admin';
+  from public.app_users where role in ('admin', 'super_admin');
   return new;
 end;
 $$;
@@ -1415,7 +1416,7 @@ set search_path = public
 as $$
   select exists (
     select 1 from public.app_users
-    where auth_id = auth.uid() and role = 'admin' and status <> 'disabled'
+    where auth_id = auth.uid() and role in ('admin', 'super_admin') and status <> 'disabled'
   )
 $$;
 
@@ -1455,7 +1456,7 @@ begin
   select id, 'appeal_information_submitted', 'Appeal Information Submitted',
     'A landlord submitted additional information for an appeal.',
     jsonb_build_object('appeal_id', v_appeal.id, 'landlord_id', v_appeal.landlord_id, 'category', 'appeals')
-  from public.app_users where role = 'admin';
+  from public.app_users where role in ('admin', 'super_admin');
 
   return v_appeal;
 end;
@@ -1615,7 +1616,7 @@ begin
     select id, 'landlord_registration', 'New landlord registration',
       v_name || ' registered and is waiting for verification review.',
       jsonb_build_object('landlord_id', v_user_id, 'landlord_name', v_name, 'action', 'landlord_registration')
-    from public.app_users where role = 'admin';
+    from public.app_users where role in ('admin', 'super_admin');
   elsif v_role = 'admin' then
     insert into public.admin_profiles (user_id, admin_level, department)
     values (v_user_id, 'Full Administrator', 'Platform Administration')
@@ -2110,7 +2111,7 @@ begin
   select role into v_actor_role from public.app_users where id = v_actor_id;
   select coalesce(nullif(name, ''), 'A landlord') into v_landlord_name from public.app_users where id = new.landlord_id;
 
-  if v_actor_role = 'admin' then
+  if v_actor_role in ('admin', 'super_admin') then
     insert into public.notifications (user_id, type, title, message, payload, read, action_url, action_target_id, action_target_type)
     values (
       new.landlord_id,
@@ -2140,7 +2141,7 @@ begin
         'action', case when new.is_published then 'property_published' else 'property_unpublished' end
       ),
       false, '/admin/apartment/' || new.id::text, new.id, 'apartment'
-    from public.app_users where role = 'admin';
+    from public.app_users where role in ('admin', 'super_admin');
   end if;
   return new;
 end;
@@ -2425,7 +2426,7 @@ create policy "notifications_update_own_or_admin" on public.notifications for up
 create policy "notifications_delete_own_or_admin" on public.notifications for delete to authenticated
   using (user_id = public.current_app_user_id() or public.current_user_is_admin());
 create policy "notifications_create_authorized" on public.notifications for insert to authenticated
-  with check (public.current_user_is_admin() or user_id = public.current_app_user_id() or exists (select 1 from public.app_users u where u.id = user_id and u.role = 'admin'));
+  with check (public.current_user_is_admin() or user_id = public.current_app_user_id() or exists (select 1 from public.app_users u where u.id = user_id and u.role in ('admin', 'super_admin')));
 
 create policy "signups_read_own_or_admin" on public.signups for select to authenticated
   using (user_id = public.current_app_user_id() or public.current_user_is_admin());
@@ -2652,6 +2653,7 @@ where landlord.id = profile.user_id
 -- student and employee profile data and accepting legacy enum values.
 begin;
 alter type public.app_user_role add value if not exists 'tenant';
+alter type public.app_user_role add value if not exists 'super_admin';
 commit;
 
 -- 14_secure_2fa_backup_codes
@@ -2787,6 +2789,57 @@ create index if not exists idx_app_users_tenant_type
 on public.app_users (tenant_type)
 where role = 'tenant'::public.app_user_role;
 
+-- =============================================================================
+-- 15A_super_admin_bootstrap
+-- Pre-create the trusted Super Admin application profile before creating the
+-- matching Supabase Auth user in Authentication > Users.
+-- Passwords remain exclusively in Supabase Auth and are never stored here.
+-- =============================================================================
+
+alter type public.app_user_role add value if not exists 'super_admin';
+
+insert into public.app_users (
+  email,
+  name,
+  role,
+  status,
+  is_verified,
+  email_verified,
+  verification_status,
+  signup_source,
+  admin_level,
+  department
+)
+values (
+  'superadmin@aptfindr.com',
+  'Super Administrator',
+  'super_admin'::public.app_user_role,
+  'active',
+  true,
+  false,
+  'pending_email_verification',
+  'manual_super_admin_bootstrap',
+  'Super Administrator',
+  'Platform Administration'
+)
+on conflict (email) do update set
+  name = case
+    when app_users.role = 'super_admin' then excluded.name
+    else app_users.name
+  end,
+  status = case
+    when app_users.role = 'super_admin' then 'active'
+    else app_users.status
+  end,
+  admin_level = case
+    when app_users.role = 'super_admin' then excluded.admin_level
+    else app_users.admin_level
+  end,
+  department = case
+    when app_users.role = 'super_admin' then excluded.department
+    else app_users.department
+  end;
+
 create or replace function public.handle_new_auth_user()
 returns trigger
 language plpgsql
@@ -2805,8 +2858,17 @@ begin
   -- Preserve trusted roles on existing linked profiles. For a brand-new Auth
   -- identity, public metadata may request tenant or landlord only; admin is
   -- never accepted from user-controlled signup metadata.
-  select role, tenant_type into v_existing_role, v_existing_tenant_type
-  from public.app_users where auth_id = new.id limit 1;
+  select role, tenant_type
+    into v_existing_role, v_existing_tenant_type
+  from public.app_users
+  where auth_id = new.id
+     or (
+       auth_id is null
+       and lower(email) = lower(new.email)
+       and role in ('admin', 'super_admin')
+     )
+  order by case when auth_id = new.id then 0 else 1 end
+  limit 1;
 
   if v_existing_role is not null then
     v_role := v_existing_role;
@@ -2891,17 +2953,27 @@ begin
       v_name || ' registered and is waiting for verification review.',
       jsonb_build_object('landlord_id', v_user_id, 'landlord_name', v_name, 'action', 'landlord_registration')
     from public.app_users admin_user
-    where admin_user.role = 'admin'
+    where admin_user.role in ('admin', 'super_admin')
       and not exists (
         select 1 from public.notifications existing
         where existing.user_id = admin_user.id
           and existing.type = 'landlord_registration'
           and existing.payload ->> 'landlord_id' = v_user_id::text
       );
-  elsif v_role = 'admin' then
+  elsif v_role in ('admin', 'super_admin') then
     insert into public.admin_profiles (user_id, admin_level, department)
-    values (v_user_id, 'Full Administrator', 'Platform Administration')
-    on conflict (user_id) do nothing;
+    values (
+      v_user_id,
+      case
+        when v_role = 'super_admin' then 'Super Administrator'
+        else 'Full Administrator'
+      end,
+      'Platform Administration'
+    )
+    on conflict (user_id) do update set
+      admin_level = excluded.admin_level,
+      department = excluded.department,
+      updated_at = now();
   end if;
 
   insert into public.signups (user_id, auth_id, email, role, source, metadata)
@@ -2933,6 +3005,221 @@ where not exists (
     lower(coalesce(auth_user.raw_user_meta_data ->> 'role', '')) = 'landlord'
     or lower(coalesce(auth_user.raw_user_meta_data ->> 'tenantType', auth_user.raw_user_meta_data ->> 'role', '')) in ('student', 'employee', 'other')
   );
+
+-- Super Administrator authorization. Super Admin inherits operational Admin
+-- access, while account-management access remains exclusive to super_admin.
+create or replace function public.current_user_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.app_users
+    where auth_id = auth.uid()
+      and role in ('admin', 'super_admin')
+      and status <> 'disabled'
+  )
+$$;
+
+create or replace function public.current_user_is_super_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.app_users
+    where auth_id = auth.uid()
+      and role = 'super_admin'
+      and status <> 'disabled'
+  )
+$$;
+
+create or replace function public.current_app_user_role()
+returns public.app_user_role
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select role from public.app_users where auth_id = auth.uid() limit 1
+$$;
+
+drop policy if exists "app_users_update_own_or_admin" on public.app_users;
+create policy "app_users_update_own_or_admin" on public.app_users for update to authenticated
+  using (
+    id = public.current_app_user_id()
+    or public.current_user_is_super_admin()
+    or (public.current_user_is_admin() and role not in ('admin', 'super_admin'))
+  )
+  with check (
+    (id = public.current_app_user_id() and role = public.current_app_user_role())
+    or public.current_user_is_super_admin()
+    or (public.current_user_is_admin() and role not in ('admin', 'super_admin'))
+  );
+
+drop policy if exists "app_users_delete_own_or_admin" on public.app_users;
+create policy "app_users_delete_own_or_admin" on public.app_users for delete to authenticated
+  using (id = public.current_app_user_id() or public.current_user_is_super_admin());
+
+drop policy if exists "admin_profiles_own_or_admin" on public.admin_profiles;
+create policy "admin_profiles_own_or_super_admin" on public.admin_profiles for all to authenticated
+  using (user_id = public.current_app_user_id() or public.current_user_is_super_admin())
+  with check (user_id = public.current_app_user_id() or public.current_user_is_super_admin());
+
+grant execute on function public.current_user_is_super_admin() to authenticated, service_role;
+grant execute on function public.current_app_user_role() to authenticated, service_role;
+
+
+-- Verify the Super Admin bootstrap/link status.
+-- Before creating the Auth user, auth_id is expected to be NULL.
+-- After creating superadmin@aptfindr.com in Authentication > Users, auth_id
+-- should become the Supabase Auth UUID automatically through the trigger.
+select
+  id,
+  auth_id,
+  email,
+  name,
+  role,
+  status,
+  admin_level,
+  department
+from public.app_users
+where lower(email) = lower('superadmin@aptfindr.com');
+
+-- =============================================================================
+-- 15B_super_admin_platform_control
+-- Singleton maintenance state, immutable history, and database-enforced write
+-- restriction for critical application tables while maintenance is active.
+-- =============================================================================
+create table if not exists public.platform_status (
+  id boolean primary key default true check (id),
+  status text not null default 'operational' check (status in ('operational', 'maintenance')),
+  title text not null default 'AptFindr is operational',
+  message text not null default 'All systems are running normally.',
+  expected_end_at timestamptz,
+  started_at timestamptz,
+  started_by uuid references public.app_users(id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.platform_status (id) values (true) on conflict (id) do nothing;
+
+create table if not exists public.maintenance_history (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  message text not null,
+  started_by uuid references public.app_users(id) on delete set null,
+  started_at timestamptz not null default now(),
+  expected_end_at timestamptz,
+  ended_at timestamptz,
+  ended_by uuid references public.app_users(id) on delete set null
+);
+create index if not exists idx_maintenance_history_started on public.maintenance_history(started_at desc);
+
+alter table public.platform_status enable row level security;
+alter table public.maintenance_history enable row level security;
+drop policy if exists "platform_status_authenticated_read" on public.platform_status;
+create policy "platform_status_authenticated_read" on public.platform_status for select to authenticated using (true);
+drop policy if exists "maintenance_history_super_admin_read" on public.maintenance_history;
+create policy "maintenance_history_super_admin_read" on public.maintenance_history for select to authenticated using (public.current_user_is_super_admin());
+grant select on public.platform_status to authenticated, service_role;
+grant select on public.maintenance_history to authenticated, service_role;
+grant all on public.platform_status, public.maintenance_history to service_role;
+
+create or replace function public.block_writes_during_maintenance()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if exists (select 1 from public.platform_status where id = true and status = 'maintenance')
+     and not public.current_user_is_super_admin() then
+    raise exception 'AptFindr is temporarily under maintenance';
+  end if;
+  return coalesce(new, old);
+end;
+$$;
+
+do $$
+declare table_name text;
+begin
+  foreach table_name in array array['app_users','apartments','apartment_rooms','apartment_images','apartment_verification_documents','reports','appeals','violations','favorites','apartment_ratings','support_tickets'] loop
+    execute format('drop trigger if exists trg_maintenance_write_guard on public.%I', table_name);
+    execute format('create trigger trg_maintenance_write_guard before insert or update or delete on public.%I for each row execute function public.block_writes_during_maintenance()', table_name);
+  end loop;
+end $$;
+
+revoke all on function public.block_writes_during_maintenance() from public, anon, authenticated;
+grant execute on function public.block_writes_during_maintenance() to service_role;
+
+-- =============================================================================
+-- 15C_super_admin_self_profile
+-- Whitelisted self-service profile update. The RPC never accepts role, status,
+-- email, admin level, user id, or audit fields from the browser.
+-- =============================================================================
+create or replace function public.fn_upsert_my_super_admin_profile(
+  p_name text,
+  p_department text default null,
+  p_avatar_url text default null
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid;
+begin
+  select id into v_user_id
+  from public.app_users
+  where auth_id = auth.uid()
+    and role = 'super_admin'
+    and status <> 'disabled';
+
+  if v_user_id is null then
+    raise exception 'Super Admin access required';
+  end if;
+  if nullif(trim(p_name), '') is null or length(trim(p_name)) > 120 then
+    raise exception 'Full Name is required and must be 120 characters or fewer';
+  end if;
+  if p_department is not null and length(trim(p_department)) > 120 then
+    raise exception 'Department must be 120 characters or fewer';
+  end if;
+  if p_avatar_url is not null and length(p_avatar_url) > 2048 then
+    raise exception 'Avatar URL is too long';
+  end if;
+
+  update public.app_users
+  set name = trim(p_name),
+      department = nullif(trim(p_department), ''),
+      avatar_url = nullif(trim(p_avatar_url), ''),
+      updated_at = now()
+  where id = v_user_id;
+
+  insert into public.admin_profiles (user_id, admin_level, department)
+  values (v_user_id, 'Super Administrator', nullif(trim(p_department), ''))
+  on conflict (user_id) do update
+  set department = excluded.department,
+      -- The immutable Super Admin level is repaired rather than accepted from UI.
+      admin_level = 'Super Administrator',
+      updated_at = now();
+
+  insert into public.audit_logs (admin_id, action, target_type, target_id, details)
+  values (v_user_id, 'super_admin_profile_updated', 'super_admin_profile', v_user_id, jsonb_build_object('department', nullif(trim(p_department), '')));
+  return true;
+end;
+$$;
+
+revoke all on function public.fn_upsert_my_super_admin_profile(text, text, text) from public, anon;
+grant execute on function public.fn_upsert_my_super_admin_profile(text, text, text) to authenticated, service_role;
+
+-- Avatar writes are owner-scoped. A normal Admin may not overwrite a Super
+-- Admin avatar merely because it has operational Admin privileges.
+drop policy if exists "avatar_storage_owner_write" on storage.objects;
+create policy "avatar_storage_owner_write" on storage.objects for all to authenticated
+  using (bucket_id = 'user-avatars' and (storage.foldername(name))[1] = public.current_app_user_id()::text)
+  with check (bucket_id = 'user-avatars' and (storage.foldername(name))[1] = public.current_app_user_id()::text);
 
 commit;
 
