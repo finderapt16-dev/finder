@@ -139,7 +139,7 @@ function HelpLineArt() {
 const NAV_MAIN = [
   { icon: Search,      label: "Apartments",   href: "/browse", section: "apartments" },
   { icon: Heart,       label: "My Favorites", href: "/favorites", section: "favorites" },
-  { icon: Sparkles,    label: "Suggested",    section: "suggested" },
+  { icon: Sparkles,    label: "Suggested for You", section: "suggested" },
   { icon: TrendingUp,  label: "Popular",      section: "popular" },
   { icon: Bell,        label: "Notifications", section: "notifications" },
 ];
@@ -150,7 +150,7 @@ const NAV_ACCOUNT = [
   { icon: HelpCircle,    label: "Help",               section: "help",    isLink: false },
 ];
 
-const DASHBOARD_SECTIONS = ["overview", "favorites", "suggested", "popular", "notifications", "recent", "settings", "report", "help"];
+const DASHBOARD_SECTIONS = ["overview", "favorites", "suggested", "popular", "notifications", "settings", "report", "help"];
 
 export function StudentEmployeeDashboard() {
   const { user, logout } = useAuth();
@@ -351,21 +351,6 @@ export function StudentEmployeeDashboard() {
       .slice(0, 6);
   }, [dashboardFavoriteRows, dashboardViewRows, publishedApartments]);
 
-  // Kept as an internal collection for the existing Newest discovery view.
-  // It is no longer exposed as a separate Tenant sidebar destination.
-  const recentApartments = useMemo(() => {
-    const now = Date.now();
-    const recentCutoff = now - 30 * 24 * 60 * 60 * 1000;
-    return [...publishedApartments]
-      .filter((apartment) => {
-        if (!apartment.createdAt) return false;
-        const createdAt = new Date(apartment.createdAt).getTime();
-        return !Number.isNaN(createdAt) && createdAt >= recentCutoff && createdAt <= now;
-      })
-      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
-      .slice(0, 6);
-  }, [publishedApartments]);
-
   const favoriteApartments = publishedApartments.filter((apt) => favoriteIds.includes(apt.id));
   const getAvailableRooms = getAvailableRoomCount;
 
@@ -389,7 +374,6 @@ export function StudentEmployeeDashboard() {
   const displayName = user?.name?.trim();
   const tenantGreeting = getTimeBasedGreeting(user?.name);
   const tenantType = getTenantType(user);
-  const portalLabel = tenantType === "student" ? "Student Portal" : tenantType === "employee" ? "Employee Portal" : "Tenant Portal";
   const dashboardSubtitle = tenantType === "student"
     ? "Find a verified place that fits your study routine."
     : tenantType === "employee"
@@ -732,7 +716,7 @@ export function StudentEmployeeDashboard() {
     const statusLabel: Record<string, string> = {
       available: "Available",
       occupied: "Occupied",
-      reserved: "Reserved",
+      reserved: "Unavailable",
       maintenance: "Maintenance",
     };
     const availableRooms = getAvailableRooms(apartment);
@@ -752,7 +736,7 @@ export function StudentEmployeeDashboard() {
             )}
           </div>
           <div className="absolute left-4 top-4 flex flex-col gap-2">
-            <VerifiedBadge label="Verified Landlord" className="bg-white/95 shadow-lg backdrop-blur-sm" />
+            <VerifiedBadge label="Verified Listing" className="bg-white/95 shadow-lg backdrop-blur-sm" />
             {apartment.petFriendly && <Badge className="rounded-full bg-emerald-600 text-white">Pet Friendly</Badge>}
             <Badge className={`rounded-full ${statusClass[status] ?? statusClass.available}`}>{statusLabel[status] ?? "Available"}</Badge>
           </div>
@@ -858,7 +842,7 @@ export function StudentEmployeeDashboard() {
           detail={`${availableRoomsCount.toLocaleString()} available ${availableRoomsCount === 1 ? "room" : "rooms"}`}
           icon={Clock}
           tone="bg-emerald-600 text-white"
-          onClick={() => availableApartments.length > 0 ? navigate("/browse") : setActiveSection("recent")}
+          onClick={() => navigate("/browse")}
         />
       </section>
 
@@ -867,9 +851,8 @@ export function StudentEmployeeDashboard() {
       )}
 
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <FeatureCard title="Suggested for You" description="Recommendations based on available published apartments and your renter role." count={suggestedApartments.length} icon={Sparkles} section="suggested" accent="orange" />
-        <FeatureCard title="Most Popular" description="Published apartments ranked from current listing signals and amenities." count={popularApartments.length} icon={TrendingUp} section="popular" accent="indigo" />
-        <FeatureCard title="Recently Added" description="Freshly available published apartments from the current listing records." count={recentApartments.length} icon={Clock} section="recent" accent="green" />
+        <FeatureCard title="Suggested for You" description="Apartment recommendations based on your preferences and available listings." count={suggestedApartments.length} icon={Sparkles} section="suggested" accent="orange" />
+        <FeatureCard title="Popular Apartments" description="Apartments receiving more interest from AptFindr users through views and favorites." count={popularApartments.length} icon={TrendingUp} section="popular" accent="indigo" />
       </section>
 
       <section className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.07)] sm:flex-row sm:items-center">
@@ -1034,8 +1017,8 @@ export function StudentEmployeeDashboard() {
             <TrendingUp className="h-4 w-4" />
             Trending Choices
           </div>
-          <h2 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">Most Popular</h2>
-          <p className="mt-3 text-base font-medium text-[#756a60]">Explore apartments highlighted by AptFindr's current popularity ranking.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">Popular Apartments</h2>
+          <p className="mt-3 text-base font-medium text-[#756a60]">Explore apartments receiving more interest from AptFindr users through views and favorites.</p>
         </div>
         <div className="pointer-events-none absolute inset-y-0 right-3 hidden w-[43%] items-end text-[#b9a58f] md:flex"><PopularLineArt /></div>
       </section>
@@ -1058,37 +1041,6 @@ export function StudentEmployeeDashboard() {
   );
 
   // ── Section: Recent ──────────────────────────────────────────────────────
-  const renderRecent = () => (
-    <div className="mx-auto max-w-7xl space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-sm">
-              <Clock className="h-5 w-5" />
-            </div>
-            <h2 className="text-3xl font-black text-slate-950">Recently Added</h2>
-          </div>
-          <p className="mt-2 text-base font-medium text-slate-600">Newest published apartments from the current listing records.</p>
-        </div>
-        <Button onClick={() => navigate("/browse")} className="rounded-lg bg-[#8B735B] font-black text-white hover:bg-[#756A60]">
-          Browse All
-        </Button>
-      </div>
-      {recentApartments.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {recentApartments.map((apartment) => (
-            <div key={apartment.id} className="relative">
-              <Badge className="absolute top-6 left-6 z-10 bg-emerald-600 hover:bg-emerald-700 shadow-lg text-white font-bold">New</Badge>
-              <ApartmentCard apartment={apartment} ratingStats={ratingSummary.byApartment.get(apartment.id)} ratingsLoading={ratingsLoading} detailState={{ returnTo: "/dashboard?section=recent", backLabel: "Back to Recently Added" }} />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <EmptyState icon={Clock} message="No available apartments at the moment." />
-      )}
-    </div>
-  );
-
   // ── Section: Settings ────────────────────────────────────────────────────
   const renderReportPremium = () => (
     <div className="report-page mx-auto max-w-6xl space-y-6">
@@ -1112,7 +1064,7 @@ export function StudentEmployeeDashboard() {
             </div>
             <h3 className="text-2xl font-black text-[#302820]">Report Submitted</h3>
             <p className="max-w-md text-sm font-medium leading-6 text-[#756a60]">
-              Thank you for helping us keep listings accurate. Our team will review your report and notify you if more details are needed.
+              Thank you for helping us keep listings accurate. You will receive a notification after an administrator completes the review.
             </p>
             <Button onClick={resetReport} className="mt-2 rounded-lg bg-[#8b735b] px-6 font-black text-white hover:bg-[#75614e]">
               Submit Another Report
@@ -1195,7 +1147,7 @@ export function StudentEmployeeDashboard() {
         {[
           { icon: Search, title: "Browse apartments", desc: "Search, filter, and compare available places.", action: () => navigate("/browse") },
           { icon: Heart, title: "Review favorites", desc: "Return to apartments you saved earlier.", action: () => navigate("/favorites") },
-          { icon: AlertTriangle, title: "Report listing issue", desc: "Flag wrong details, scams, or unavailable units.", action: () => setActiveSection("report") },
+          { icon: AlertTriangle, title: "Report a problem", desc: "Report inaccurate, suspicious, or unavailable listings.", action: () => setActiveSection("report") },
         ].map(({ icon: Icon, title, desc, action }) => (
           <button
             key={title}
@@ -1218,14 +1170,14 @@ export function StudentEmployeeDashboard() {
               <BookOpen className="h-5 w-5 text-[#8b735b]" />
               Renter Guide
             </CardTitle>
-            <CardDescription>Put these inside Help so users know what to do next.</CardDescription>
+            <CardDescription>Learn how to find and compare apartments in AptFindr.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {[
               ["Search and filters", "Use area, budget, bedrooms, parking, pet-friendly, and furnished filters to narrow listings."],
               ["Favorites", "Tap the heart on an apartment to save it for later comparison."],
-              ["Listing details", "Check rent, available date, amenities, address, photos, and landlord verification before contacting."],
-              ["Saved preferences", "Update Settings > Search to make Browse open with your preferred filters."],
+              ["Listing details", "Check rent, room availability, amenities, location, photos, and verified listing status."],
+              ["Report updates", "Open Notifications to check updates after an administrator reviews your report."],
             ].map(([title, desc]) => (
               <div key={title} className="rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-4">
                 <p className="text-base font-bold text-[#302820]">{title}</p>
@@ -1241,13 +1193,13 @@ export function StudentEmployeeDashboard() {
               <Shield className="h-5 w-5 text-[#8b735b]" />
               Safety & Support
             </CardTitle>
-            <CardDescription>Keep renter support focused on trust and listing accuracy.</CardDescription>
+            <CardDescription>Use listing information carefully and report details that appear inaccurate.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {[
-              ["Before visiting", "Confirm the exact address, rent inclusions, deposit terms, and viewing schedule."],
-              ["Avoid scams", "Do not send deposits before verifying the unit and landlord details."],
-              ["Report problems", "Use Report a Problem for fake listings, wrong photos, wrong prices, or unavailable units."],
+              ["Before visiting", "Confirm the exact location, rent inclusions, room availability, and viewing schedule."],
+              ["Verified listings", "A verified badge means submitted listing documents were reviewed; it is not a guarantee of ownership or safety."],
+              ["Report problems", "Use Report a Problem for inaccurate, suspicious, or unavailable listings."],
               ["Account help", "Use the form below for login, profile, favorites, or general app issues."],
             ].map(([title, desc]) => (
               <div key={title} className="flex gap-3 rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-4">
@@ -1346,7 +1298,6 @@ export function StudentEmployeeDashboard() {
     suggested: renderSuggested,
     popular:   renderPopular,
     notifications: () => <TenantNotifications state={tenantNotifications} />,
-    recent:    renderRecent,
     report:    renderReportPremium,
     settings:  renderSettings,
     help:      renderHelp,

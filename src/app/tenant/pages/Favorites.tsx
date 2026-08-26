@@ -1,5 +1,6 @@
 import {
   Bath,
+  Bell,
   Bed,
   Bookmark,
   Building2,
@@ -34,6 +35,7 @@ import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
 import { getImageUrl } from "@/app/shared/utils/images";
 import { TenantMobileNavigation } from "@/app/tenant/components/TenantMobileNavigation";
+import { useTenantNotifications } from "@/app/tenant/hooks/useTenantNotifications";
 import {
   getAvailableRoomCount,
   getLowestAvailableRoomPrice,
@@ -43,7 +45,7 @@ import {
 const STATUS_LABEL: Record<string, string> = {
   available: "Available",
   occupied: "Occupied",
-  reserved: "Reserved",
+  reserved: "Unavailable",
   maintenance: "Maintenance",
 };
 
@@ -73,6 +75,7 @@ export function Favorites() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { refreshFavorites, toggleFavorite } = useFavorites();
+  const { unreadCount } = useTenantNotifications();
   const { apartments } = useApartmentsContext();
   const [favoriteApartments, setFavoriteApartments] = useState<Awaited<ReturnType<typeof listFavoriteApartments>>>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -220,7 +223,7 @@ export function Favorites() {
             )}
           </div>
           <div className="absolute left-4 top-4 flex flex-col gap-2">
-            {apartment.landlordVerified === true && <VerifiedBadge label="Verified Landlord" className="bg-white/95 shadow-lg backdrop-blur-sm" />}
+            {apartment.landlordVerified === true && <VerifiedBadge label="Verified Listing" className="bg-white/95 shadow-lg backdrop-blur-sm" />}
             {apartment.petFriendly && <Badge className="rounded-full border border-[#e8ded1] bg-[#f3efeA] text-[#756a60]">Pet Friendly</Badge>}
             <Badge className={`rounded-full ${STATUS_CLASS[status] ?? STATUS_CLASS.available}`}>{STATUS_LABEL[status] ?? "Available"}</Badge>
           </div>
@@ -283,7 +286,7 @@ export function Favorites() {
 
   return (
     <div className="tenant-browse app-shell fixed inset-0 z-50 overflow-hidden bg-white">
-      <TenantMobileNavigation active="favorites" />
+      <TenantMobileNavigation active="favorites" unreadCount={unreadCount} />
       <div className="app-shell-frame flex h-full">
         <aside className="app-shell-sidebar hidden h-full w-64 shrink-0 flex-col border-r border-[#e8ded1] bg-white lg:flex">
           <div className="app-sidebar flex h-full w-full flex-col overflow-y-auto">
@@ -316,8 +319,9 @@ export function Favorites() {
             <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756a60]">Main</p>
             <SidebarLink icon={Search} label="Apartments" href="/browse" />
             <SidebarLink icon={Heart} label="My Favorites" href="/favorites" active badge={favoriteCount} />
-            <SidebarLink icon={Sparkles} label="Suggested" href="/dashboard?section=suggested" />
+            <SidebarLink icon={Sparkles} label="Suggested for You" href="/dashboard?section=suggested" />
             <SidebarLink icon={TrendingUp} label="Popular" href="/dashboard?section=popular" />
+            <SidebarLink icon={Bell} label="Notifications" href="/dashboard?section=notifications" badge={unreadCount} />
           </nav>
 
           <nav className="space-y-1 border-t border-[#e8ded1] px-3 py-4">

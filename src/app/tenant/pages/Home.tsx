@@ -13,17 +13,14 @@ import {
   Flame,
   Grid2X2,
   Heart,
-  HelpCircle,
   Home as HomeIcon,
   LocateFixed,
-  LogOut,
   Map,
   MapPin,
   PawPrint,
   RefreshCw,
   RotateCcw,
   Search,
-  Settings,
   ShieldCheck,
   SlidersHorizontal,
   Sofa,
@@ -34,10 +31,9 @@ import {
   TrendingUp,
   TriangleAlert
 } from "lucide-react";
-import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
 import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
 import { useEffect, useMemo, useRef, useState, type ComponentType, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { VerifiedBadge } from "@/app/shared/components/common/VerifiedBadge";
 import { ApartmentRatingSummary } from "@/app/shared/components/common/ApartmentRatingSummary";
@@ -82,6 +78,7 @@ import { toast } from "sonner";
 import { LandlordBrowse } from "@/app/landlord/pages/LandlordBrowse";
 import { TenantMobileNavigation } from "@/app/tenant/components/TenantMobileNavigation";
 import { TenantSidebar } from "@/app/tenant/components/TenantSidebar";
+import { useTenantNotifications } from "@/app/tenant/hooks/useTenantNotifications";
 
 type SortOption = TenantPreferenceSortOption;
 type BrowseApartment = Apartment & { distanceMeters?: number };
@@ -94,7 +91,7 @@ const hasMeaningfulBudgetPreference = (preferences: TenantPreferenceSettings) =>
 const STATUS_LABEL: Record<string, string> = {
   available: "Available",
   occupied: "Occupied",
-  reserved: "Reserved",
+  reserved: "Unavailable",
   maintenance: "Maintenance",
 };
 
@@ -175,9 +172,9 @@ function BrowseContent() {
 }
 
 function TenantBrowse() {
-  const navigate = useNavigate();
+  const { unreadCount } = useTenantNotifications();
   const [searchParams] = useSearchParams();
-  const { user, users, logout } = useAuth();
+  const { user, users } = useAuth();
   const {
     apartments: allApartments,
     isLoading: apartmentsLoading,
@@ -450,10 +447,6 @@ function TenantBrowse() {
   }, [realPriceValues]);
 
   const mapCenter = DEFAULT_LA_PAZ_MAP_CENTER;
-  const displayName = user?.name?.trim();
-  const tenantType = getTenantType(user);
-  const portalLabel = tenantType === "student" ? "Student Portal" : tenantType === "employee" ? "Employee Portal" : "Tenant Portal";
-
   const resetFilters = () => {
     setSearchQuery("");
     applyPriceRange(DEFAULT_PRICE_RANGE, false);
@@ -553,41 +546,6 @@ function TenantBrowse() {
     setBudgetFilterEnabled(true);
     setPriceRange((current) => [current[0], Math.max(0, next)]);
   };
-
-  const handleLogout = () => {
-    logout?.();
-    navigate("/");
-  };
-
-  const SidebarLink = ({
-    icon: Icon,
-    label,
-    href,
-    active,
-    badge,
-  }: {
-    icon: ComponentType<{ className?: string }>;
-    label: string;
-    href: string;
-    active?: boolean;
-    badge?: number;
-  }) => (
-    <Link
-      to={href}
-      aria-current={active ? "page" : undefined}
-      className={`app-sidebar-nav-item flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition ${
-        active ? "bg-[#f3efeA] text-[#8b735b]" : "text-[#302820] hover:bg-[#faf8f5] hover:text-[#8b735b]"
-      }`}
-    >
-      <Icon className="h-4 w-4 shrink-0" />
-      <span className="min-w-0 flex-1">{label}</span>
-      {badge !== undefined && badge > 0 && (
-        <span className="app-sidebar-badge flex min-w-5 items-center justify-center rounded-full bg-[#8b735b] px-1.5 py-0.5 text-[10px] font-bold text-white">
-          {badge}
-        </span>
-      )}
-    </Link>
-  );
 
   const renderFilterTrigger = (floating = false) => (
     <DialogTrigger asChild>
@@ -767,7 +725,7 @@ function TenantBrowse() {
           <div className="absolute left-4 top-4 flex flex-col gap-2">
             {activeNearbySearch && apartment.distanceMeters !== undefined && <Badge className="rounded-md bg-slate-950 text-white">{formatDistance(apartment.distanceMeters)}</Badge>}
             <Badge className={`rounded-md ${STATUS_CLASS[status] ?? STATUS_CLASS.available}`}>{STATUS_LABEL[status] ?? "Available"}</Badge>
-            {isVerifiedListing(apartment) && <VerifiedBadge label="Verified Landlord" className="bg-white/95 shadow-lg backdrop-blur-sm" />}
+            {isVerifiedListing(apartment) && <VerifiedBadge label="Verified Listing" className="bg-white/95 shadow-lg backdrop-blur-sm" />}
             {apartment.petFriendly && <Badge className="rounded-md border border-[#e8ded1] bg-[#f3efeA] text-[#756a60]">Pet Friendly</Badge>}
           </div>
           <button
@@ -812,9 +770,9 @@ function TenantBrowse() {
   return (
     <Dialog open={preferencesOpen} onOpenChange={setPreferencesOpen}>
       <div className="tenant-browse fixed inset-0 z-50 overflow-hidden bg-white">
-      <TenantMobileNavigation active="apartments" />
+      <TenantMobileNavigation active="apartments" unreadCount={unreadCount} />
       <div className="flex h-full">
-        <div className="hidden h-full w-64 shrink-0 lg:block"><TenantSidebar active="apartments" /></div>
+        <div className="hidden h-full w-64 shrink-0 lg:block"><TenantSidebar active="apartments" unreadCount={unreadCount} /></div>
 
         <main className="app-shell-main min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div className="app-shell-content app-shell-content-mobile-nav mx-auto max-w-[1500px] px-4 py-6 md:px-8 lg:px-10">

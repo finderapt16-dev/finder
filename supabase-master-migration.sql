@@ -3304,16 +3304,37 @@ after update of status on public.apartments
 for each row execute function public.notify_favorites_of_apartment_availability();
 
 -- Report updates are transactional and intentionally ignore optional apartment
--- alert preferences. This fires only on a real transition to resolved.
+-- alert preferences. Only actual transitions to supported final statuses fire.
 create or replace function public.notify_tenant_of_resolved_report()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
   v_tenant_id uuid := coalesce(new.reporter_id, new.user_id);
   v_apartment_title text;
+  v_notification_type text;
+  v_title text;
+  v_message text;
 begin
-  if new.status::text = 'resolved' and old.status::text is distinct from 'resolved' and v_tenant_id is not null then
+  if new.status::text in ('resolved', 'dismissed')
+     and old.status is distinct from new.status
+     and v_tenant_id is not null then
     select nullif(trim(title), '') into v_apartment_title
     from public.apartments where id = new.apartment_id;
+
+    if new.status::text = 'resolved' then
+      v_notification_type := 'report_resolved';
+      v_title := 'Report Resolved';
+      v_message := case when v_apartment_title is not null
+        then format('Your report regarding %s has been resolved by the administrator.', v_apartment_title)
+        else 'Your submitted report has been resolved by the administrator.'
+      end;
+    else
+      v_notification_type := 'report_dismissed';
+      v_title := 'Report Reviewed';
+      v_message := case when v_apartment_title is not null
+        then format('Your report regarding %s was reviewed and dismissed by the administrator.', v_apartment_title)
+        else 'Your submitted report was reviewed and dismissed by the administrator.'
+      end;
+    end if;
 
     insert into public.notifications (
       user_id, type, title, message, payload, read,
@@ -3321,12 +3342,9 @@ begin
     )
     select
       v_tenant_id,
-      'report_resolved',
-      'Report Resolved',
-      case when v_apartment_title is not null
-        then format('Your report regarding %s has been resolved by the administrator.', v_apartment_title)
-        else 'Your submitted report has been resolved by the administrator.'
-      end,
+      v_notification_type,
+      v_title,
+      v_message,
       jsonb_build_object('report_id', new.id, 'apartment_id', new.apartment_id, 'status', new.status),
       false,
       '/dashboard?section=notifications&reportId=' || new.id::text,
@@ -3335,7 +3353,7 @@ begin
     where not exists (
       select 1 from public.notifications existing
       where existing.user_id = v_tenant_id
-        and existing.type = 'report_resolved'
+        and existing.type = v_notification_type
         and existing.action_target_id = new.id
     );
   end if;

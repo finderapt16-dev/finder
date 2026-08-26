@@ -11,13 +11,13 @@ import {
 } from "@/app/shared/services/dashboardSupabaseService";
 import { supabase } from "@/lib/supabaseclient";
 
-export function useTenantNotifications() {
+export function useTenantNotifications(enabled = true) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<DashboardNotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!user?.id) {
+    if (!enabled || !user?.id) {
       setNotifications([]);
       setLoading(false);
       return;
@@ -25,12 +25,12 @@ export function useTenantNotifications() {
     const rows = await fetchNotifications(user.id);
     setNotifications(rows.filter((row) => row.user_id === user.id && row.is_deleted !== true));
     setLoading(false);
-  }, [user?.id]);
+  }, [enabled, user?.id]);
 
   useEffect(() => {
     setLoading(true);
     void refresh();
-    if (!user?.id) return;
+    if (!enabled || !user?.id) return;
 
     const channel = supabase
       .channel(`tenant-notifications-${user.id}`)
@@ -42,7 +42,7 @@ export function useTenantNotifications() {
       .subscribe();
 
     return () => { void supabase.removeChannel(channel); };
-  }, [refresh, user?.id]);
+  }, [enabled, refresh, user?.id]);
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => notification.read !== true).length,

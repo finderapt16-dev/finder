@@ -33,7 +33,7 @@ const STATUS_BADGE: Record<string, string> = {
 const STATUS_LABEL: Record<string, string> = {
   available: "Available",
   occupied: "Occupied",
-  reserved: "Reserved",
+  reserved: "Unavailable",
   maintenance: "Under Maintenance",
 };
 
@@ -75,7 +75,7 @@ export function ApartmentCard({ apartment, detailState, ratingStats, ratingsLoad
           )}
           <div className="absolute left-2 top-2 flex flex-col gap-2 animate-slide-in-left">
             {verifiedLandlord && (
-              <VerifiedBadge label="Verified Landlord" className="bg-white/95 shadow-lg backdrop-blur-sm" />
+              <VerifiedBadge label="Verified Listing" className="bg-white/95 shadow-lg backdrop-blur-sm" />
             )}
             {apartment.petFriendly && (
               <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg">Pet Friendly</Badge>

@@ -1,5 +1,6 @@
 import {
   ChevronRight,
+  Bell,
   Heart,
   HelpCircle,
   Home,
@@ -25,15 +26,17 @@ type TenantNavSection =
   | "favorites"
   | "suggested"
   | "popular"
+  | "notifications"
   | "settings"
   | "report"
   | "help";
 
 interface TenantMobileNavigationProps {
   active?: TenantNavSection;
+  unreadCount?: number;
 }
 
-export function TenantMobileNavigation({ active = "apartments" }: TenantMobileNavigationProps) {
+export function TenantMobileNavigation({ active = "apartments", unreadCount = 0 }: TenantMobileNavigationProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { favorites } = useFavorites();
@@ -156,8 +159,9 @@ export function TenantMobileNavigation({ active = "apartments" }: TenantMobileNa
                 <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#756a60]">Main</p>
                 <NavLink icon={Search} label="Apartments" to="/browse" section="apartments" />
                 <NavLink icon={Heart} label="My Favorites" to="/favorites" section="favorites" badge={favorites.length} />
-                <NavLink icon={Sparkles} label="Suggested" to="/dashboard?section=suggested" section="suggested" />
+                <NavLink icon={Sparkles} label="Suggested for You" to="/dashboard?section=suggested" section="suggested" />
                 <NavLink icon={TrendingUp} label="Popular" to="/dashboard?section=popular" section="popular" />
+                <NavLink icon={Bell} label="Notifications" to="/dashboard?section=notifications" section="notifications" badge={unreadCount} />
               </nav>
 
               <nav className="space-y-1 border-t border-[#e8ded1] px-3 py-4">
