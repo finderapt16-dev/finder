@@ -9,7 +9,6 @@ import {
   Grid2X2,
   Heart,
   HelpCircle,
-  Home,
   List,
   LogOut,
   MapPin,
@@ -293,7 +292,7 @@ export function Favorites() {
           <div className="app-sidebar-brand px-5 pb-5 pt-6">
             <Link to="/browse" className="flex items-center gap-2.5">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#e8ded1] bg-[#faf8f5] text-[#8b735b]">
-                <Home className="h-6 w-6" />
+                <img src="/icon.svg" alt="" className="h-9 w-9 object-contain" aria-hidden="true" />
               </div>
               <div>
                 <span className="text-xl font-bold tracking-tight text-[#302820]">AptFindr</span>

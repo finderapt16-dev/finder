@@ -88,7 +88,6 @@ import {
   FileText,
   Flag,
   History,
-  Home,
   LayoutDashboard,
   Lock,
   LifeBuoy,
@@ -1485,7 +1484,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
         <div className="app-sidebar-brand px-5 pb-5 pt-6">
           <div className="flex items-center gap-2.5">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#E8DED1] bg-[#FAF8F5] text-[#8B735B]">
-              <Home className="h-6 w-6" />
+              <img src="/icon.svg" alt="" className="h-9 w-9 object-contain" aria-hidden="true" />
             </span>
             <span><strong className="block text-xl font-bold tracking-tight text-[#302820]">AptFindr</strong><small className="text-xs font-medium text-[#756A60]">{isSuperAdminPortal ? "Super Admin Portal" : "Admin Portal"}</small></span>
           </div>
