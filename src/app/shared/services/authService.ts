@@ -605,6 +605,7 @@ function signupLog(message: string, details?: Record<string, unknown>): void {
 
 function mapSignupError(error: { message?: string; status?: number; code?: string }): SignupFlowError {
   const message = error.message ?? '';
+  const code = error.code ?? '';
   console.error('[AUTH] Signup request failed', { message, status: error.status, code: error.code });
   if (/already registered|already exists|user.*exists/i.test(message)) {
     return new SignupFlowError('An account may already exist for this email. Try signing in, resending verification, or resetting your password.', 'auth', 'email_exists', { cause: error });
@@ -612,7 +613,12 @@ function mapSignupError(error: { message?: string; status?: number; code?: strin
   if (/invalid.*email|email.*invalid/i.test(message)) return new SignupFlowError('Enter a valid email address.', 'validation', 'invalid_email', { cause: error });
   if (/password|weak/i.test(message)) return new SignupFlowError('Choose a stronger password that meets the password requirements.', 'validation', 'weak_password', { cause: error });
   if (/signup.*disabled|signups.*disabled/i.test(message)) return new SignupFlowError('Account registration is temporarily unavailable.', 'auth', 'signup_disabled', { cause: error });
-  if (error.status === 429 || /rate|too many|seconds/i.test(message)) return new SignupFlowError('Too many registration attempts. Please wait before trying again.', 'auth', 'rate_limit', { cause: error });
+  if (error.status === 429 || /rate|too many|seconds/i.test(message) || /over_email_send_rate_limit/i.test(code)) {
+    return new SignupFlowError("We couldn't send the confirmation email right now. Please try again shortly.", 'auth', 'confirmation_email_rate_limit', { cause: error });
+  }
+  if (/smtp|mailer|email.*send|send.*email|confirmation.*email|email.*not.*authorized|not.*authorized.*email/i.test(`${code} ${message}`)) {
+    return new SignupFlowError("We couldn't send the confirmation email right now. Please try again shortly.", 'auth', 'confirmation_email_delivery', { cause: error });
+  }
   if (/database|trigger|permission|row-level|rls/i.test(message)) return new SignupFlowError('Account registration could not be completed because profile setup failed. No retry is needed until the database configuration is corrected.', 'profile', 'profile_database', { cause: error });
   if (/fetch|network|connection/i.test(message)) return new SignupFlowError('We could not reach the account service. Check your connection and try again.', 'auth', 'network', { cause: error });
   return new SignupFlowError('We could not complete account registration. Please try again later.', 'auth', 'unexpected', { cause: error });
@@ -793,7 +799,9 @@ export async function resendSignupVerification(email: string): Promise<void> {
   });
   if (!error) return;
   console.error('[AUTH] Verification resend failed', { message: error.message, status: error.status, code: error.code });
-  if (error.status === 429 || /rate|too many|seconds/i.test(error.message)) throw new Error('Please wait before requesting another verification email.');
+  if (error.status === 429 || /rate|too many|seconds|smtp|mailer|email.*send|send.*email|email.*not.*authorized|not.*authorized.*email/i.test(`${error.code ?? ''} ${error.message}`)) {
+    throw new Error("We couldn't send the confirmation email right now. Please try again shortly.");
+  }
   if (/already.*confirm|already.*verif/i.test(error.message)) throw new Error('This email is already verified. Try signing in or resetting your password.');
   if (/invalid.*email/i.test(error.message)) throw new Error('Enter a valid email address.');
   throw new Error('The verification email could not be requested. Please try again later.');

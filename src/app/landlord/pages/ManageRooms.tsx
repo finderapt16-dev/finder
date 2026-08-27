@@ -2,21 +2,14 @@ import {
   ArrowLeft,
   Bath,
   BedDouble,
-  Bell,
-  Building2,
   CalendarDays,
   CheckCircle2,
   DoorOpen,
   Edit3,
-  HelpCircle,
-  Home,
-  ListPlus,
-  LogOut,
   MapPin,
   Menu,
   MoreVertical,
   Plus,
-  Settings,
   Tag,
   Trash2,
   TrendingUp,
@@ -25,7 +18,6 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
 import { LandlordSidebar } from "@/app/landlord/components/LandlordSidebar";
 import { motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";

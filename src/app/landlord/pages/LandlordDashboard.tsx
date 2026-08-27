@@ -1,6 +1,5 @@
 import { EditApartmentDialog } from "@/app/shared/components/common/EditApartmentDialog";
 import { EvidenceUploader, type EvidenceFile } from "@/app/shared/components/common/EvidenceUploader";
-import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
 import { LandlordSidebar } from "@/app/landlord/components/LandlordSidebar";
 import { ApartmentRatingSummary } from "@/app/shared/components/common/ApartmentRatingSummary";
 import { Badge } from "@/app/shared/components/ui/badge";
@@ -78,7 +77,6 @@ import {
   LayoutGrid,
   List,
   ListPlus,
-  LogOut,
   Mail,
   MailOpen,
   MapPin,
@@ -107,21 +105,6 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 // ── Nav groups ───────────────────────────────────────────────────────────────
-const NAV_MAIN = [
-  { icon: LayoutGrid,      label: "My Properties",  section: "overview",       isLink: false },
-  { icon: TrendingUp,      label: "Activity",       section: "activity",       isLink: false },
-  { icon: Bell,            label: "Notifications",  section: "notifications",  isLink: false },
-];
-
-const NAV_MANAGE = [
-  { icon: ListPlus, label: "Add Property", href: "/add-apartment", isLink: true },
-];
-
-const NAV_ACCOUNT = [
-  { icon: Settings,   label: "Settings", section: "settings", isLink: false },
-  { icon: HelpCircle, label: "Help & Support", section: "help", isLink: false },
-];
-
 const LANDLORD_DASHBOARD_SECTIONS = new Set(["overview", "properties", "activity", "notifications", "settings", "help"]);
 
 const STATUS_OPTIONS: { value: ApartmentStatus; label: string; className: string }[] = [

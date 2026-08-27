@@ -9,7 +9,7 @@ import {
   BadgeCheck,
   CheckCircle2,
   Home,
-  Key, Lock,
+  Lock,
   Mail,
   RefreshCw,
   ShieldCheck,

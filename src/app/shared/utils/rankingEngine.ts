@@ -513,30 +513,3 @@ export function getRecommendationExplanation(breakdown: RankingScoreBreakdown): 
   const topFactors = factors.map(f => f.label).join(', ');
   return `Recommended based on your preferences, ${topFactors}, and apartment availability.`;
 }
-
-/**
- * Debug function to log detailed ranking info (for admin/testing)
- */
-export function debugApartmentRanking(
-  apartment: Apartment,
-  breakdown: RankingScoreBreakdown
-): void {
-  console.log(`
-  ╔════════════════════════════════════════════════════════════╗
-  ║ APARTMENT RANKING DEBUG
-  ║ ${apartment.title}
-  ╠════════════════════════════════════════════════════════════╣
-  ║ Location Score:       ${breakdown.locationScore.toString().padStart(3)} / 100 (30%)
-  ║ Budget Score:         ${breakdown.budgetScore.toString().padStart(3)} / 100 (25%)
-  ║ Availability Score:   ${breakdown.availabilityScore.toString().padStart(3)} / 100 (15%)
-  ║ Amenities Score:      ${breakdown.amenitiesScore.toString().padStart(3)} / 100 (10%)
-  ║ Verification Score:   ${breakdown.verificationScore.toString().padStart(3)} / 100 (10%)
-  ║ Tenant Rating:        ${breakdown.ratingScore.toString().padStart(3)} / 100 (5%; ${breakdown.ratingCount} ratings)
-  ║ Popularity Score:     ${breakdown.popularityScore.toString().padStart(3)} / 100 (3%)
-  ║ Activity Score:       ${breakdown.activityScore.toString().padStart(3)} / 100 (2%)
-  ╠════════════════════════════════════════════════════════════╣
-  ║ FINAL SCORE:          ${breakdown.finalScore.toString().padStart(3)} / 100
-  ╚════════════════════════════════════════════════════════════╝
-  `);
-}
-

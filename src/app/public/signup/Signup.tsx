@@ -349,7 +349,7 @@ export function Signup() {
                     <AlertCircle className="h-4 w-4 text-rose-500" />
                     <AlertDescription className="font-semibold text-rose-700 text-sm">{error}</AlertDescription>
                   </Alert>
-                  {error.includes("may already exist") && <div className="mt-2 flex flex-wrap gap-3 text-xs font-bold"><Link to={loginPath} className="text-amber-700">Sign in</Link><Link to="/forgot-password" className="text-amber-700">Forgot password</Link><Link to={loginPath} state={{ message: "Enter your email below, then use Resend Verification Email.", verificationEmail: formData.email.trim() }} className="text-amber-700">Resend verification</Link></div>}
+                  {(error.includes("may already exist") || error.includes("couldn't send the confirmation email")) && <div className="mt-2 flex flex-wrap gap-3 text-xs font-bold"><Link to={loginPath} className="text-amber-700">Sign in</Link><Link to="/forgot-password" className="text-amber-700">Forgot password</Link><Link to={loginPath} state={{ message: "Use Resend Verification Email for this account.", verificationEmail: formData.email.trim() }} className="text-amber-700">Resend verification</Link></div>}
                 </motion.div>
               )}
             </AnimatePresence>

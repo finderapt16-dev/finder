@@ -74,7 +74,6 @@ import {
   AlertTriangle,
   Archive,
   ArrowLeft,
-  BarChart3,
   BedDouble,
   Bell, BellRing,
   Building2,
@@ -91,7 +90,6 @@ import {
   History,
   Home,
   LayoutDashboard,
-  LayoutGrid, List,
   Lock,
   LifeBuoy,
   LogOut,
@@ -102,7 +100,6 @@ import {
   Phone,
   RefreshCw,
   RotateCcw,
-  Ruler,
   Save,
   Search,
   Settings,
@@ -111,7 +108,6 @@ import {
   ShieldCheck,
   Smartphone,
   Sofa,
-  Sparkles,
   Trash2,
   User as UserIcon,
   Users,
@@ -701,7 +697,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
   const [aptStatusFilter, setAptStatusFilter] = useState<"all" | "available" | "occupied" | "review">("all");
   const [aptPropertyTypeFilter, setAptPropertyTypeFilter] = useState("all");
   const [aptSort, setAptSort] = useState<"newest" | "oldest" | "price-low" | "price-high" | "name">("newest");
-  const [aptViewMode, setAptViewMode] = useState<"grid" | "list">("grid");
   const [publishingApartmentId, setPublishingApartmentId] = useState<string | null>(null);
 
   // landlord details modal
@@ -1430,149 +1425,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
 
   const handleLogout = () => { if (user?.id) clearAdminNavigationMemory(user.id); logout?.(); navigate("/"); };
 // ── Sidebar ───────────────────────────────────────────────────────────────
-  const SidebarContent = () => (
-    <div className="app-sidebar flex flex-col h-full overflow-y-auto bg-slate-950 border-r border-white/[0.06] shadow-2xl relative z-10 select-none">
-      {/* Cinematic Ambient Glow matching the Left Panel Login backdrop */}
-      <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-slate-900/75 to-slate-950/95" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/15 via-orange-600/5 to-transparent blur-sm" />
-        <div className="absolute inset-0 bg-radial-at-t from-transparent via-slate-950/40 to-slate-950/90" />
-      </div>
-
-      {/* Brand Logo Section */}
-      <div className="app-sidebar-brand px-6 pt-7 pb-5 relative z-10">
-        <div className="flex items-center gap-3.5 px-1">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500 shadow-xl shadow-orange-500/10 flex items-center justify-center shrink-0 transform transition-transform duration-500 hover:scale-105 hover:rotate-3">
-            <Sparkles className="h-5 w-5 text-white filter drop-shadow-sm" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xl font-black bg-gradient-to-r from-white via-slate-100 to-slate-200 bg-clip-text text-transparent tracking-tight">
-              RentIloilo
-            </span>
-            <span className="text-[9px] text-amber-400/60 font-black tracking-widest uppercase mt-0.5">
-              Admin Portal
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Admin User Profile Card */}
-      <div className="px-4 py-3 relative z-10">
-        <div className="app-sidebar-profile flex items-center gap-3.5 bg-gradient-to-br from-white/[0.04] via-white/[0.02] to-transparent backdrop-blur-xl border border-white/[0.07] rounded-2xl px-3.5 py-3 shadow-lg shadow-black/20 hover:border-white/[0.15] hover:bg-white/[0.06] transition-all duration-300 group">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-slate-800 to-slate-700 p-[1px] shadow-md shrink-0">
-            <div className="h-full w-full rounded-[11px] bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center font-black text-white text-sm shadow-inner transform group-hover:scale-105 transition-transform duration-300">
-              {user?.name?.[0]?.toUpperCase() ?? "A"}
-            </div>
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-slate-200 font-extrabold text-sm truncate tracking-wide leading-snug group-hover:text-white transition-colors">
-              {user?.name ?? "Admin"}
-            </p>
-            <p className="text-white/40 text-xs truncate font-medium mt-0.5">
-              {user?.email ?? ""}
-            </p>
-          </div>
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-white/[0.08] flex items-center justify-center shrink-0 group-hover:border-amber-500/30 group-hover:bg-amber-500/5 transition-all duration-300">
-            <Shield className="h-4 w-4 text-amber-400 filter drop-shadow-[0_0_6px_rgba(245,158,11,0.4)]" />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Navigation Segment */}
-      <nav className="px-3 pt-5 pb-3 space-y-1.5 relative z-10">
-        <p className="flex items-center gap-2 px-4 mb-2 text-[10px] font-black uppercase tracking-widest text-amber-300">
-          <span>Main</span>
-          <span className="h-px w-8 rounded-full bg-amber-400/80" />
-        </p>
-        <div className="space-y-1">
-          {NAV_MAIN.map(({ icon: Icon, label, section }) => (
-            <button
-              key={section}
-              aria-current={activeSection === section ? "page" : undefined}
-              onClick={() => {
-                navigateToAdminModule(section as AdminModule);
-              }}
-              className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 relative group overflow-hidden ${
-                activeSection === section
-                  ? "bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white shadow-xl shadow-orange-950/40 border-t border-white/[0.15]"
-                  : "text-slate-400 hover:text-white hover:bg-white/[0.04] hover:translate-x-0.5"
-              }`}
-            >
-              <Icon className={`h-4.5 w-4.5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
-                activeSection === section ? "text-white" : "text-slate-400 group-hover:text-amber-400"
-              }`} />
-              
-              <span className="flex-1 text-left">{label}</span>
-              
-              {/* Dynamic Notification Badges designed as Floating Pills */}
-              {label === "Reports" && pendingReports > 0 && (
-                <span className="app-sidebar-badge ml-auto h-5 px-2 bg-gradient-to-r from-red-500 to-rose-600 rounded-full text-white text-[10px] font-black tracking-tight flex items-center justify-center min-w-[22px] border border-red-400/20 shadow-md shadow-red-950/50 transform group-hover:scale-105 transition-transform">
-                  {pendingReports}
-                </span>
-              )}
-              {label === "Appeals" && activeAppealsCount > 0 && (
-                <span className="app-sidebar-badge ml-auto h-5 px-2 bg-gradient-to-r from-violet-500 to-purple-600 rounded-full text-white text-[10px] font-black tracking-tight flex items-center justify-center min-w-[22px] border border-violet-400/20 shadow-md shadow-purple-950/50 transform group-hover:scale-105 transition-transform">
-                  {activeAppealsCount}
-                </span>
-              )}
-              {label === "Landlords" && pendingCount > 0 && (
-                <span className="app-sidebar-badge ml-auto h-5 px-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full text-white text-[10px] font-black tracking-tight flex items-center justify-center min-w-[22px] border border-amber-400/20 shadow-md shadow-orange-950/50 transform group-hover:scale-105 transition-transform">
-                  {pendingCount}
-                </span>
-              )}
-              {label === "Notifications" && unreadNotifsCount > 0 && (
-                <span className="app-sidebar-badge ml-auto h-5 px-2 bg-gradient-to-r from-violet-500 to-indigo-600 rounded-full text-white text-[10px] font-black tracking-tight flex items-center justify-center min-w-[22px] border border-indigo-400/20 shadow-md shadow-indigo-950/50 transform group-hover:scale-105 transition-transform">
-                  {unreadNotifsCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </nav>
-
-      {/* Account Settings Segment */}
-      <nav className="px-3 pt-4 pb-3 border-t border-white/[0.06] mt-2 space-y-1.5 relative z-10">
-        <p className="flex items-center gap-2 px-4 mb-2 text-[10px] font-black uppercase tracking-widest text-blue-300">
-          <span>Account</span>
-          <span className="h-px w-8 rounded-full bg-blue-400/80" />
-        </p>
-        <div className="space-y-1">
-          {NAV_ACCOUNT.map(({ icon: Icon, label, section }) => (
-            <button
-              key={section}
-              aria-current={activeSection === section ? "page" : undefined}
-              onClick={() => {
-                navigateToAdminModule(section as AdminModule);
-              }}
-              className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 relative group overflow-hidden ${
-                activeSection === section
-                  ? "bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white shadow-xl shadow-orange-950/40 border-t border-white/[0.15]"
-                  : "text-slate-400 hover:text-white hover:bg-white/[0.04] hover:translate-x-0.5"
-              }`}
-            >
-              <Icon className={`h-4.5 w-4.5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
-                activeSection === section ? "text-white" : "text-slate-400 group-hover:text-amber-400"
-              }`} />
-              <span className="flex-1 text-left">{label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
-
-      <div className="flex-1" />
-
-      {/* Danger Logout Action Button Container */}
-      <div className="px-4 py-4 border-t border-white/[0.06] mt-2 bg-gradient-to-t from-black/20 to-transparent relative z-10">
-        <LogoutConfirmation onConfirm={handleLogout}>
-          <button className="app-sidebar-logout w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm font-black tracking-wide text-rose-400 bg-rose-500/[0.03] border border-rose-500/10 hover:text-white hover:bg-gradient-to-r hover:from-red-500 hover:to-rose-600 hover:border-transparent hover:shadow-lg hover:shadow-red-950/40 transition-all duration-300 active:scale-[0.98] group">
-            <LogOut className="h-4.5 w-4.5 shrink-0 transition-transform duration-300 group-hover:scale-110" />
-            <span>Log Out</span>
-          </button>
-        </LogoutConfirmation>
-      </div>
-    </div>
-  );
-
   const PortalSidebarContent = () => {
     const navItemClass = (section: string) =>
       `app-sidebar-nav-item relative flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition-colors ${
