@@ -1,4 +1,5 @@
 import { supabase } from "../../../lib/supabaseclient";
+import { safeRandomId } from "../utils/safeRandomId";
 import { apartmentRowToApartment, type ApartmentRow } from "../data/apartments";
 import { resolveAppUserId } from "./apartmentsService";
 
@@ -1207,7 +1208,7 @@ export async function createAppealWithEvidence(
   appeal: Parameters<typeof createAppeal>[0],
   evidenceFiles: AppealEvidenceInput[],
 ): Promise<DashboardAppealRow> {
-  const appealId = appeal.id || crypto.randomUUID();
+  const appealId = appeal.id || safeRandomId();
   const uploadedPaths: string[] = [];
   const evidenceDocuments: Record<string, unknown>[] = [];
 
@@ -1215,7 +1216,7 @@ export async function createAppealWithEvidence(
     for (const evidence of evidenceFiles) {
       const extension = evidence.fileName.split(".").pop()?.toLowerCase() || "bin";
       const safeBaseName = evidence.fileName.replace(/[^a-z0-9._-]+/gi, "-").slice(-100);
-      const path = `${appeal.landlord_id}/appeals/${appealId}/${crypto.randomUUID()}-${safeBaseName || `evidence.${extension}`}`;
+      const path = `${appeal.landlord_id}/appeals/${appealId}/${safeRandomId()}-${safeBaseName || `evidence.${extension}`}`;
       const { error } = await supabase.storage.from("verification-documents").upload(path, evidence.file, {
         contentType: evidence.mimeType || undefined,
         upsert: false,
@@ -1258,7 +1259,7 @@ export async function submitAppealFollowupWithEvidence(
   try {
     for (const evidence of evidenceFiles) {
       const safeName = evidence.fileName.replace(/[^a-z0-9._-]+/gi, "-").slice(-100) || "evidence.bin";
-      const path = `${landlordId}/appeals/${appealId}/${crypto.randomUUID()}-${safeName}`;
+      const path = `${landlordId}/appeals/${appealId}/${safeRandomId()}-${safeName}`;
       const { error } = await supabase.storage.from("verification-documents").upload(path, evidence.file, {
         contentType: evidence.mimeType || undefined,
         upsert: false,

@@ -36,10 +36,12 @@ export function ApartmentsProvider({ children }: { children: ReactNode }): React
   const requestIdRef = useRef(0);
   const isMountedRef = useRef(true);
   const activeRefreshRef = useRef(false);
+  const queuedRefreshRef = useRef(false);
   const apartmentsRef = useRef<Apartment[]>([]);
 
   const refreshApartments = useCallback(async () => {
     if (activeRefreshRef.current) {
+      queuedRefreshRef.current = true;
       return;
     }
 
@@ -74,6 +76,10 @@ export function ApartmentsProvider({ children }: { children: ReactNode }): React
         setIsRefreshing(false);
       }
       activeRefreshRef.current = false;
+      if (queuedRefreshRef.current) {
+        queuedRefreshRef.current = false;
+        void refreshApartments();
+      }
     }
   }, []);
 
@@ -110,12 +116,20 @@ export function ApartmentsProvider({ children }: { children: ReactNode }): React
       .on('postgres_changes', { event: '*', schema: 'public', table: 'apartment_images' }, scheduleRefresh)
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'app_users', filter: 'role=eq.landlord' },
+        { event: 'UPDATE', schema: 'public', table: 'app_users' },
         scheduleRefresh,
       )
       .subscribe();
+    const refreshOnFocus = () => scheduleRefresh();
+    const refreshOnVisibility = () => {
+      if (document.visibilityState === 'visible') scheduleRefresh();
+    };
+    window.addEventListener('focus', refreshOnFocus);
+    document.addEventListener('visibilitychange', refreshOnVisibility);
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer);
+      window.removeEventListener('focus', refreshOnFocus);
+      document.removeEventListener('visibilitychange', refreshOnVisibility);
       void supabase.removeChannel(channel);
     };
   }, [refreshApartments]);

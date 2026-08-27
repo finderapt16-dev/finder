@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { Label } from "../ui/label";
-import { geocodeLocationWithinLaPaz, GeocodingError } from "../../services/geocodingService";
+import { geocodeLocationWithinLaPaz, reverseGeocodeWithinLaPaz, GeocodingError } from "../../services/geocodingService";
 
 // Fix for default marker icon in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -18,6 +18,7 @@ interface LocationPickerProps {
   addressQuery?: string;
   geocodeRequestKey?: number;
   onGeocodeStatusChange?: (status: "idle" | "loading" | "found" | "not-found" | "error") => void;
+  onMapAddressChange?: (address: string) => void;
 }
 
 export function LocationPicker({
@@ -27,12 +28,16 @@ export function LocationPicker({
   addressQuery = "",
   geocodeRequestKey = 0,
   onGeocodeStatusChange,
+  onMapAddressChange,
 }: LocationPickerProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const onLocationChangeRef = useRef(onLocationChange);
   const onGeocodeStatusChangeRef = useRef(onGeocodeStatusChange);
+  const onMapAddressChangeRef = useRef(onMapAddressChange);
+  const reverseControllerRef = useRef<AbortController | null>(null);
+  const coordinatesRef = useRef({ lat, lng });
   const [isClient, setIsClient] = useState(false);
   const [geocodeStatus, setGeocodeStatus] = useState<"idle" | "loading" | "found" | "not-found" | "error">("idle");
   const [matchedAddress, setMatchedAddress] = useState("");
@@ -44,6 +49,10 @@ export function LocationPicker({
   useEffect(() => {
     onGeocodeStatusChangeRef.current = onGeocodeStatusChange;
   }, [onGeocodeStatusChange]);
+
+  useEffect(() => {
+    onMapAddressChangeRef.current = onMapAddressChange;
+  }, [onMapAddressChange]);
 
   const updateGeocodeStatus = (status: "idle" | "loading" | "found" | "not-found" | "error") => {
     setGeocodeStatus(status);
@@ -70,19 +79,38 @@ export function LocationPicker({
     const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
     markerRef.current = marker;
 
+    const selectMapPoint = async (newLat: number, newLng: number) => {
+      const previousPoint = coordinatesRef.current;
+      marker.setLatLng([newLat, newLng]);
+      reverseControllerRef.current?.abort();
+      const controller = new AbortController();
+      reverseControllerRef.current = controller;
+      updateGeocodeStatus("loading");
+      try {
+        const location = await reverseGeocodeWithinLaPaz(newLat, newLng, controller.signal);
+        setMatchedAddress(location.label);
+        updateGeocodeStatus("found");
+        coordinatesRef.current = { lat: newLat, lng: newLng };
+        onLocationChangeRef.current(newLat, newLng);
+        onMapAddressChangeRef.current?.(location.label);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        console.error("Unable to identify the selected map location:", error);
+        marker.setLatLng([previousPoint.lat, previousPoint.lng]);
+        updateGeocodeStatus(error instanceof GeocodingError && error.reason !== "network" ? "not-found" : "error");
+      }
+    };
+
     // Handle map click to move marker
     map.on("click", (e: L.LeafletMouseEvent) => {
       const { lat: newLat, lng: newLng } = e.latlng;
-      marker.setLatLng([newLat, newLng]);
-      updateGeocodeStatus("found");
-      onLocationChangeRef.current(newLat, newLng);
+      void selectMapPoint(newLat, newLng);
     });
 
     // Handle marker drag
     marker.on("dragend", () => {
       const position = marker.getLatLng();
-      updateGeocodeStatus("found");
-      onLocationChangeRef.current(position.lat, position.lng);
+      void selectMapPoint(position.lat, position.lng);
     });
 
     // Cleanup
@@ -91,11 +119,13 @@ export function LocationPicker({
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
+      reverseControllerRef.current?.abort();
     };
   }, [isClient]);
 
   // Update marker position when lat/lng props change
   useEffect(() => {
+    coordinatesRef.current = { lat, lng };
     if (markerRef.current && mapInstanceRef.current) {
       markerRef.current.setLatLng([lat, lng]);
       mapInstanceRef.current.setView([lat, lng], mapInstanceRef.current.getZoom());
@@ -138,7 +168,7 @@ export function LocationPicker({
 
   if (!isClient) {
     return (
-      <div className="w-full h-[400px] bg-slate-100 rounded-lg flex items-center justify-center">
+      <div className="flex h-[300px] w-full items-center justify-center rounded-lg bg-slate-100 sm:h-[400px] lg:h-[460px]">
         <p className="text-slate-500">Loading map...</p>
       </div>
     );
@@ -149,16 +179,16 @@ export function LocationPicker({
       <Label>Location on Map *</Label>
       <div 
         ref={mapRef} 
-        className="w-full h-[400px] rounded-lg overflow-hidden border border-slate-200"
+        className="h-[300px] w-full touch-manipulation overflow-hidden rounded-lg border border-slate-200 sm:h-[400px] lg:h-[460px]"
       />
       <p className="text-sm text-slate-500">
-        📍 Click anywhere on the map to pinpoint the exact location, or drag the marker
+        Click the map or drag the pin to select the property's exact location.
       </p>
       {geocodeStatus === "loading" && <p className="text-sm font-medium text-amber-700">Finding the entered address on the map...</p>}
-      {geocodeStatus === "found" && <p className="text-sm font-medium text-emerald-700">Map pinned to: {matchedAddress}</p>}
+      {geocodeStatus === "found" && matchedAddress && <p className="break-words text-sm font-medium text-emerald-700">Map pinned to: {matchedAddress}</p>}
       {geocodeStatus === "not-found" && <p className="text-sm font-medium text-red-600">We could not find this address on the map. Please check the address or move the marker manually.</p>}
       {geocodeStatus === "error" && <p className="text-sm font-medium text-red-600">The address lookup is temporarily unavailable. You can still click or drag the map pin.</p>}
-      <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded border border-slate-200">
+      <div className="grid grid-cols-1 gap-2 rounded border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 min-[360px]:grid-cols-2">
         <div>
           <span className="font-medium">Latitude:</span> {lat.toFixed(6)}
         </div>

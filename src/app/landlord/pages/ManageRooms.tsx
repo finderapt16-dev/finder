@@ -25,6 +25,7 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { MultiImageUploader, type UploadedImage } from "@/app/shared/components/common/MultiImageUploader";
+import { safeRandomId } from "@/app/shared/utils/safeRandomId";
 import { Badge } from "@/app/shared/components/ui/badge";
 import { Button } from "@/app/shared/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/shared/components/ui/card";
@@ -179,9 +180,14 @@ export function ManageRooms() {
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "apartments", filter: `id=eq.${id}` }, refreshProperty)
       .subscribe();
     const refreshOnFocus = () => { refreshRooms(); refreshProperty(); };
+    const refreshOnVisibility = () => {
+      if (document.visibilityState === "visible") refreshOnFocus();
+    };
     window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnVisibility);
     return () => {
       window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnVisibility);
       void supabase.removeChannel(channel);
     };
   }, [id]);
@@ -228,7 +234,7 @@ export function ManageRooms() {
       if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
       return a.sortOrder - b.sortOrder;
     });
-    const roomUploadId = form.id || crypto.randomUUID();
+    const roomUploadId = form.id || safeRandomId();
     const urls: string[] = [];
     const pendingCount = ordered.filter((image) => image.file || image.url.startsWith("data:")).length;
     let completedUploads = 0;

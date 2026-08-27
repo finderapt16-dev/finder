@@ -6,6 +6,7 @@ export class GeocodingError extends Error {
 
 const BOUNDS = { south: 10.68, north: 10.75, west: 122.535, east: 122.595 };
 const cache = new Map<string, GeocodedLocation>();
+const reverseCache = new Map<string, GeocodedLocation>();
 const inside = ({ lat, lng }: GeocodedLocation) => lat >= BOUNDS.south && lat <= BOUNDS.north && lng >= BOUNDS.west && lng <= BOUNDS.east;
 
 async function lookup(query: string, bounded: boolean, signal?: AbortSignal): Promise<GeocodedLocation[]> {
@@ -30,5 +31,42 @@ export async function geocodeLocationWithinLaPaz(target: string, signal?: AbortS
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     if (error instanceof GeocodingError) throw error;
     throw new GeocodingError("Location search is temporarily unavailable.", "network");
+  }
+}
+
+export async function reverseGeocodeWithinLaPaz(lat: number, lng: number, signal?: AbortSignal): Promise<GeocodedLocation> {
+  const point = { lat, lng, label: "" };
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !inside(point)) {
+    throw new GeocodingError("That location is outside the supported La Paz area.", "outside-scope");
+  }
+
+  const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+  const cached = reverseCache.get(key);
+  if (cached) return cached;
+
+  try {
+    const params = new URLSearchParams({
+      lat: String(lat),
+      lon: String(lng),
+      format: "jsonv2",
+      addressdetails: "1",
+      zoom: "18",
+    });
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, {
+      signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new GeocodingError("Location lookup is temporarily unavailable.", "network");
+    const row = await response.json() as { display_name?: string };
+    const label = String(row.display_name ?? "").trim();
+    if (!label) throw new GeocodingError("No address was found for that map point.", "not-found");
+    const result = { lat, lng, label };
+    if (reverseCache.size >= 100) reverseCache.delete(reverseCache.keys().next().value as string);
+    reverseCache.set(key, result);
+    return result;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    if (error instanceof GeocodingError) throw error;
+    throw new GeocodingError("Location lookup is temporarily unavailable.", "network");
   }
 }

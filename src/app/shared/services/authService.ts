@@ -1,4 +1,5 @@
 import { supabase as supabaseClient } from '../../../lib/supabaseclient';
+import { safeRandomId } from '../utils/safeRandomId';
 
 export type UserRole = 'tenant' | 'landlord' | 'admin' | 'super_admin' | 'student' | 'employee';
 export type TenantType = 'student' | 'employee' | 'other';
@@ -356,7 +357,7 @@ async function uploadLandlordSignupDocuments(userId: string, input: CreateUserIn
   const updates: Record<string, string> = {};
   for (const item of files) {
     const extension = item.file.name.split('.').pop()?.toLowerCase() || 'bin';
-    const path = `${userId}/${item.prefix}-${crypto.randomUUID()}.${extension}`;
+    const path = `${userId}/${item.prefix}-${safeRandomId()}.${extension}`;
     const { error } = await supabaseClient.storage.from('verification-documents').upload(path, item.file, {
       contentType: item.file.type || undefined,
       upsert: false,

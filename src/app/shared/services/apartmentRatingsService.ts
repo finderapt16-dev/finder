@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseclient";
+import { safeRandomId } from "../utils/safeRandomId";
 
 export interface ApartmentRatingRow { id: string; apartment_id: string; tenant_id: string; rating: number; created_at: string; updated_at: string; }
 
@@ -58,7 +59,7 @@ export function subscribeToApartmentRatings(onChange: () => void, apartmentId?: 
     ? { event: "*" as const, schema: "public", table: "apartment_ratings", filter: `apartment_id=eq.${apartmentId}` }
     : { event: "*" as const, schema: "public", table: "apartment_ratings" };
   const channel = supabase
-    .channel(`apartment-ratings-ranking-${crypto.randomUUID()}`)
+    .channel(`apartment-ratings-ranking-${safeRandomId()}`)
     .on("postgres_changes", changeConfig, onChange)
     .subscribe((status) => {
       // Revalidate after a reconnect because changes may have occurred while the client was offline.

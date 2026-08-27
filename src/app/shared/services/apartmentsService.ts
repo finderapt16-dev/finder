@@ -8,9 +8,11 @@ import type {
 } from '../data/apartments';
 import {
   apartmentFormValuesToInsertRow,
+  apartmentFormValuesToUpdateRow,
   apartmentRowToApartment,
 } from '../data/apartments';
 import { isTenantRole } from './authService';
+import { optimizeImageForUpload } from '../utils/imageUpload';
 
 const APARTMENT_SELECT =
   '*, apartment_images(url, is_primary, sort_order), apartment_rooms(id, name, room_type, sqft, max_occupants, rent, has_private_bath, bathroom_type, shared_bath_location, has_ac, is_occupied, status, description, images, created_at)';
@@ -429,7 +431,7 @@ export const updateApartment = async (
   landlord?: UserIdentityInput,
 ): Promise<Apartment> => {
   const resolvedLandlordId = await resolveAppUserId(landlord);
-  const payload: ApartmentInsertRow = apartmentFormValuesToInsertRow(apartment, resolvedLandlordId);
+  const payload = apartmentFormValuesToUpdateRow(apartment);
   const { data: beforeData } = await supabase
     .from('apartments')
     .select(APARTMENT_SELECT)
@@ -440,16 +442,6 @@ export const updateApartment = async (
 
   if (error) {
     throw new Error(unwrapErrorMessage(error, 'Unable to update apartment.'));
-  }
-
-  const { error: roomDeleteError } = await supabase.from('apartment_rooms').delete().eq('apartment_id', id);
-
-  if (roomDeleteError) {
-    throw new Error(unwrapErrorMessage(roomDeleteError, 'Unable to update apartment rooms.'));
-  }
-
-  if (apartment.rooms && apartment.rooms.length > 0) {
-    await insertApartmentRooms(id, apartment.rooms);
   }
 
   const { data, error: reloadError } = await supabase
@@ -465,15 +457,9 @@ export const updateApartment = async (
   const propertyFields = [
     'title', 'price', 'bedrooms', 'bathrooms', 'sqft', 'address', 'city', 'state', 'zip',
     'description', 'amenities', 'pet_friendly', 'parking', 'furnished', 'utilities', 'lat', 'lng',
-    'landlord_id', 'status', 'features',
+    'status', 'features',
   ];
   const changes = buildAuditChanges(beforeData as Record<string, unknown> | null, data as Record<string, unknown>, propertyFields);
-  if (valuesDiffer((beforeData as Record<string, unknown> | null)?.apartment_rooms, (data as Record<string, unknown>).apartment_rooms)) {
-    changes.rooms = {
-      old: comparableValue((beforeData as Record<string, unknown> | null)?.apartment_rooms),
-      new: comparableValue((data as Record<string, unknown>).apartment_rooms),
-    };
-  }
   await writeApartmentAudit(id, resolvedLandlordId, 'apartment_updated', changes);
 
   return apartmentRowToApartment(data as ApartmentRow);
@@ -908,11 +894,12 @@ export const updateApartmentRoom = async (
   room: ApartmentRoom,
   actorUserId?: string,
 ): Promise<ApartmentRoom> => {
-  const { data: before } = await supabase.from('apartment_rooms').select('*').eq('id', roomId).maybeSingle();
+  const { data: before } = await supabase.from('apartment_rooms').select('*').eq('id', roomId).eq('apartment_id', apartmentId).maybeSingle();
   const { data, error } = await supabase
     .from('apartment_rooms')
     .update(apartmentRoomToPayload(apartmentId, room))
     .eq('id', roomId)
+    .eq('apartment_id', apartmentId)
     .select('id, name, room_type, sqft, max_occupants, rent, has_private_bath, bathroom_type, shared_bath_location, has_ac, is_occupied, status, description, images, created_at')
     .single();
 
@@ -949,14 +936,15 @@ export const updateApartmentRoomStatus = async (
   actorUserId?: string,
 ): Promise<void> => {
   const nextStatus = status ?? 'available';
-  const { data: before } = await supabase.from('apartment_rooms').select('status').eq('id', roomId).maybeSingle();
+  const { data: before } = await supabase.from('apartment_rooms').select('status').eq('id', roomId).eq('apartment_id', apartmentId).maybeSingle();
   const { error } = await supabase
     .from('apartment_rooms')
     .update({
       status: nextStatus,
       is_occupied: nextStatus === 'occupied',
     })
-    .eq('id', roomId);
+    .eq('id', roomId)
+    .eq('apartment_id', apartmentId);
 
   if (error) {
     throw new Error(unwrapErrorMessage(error, 'Unable to update room status.'));
@@ -972,8 +960,8 @@ export const updateApartmentRoomStatus = async (
 };
 
 export const deleteApartmentRoom = async (apartmentId: string, roomId: string, actorUserId?: string): Promise<void> => {
-  const { data: before } = await supabase.from('apartment_rooms').select('*').eq('id', roomId).maybeSingle();
-  const { error } = await supabase.from('apartment_rooms').delete().eq('id', roomId);
+  const { data: before } = await supabase.from('apartment_rooms').select('*').eq('id', roomId).eq('apartment_id', apartmentId).maybeSingle();
+  const { error } = await supabase.from('apartment_rooms').delete().eq('id', roomId).eq('apartment_id', apartmentId);
 
   if (error) {
     throw new Error(unwrapErrorMessage(error, 'Unable to delete room.'));
@@ -990,16 +978,17 @@ export const uploadApartmentImage = async (
   file: File | Blob,
   fileName = 'apartment-image.jpg',
 ): Promise<string> => {
+  const uploadFile = await optimizeImageForUpload(file);
   const extension = fileName.split('.').pop()?.toLowerCase() || 'jpg';
   const safeName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
   const path = `${apartmentId}/${safeName}`;
 
   const { error } = await supabase.storage
     .from('apartment-images')
-    .upload(path, file, {
+    .upload(path, uploadFile, {
       cacheControl: '3600',
       upsert: false,
-      contentType: file.type || 'image/jpeg',
+      contentType: uploadFile.type || file.type || 'image/jpeg',
     });
 
   if (error) {
@@ -1017,13 +1006,14 @@ export const uploadApartmentRoomImage = async (
   file: File | Blob,
   fileName = 'room-image.jpg',
 ): Promise<string> => {
+  const uploadFile = await optimizeImageForUpload(file, 1920);
   const extension = fileName.split('.').pop()?.toLowerCase() || 'jpg';
   const safeName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
   const path = `${apartmentId}/rooms/${roomUploadId}/${safeName}`;
-  const { error } = await supabase.storage.from('apartment-images').upload(path, file, {
+  const { error } = await supabase.storage.from('apartment-images').upload(path, uploadFile, {
     cacheControl: '3600',
     upsert: false,
-    contentType: file.type || 'image/jpeg',
+    contentType: uploadFile.type || file.type || 'image/jpeg',
   });
   if (error) throw new Error(unwrapErrorMessage(error, 'Unable to upload room image.'));
   const publicUrl = supabase.storage.from('apartment-images').getPublicUrl(path).data.publicUrl;
@@ -1049,21 +1039,61 @@ export const persistApartmentImages = async (apartmentId: string, inputs: Apartm
 };
 
 export const replaceApartmentImages = async (apartmentId: string, images: string[], actorUserId?: string): Promise<void> => {
-  const { data: before } = await supabase
+  const desiredUrls = [...new Set(images.map((url) => url.trim()).filter(Boolean))];
+  const { data: before, error: loadError } = await supabase
     .from('apartment_images')
-    .select('url, is_primary, sort_order')
+    .select('id, url, is_primary, sort_order')
     .eq('apartment_id', apartmentId)
     .order('sort_order');
-  const { error } = await supabase.from('apartment_images').delete().eq('apartment_id', apartmentId);
 
-  if (error) {
-    throw new Error(unwrapErrorMessage(error, 'Unable to update apartment images.'));
+  if (loadError) {
+    throw new Error(unwrapErrorMessage(loadError, 'Unable to load the existing apartment images.'));
   }
 
-  await insertApartmentImages(apartmentId, images);
+  const existingRows = before ?? [];
+  const existingUrls = new Set(existingRows.map((row) => row.url).filter((url): url is string => Boolean(url)));
+  const missingUrls = desiredUrls.filter((url) => !existingUrls.has(url));
+
+  // Add replacements before removing anything so a failed upload/save never
+  // destroys the landlord's existing gallery.
+  if (missingUrls.length > 0) {
+    const { error: insertError } = await supabase.from('apartment_images').insert(
+      missingUrls.map((url, index) => ({
+        apartment_id: apartmentId,
+        url,
+        is_primary: false,
+        sort_order: existingRows.length + index,
+      })),
+    );
+    if (insertError) throw new Error(unwrapErrorMessage(insertError, 'Unable to save the new apartment images.'));
+  }
+
+  const { error: clearPrimaryError } = await supabase
+    .from('apartment_images')
+    .update({ is_primary: false })
+    .eq('apartment_id', apartmentId);
+  if (clearPrimaryError) throw new Error(unwrapErrorMessage(clearPrimaryError, 'Unable to update the apartment image order.'));
+
+  for (let index = 0; index < desiredUrls.length; index += 1) {
+    const { error: updateError } = await supabase
+      .from('apartment_images')
+      .update({ is_primary: index === 0, sort_order: index })
+      .eq('apartment_id', apartmentId)
+      .eq('url', desiredUrls[index]);
+    if (updateError) throw new Error(unwrapErrorMessage(updateError, 'Unable to update the apartment image order.'));
+  }
+
+  const removedIds = existingRows
+    .filter((row) => row.id && (!row.url || !desiredUrls.includes(row.url)))
+    .map((row) => row.id as string);
+  if (removedIds.length > 0) {
+    const { error: deleteError } = await supabase.from('apartment_images').delete().in('id', removedIds);
+    if (deleteError) throw new Error(unwrapErrorMessage(deleteError, 'Unable to remove deselected apartment images.'));
+  }
+
   await writeApartmentAudit(apartmentId, actorUserId, 'apartment_images_updated', {
-    images: { old: before ?? [], new: images },
-  }, { image_count: images.length, changed_fields: ['images'] });
+    images: { old: existingRows, new: desiredUrls },
+  }, { image_count: desiredUrls.length, changed_fields: ['images'] });
 };
 
 export const recordApartmentView = async (

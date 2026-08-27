@@ -379,7 +379,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
   const [platformUsers, setPlatformUsers] = useState<DashboardUserRow[]>([]);
   const [supportRequests, setSupportRequests] = useState<SupportTicketRow[]>([]);
   const [platformStatus, setPlatformStatus] = useState<MaintenanceState | null>(null);
-  const [verifyAction, setVerifyAction] = useState<{ landlordId: string; verify: boolean } | null>(null);
+  const [verifyAction, setVerifyAction] = useState<{ landlordId: string; verify: boolean; credentialsIncomplete?: boolean } | null>(null);
   const [landlordSearch, setLandlordSearch] = useState("");
   const [landlordStatusFilter, setLandlordStatusFilter] = useState<"all" | "pending" | "verified" | "violations">("all");
   const [landlordSort, setLandlordSort] = useState<"newest" | "oldest" | "name">("newest");
@@ -944,6 +944,22 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
 
   useEffect(() => {
     if (user?.role !== "admin" && user?.role !== "super_admin") return;
+    const refreshApartmentData = () => {
+      void fetchApartments().then((items) => setAllApartments(items as unknown as ListingRecord[]));
+    };
+    const refreshUserData = () => {
+      void fetchUsers().then((users) => {
+        setPlatformUsers(users);
+        setLandlords(users.filter((account) => account.role === "landlord"));
+      });
+    };
+    const refreshVisibleData = () => {
+      refreshApartmentData();
+      refreshUserData();
+      void fetchAdminReports().then(setReports);
+      void fetchViolations().then(setViolations);
+      void fetchPendingAppeals().then(setAppeals);
+    };
     const channel = supabase
       .channel(`admin-dashboard-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "reports" }, () => {
@@ -956,11 +972,23 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
         void fetchPendingAppeals().then(setAppeals);
         void fetchArchivedAppeals().then(setArchivedAppeals);
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "apartments" }, () => { void fetchApartments().then((items) => setAllApartments(items as unknown as ListingRecord[])); })
-      .on("postgres_changes", { event: "*", schema: "public", table: "apartment_rooms" }, () => { void fetchApartments().then((items) => setAllApartments(items as unknown as ListingRecord[])); })
-      .on("postgres_changes", { event: "*", schema: "public", table: "apartment_images" }, () => { void fetchApartments().then((items) => setAllApartments(items as unknown as ListingRecord[])); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "apartments" }, refreshApartmentData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "apartment_rooms" }, refreshApartmentData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "apartment_images" }, refreshApartmentData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "apartment_verification_documents" }, refreshApartmentData)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "app_users" }, refreshUserData)
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    const refreshOnFocus = () => refreshVisibleData();
+    const refreshOnVisibility = () => {
+      if (document.visibilityState === "visible") refreshVisibleData();
+    };
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnVisibility);
+    return () => {
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnVisibility);
+      void supabase.removeChannel(channel);
+    };
   }, [loadAdminNotifications, user?.id, user?.role]);
 
   // Fetch full report details when a report is selected
@@ -1037,6 +1065,24 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
   const loadLandlords = async () => {
     const users = await fetchUsers();
     setLandlords(users.filter((x) => x.role === "landlord"));
+  };
+
+  const requestVerification = async (landlord: DashboardUserRow, verify: boolean) => {
+    if (!verify) {
+      setVerifyAction({ landlordId: text(landlord.id), verify: false });
+      return;
+    }
+    try {
+      const details = await fetchLandlordWithDetails(text(landlord.id));
+      const profile = details?.profile;
+      const hasPermitNumber = Boolean(text(profile?.business_permit_number || profile?.permit_number || landlord.permit_number || landlord.permitNumber).trim());
+      const hasPermitDocument = Boolean(text(profile?.verification_document_url).trim());
+      const hasIdDocument = Boolean(text(profile?.id_document_url).trim());
+      setVerifyAction({ landlordId: text(landlord.id), verify: true, credentialsIncomplete: !hasPermitNumber || !hasPermitDocument || !hasIdDocument });
+    } catch (error) {
+      console.error("Unable to check submitted landlord credentials:", error);
+      setVerifyAction({ landlordId: text(landlord.id), verify: true, credentialsIncomplete: true });
+    }
   };
 
   const confirmVerification = () => {
@@ -1931,7 +1977,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                     <div className="space-y-2" onClick={(event) => event.stopPropagation()}>
                       <Button size="sm" onClick={() => setSelectedLandlord(landlord)} className="h-9 w-full rounded-lg bg-[#8B735B] text-xs font-black text-white hover:bg-[#765F4A]"><Eye className="mr-1.5 h-3.5 w-3.5" />Review Details</Button>
                       <div className="grid grid-cols-3 gap-1.5">
-                      <Button size="sm" variant="outline" onClick={() => setVerifyAction({ landlordId: text(landlord.id), verify: !verified })} className="h-8 rounded-md border-[#E8DED1] text-[10px] font-black text-[#302820] hover:bg-[#FAF8F5]">
+                      <Button size="sm" variant="outline" onClick={() => void requestVerification(landlord, !verified)} className="h-8 rounded-md border-[#E8DED1] text-[10px] font-black text-[#302820] hover:bg-[#FAF8F5]">
                         {verified ? <XCircle className="mr-1 h-3 w-3" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}{verified ? "Revoke" : "Verify"}
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => openViolationModal("violation", text(landlord.id), text(landlord.name, "Landlord"), "General")} className="h-8 rounded-md border-[#E8DED1] text-[10px] font-black text-[#302820] hover:bg-[#FAF8F5]"><AlertOctagon className="mr-1 h-3 w-3" />Violation</Button>
@@ -3434,10 +3480,12 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
 
         <section className="border-b border-[#E8DED1] pb-5">
           <h2 className="mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#8B735B]"><Shield className="h-4 w-4" />Verification Details</h2>
-          <div className="grid gap-5 rounded-xl border border-[#E8DED1] bg-white p-5 sm:grid-cols-2">
+          <div className="grid gap-5 rounded-xl border border-[#E8DED1] bg-white p-5 sm:grid-cols-3">
             <div><p className="text-xs font-semibold text-slate-500">Verification Status</p><Badge className="mt-3 border border-[#E8DED1] bg-[#FAF8F5] text-xs font-bold text-[#6F4E37]">{verified ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : <Clock className="mr-1 h-3.5 w-3.5" />}{verified ? "Verified" : "Pending Review"}</Badge></div>
-            <div className="border-[#E8DED1] sm:border-l sm:pl-5"><p className="text-xs font-semibold text-slate-500">Submitted Credential</p><p className="mt-2 text-base font-black text-slate-900">Business Permit</p><p className="mt-1 text-sm font-medium text-slate-600">Permit #{selectedLandlordDetails.profile?.business_permit_number || selectedLandlordDetails.profile?.permit_number || selectedLandlord.permit_number || selectedLandlord.permitNumber || "Not provided"}</p>{selectedLandlordDetails.profile?.verification_document_url ? <a href={selectedLandlordDetails.profile.verification_document_url} target="_blank" rel="noreferrer" className="mt-3 inline-flex h-9 items-center rounded-lg border border-[#D8C5B1] bg-white px-3 text-xs font-bold text-[#6F4E37] transition hover:bg-[#FAF8F5]"><FileText className="mr-1.5 h-3.5 w-3.5" />View Document</a> : <Button type="button" variant="outline" size="sm" disabled title="No uploaded verification document is available" className="mt-3 h-9 rounded-lg border-[#D8C5B1] bg-white text-xs font-bold text-[#756A60]"><FileText className="mr-1.5 h-3.5 w-3.5" />View Document</Button>}</div>
+            <div className="border-[#E8DED1] sm:border-l sm:pl-5"><p className="text-xs font-semibold text-slate-500">Document Type</p><p className="mt-2 text-base font-black text-slate-900">Business Permit</p><p className="mt-1 text-sm font-medium text-slate-600">Reference: {selectedLandlordDetails.profile?.business_permit_number || selectedLandlordDetails.profile?.permit_number || selectedLandlord.permit_number || selectedLandlord.permitNumber || "Not provided"}</p><p className="mt-1 text-xs font-medium text-slate-500">Submitted: {formatOptionalDate(selectedLandlordDetails.profile?.created_at || selectedLandlord.created_at as string | undefined, { month: "short", day: "numeric", year: "numeric" })}</p><Badge className="mt-2 border border-[#E8DED1] bg-[#FAF8F5] text-[10px] font-bold text-[#6F4E37]">{selectedLandlordDetails.profile?.verification_document_url ? "Submitted for review" : "File not submitted"}</Badge>{selectedLandlordDetails.profile?.verification_document_url ? <a href={selectedLandlordDetails.profile.verification_document_url} target="_blank" rel="noreferrer" className="mt-3 flex h-9 w-fit items-center rounded-lg border border-[#D8C5B1] bg-white px-3 text-xs font-bold text-[#6F4E37] transition hover:bg-[#FAF8F5]"><FileText className="mr-1.5 h-3.5 w-3.5" />View Document</a> : <p className="mt-3 text-xs font-medium text-amber-700">No permit file was uploaded.</p>}</div>
+            <div className="border-[#E8DED1] sm:border-l sm:pl-5"><p className="text-xs font-semibold text-slate-500">Document Type</p><p className="mt-2 text-base font-black text-slate-900">Valid ID</p><p className="mt-1 text-sm font-medium text-slate-600">Reference: {selectedLandlordDetails.profile?.id_number || "Not provided"}</p><p className="mt-1 text-xs font-medium text-slate-500">Submitted: {formatOptionalDate(selectedLandlordDetails.profile?.created_at || selectedLandlord.created_at as string | undefined, { month: "short", day: "numeric", year: "numeric" })}</p><Badge className="mt-2 border border-[#E8DED1] bg-[#FAF8F5] text-[10px] font-bold text-[#6F4E37]">{selectedLandlordDetails.profile?.id_document_url ? "Submitted for review" : "File not submitted"}</Badge>{selectedLandlordDetails.profile?.id_document_url ? <a href={selectedLandlordDetails.profile.id_document_url} target="_blank" rel="noreferrer" className="mt-3 flex h-9 w-fit items-center rounded-lg border border-[#D8C5B1] bg-white px-3 text-xs font-bold text-[#6F4E37] transition hover:bg-[#FAF8F5]"><FileText className="mr-1.5 h-3.5 w-3.5" />View Document</a> : <p className="mt-3 text-xs font-medium text-amber-700">No ID file was uploaded.</p>}</div>
           </div>
+          {(!selectedLandlordDetails.profile?.verification_document_url || !selectedLandlordDetails.profile?.id_document_url) && <div className="mt-3 flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium leading-6 text-amber-900"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><span>Some required credentials may be incomplete. Please review the submitted information carefully before verification. This warning does not prevent an authorized Admin from making the final decision.</span></div>}
         </section>
 
         <section>
@@ -3449,7 +3497,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
         </section>
 
         <section className="grid gap-2 border-t border-[#E8DED1] pt-5 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]">
-          {verified ? <Button variant="outline" onClick={(e) => { e.stopPropagation(); setVerifyAction({ landlordId: text(selectedLandlord.id), verify: false }); setSelectedLandlord(null); }} className="h-11 rounded-xl border-[#E8DED1] font-bold text-[#302820] hover:bg-white"><XCircle className="mr-2 h-4 w-4" />Revoke Verification</Button> : <Button onClick={(e) => { e.stopPropagation(); setVerifyAction({ landlordId: text(selectedLandlord.id), verify: true }); setSelectedLandlord(null); }} className="h-11 rounded-xl bg-[#8B735B] font-bold text-white hover:bg-[#765F4A]"><CheckCircle2 className="mr-2 h-4 w-4" />Verify Landlord</Button>}
+          {verified ? <Button variant="outline" onClick={(e) => { e.stopPropagation(); void requestVerification(selectedLandlord, false); setSelectedLandlord(null); }} className="h-11 rounded-xl border-[#E8DED1] font-bold text-[#302820] hover:bg-white"><XCircle className="mr-2 h-4 w-4" />Revoke Verification</Button> : <Button onClick={(e) => { e.stopPropagation(); void requestVerification(selectedLandlord, true); setSelectedLandlord(null); }} className="h-11 rounded-xl bg-[#8B735B] font-bold text-white hover:bg-[#765F4A]"><CheckCircle2 className="mr-2 h-4 w-4" />Verify Landlord</Button>}
           <Button variant="outline" onClick={(e) => { e.stopPropagation(); openViolationModal("violation", text(selectedLandlord.id), text(selectedLandlord.name, "Landlord"), "General"); }} className="h-11 rounded-xl border-[#E8DED1] font-bold text-[#302820] hover:bg-white"><AlertOctagon className="mr-2 h-4 w-4" />Issue Violation</Button>
           <Button variant="outline" onClick={(e) => { e.stopPropagation(); openViolationModal("notice", text(selectedLandlord.id), text(selectedLandlord.name, "Landlord"), "General"); }} className="h-11 rounded-xl border-[#E8DED1] font-bold text-[#302820] hover:bg-white"><BellRing className="mr-2 h-4 w-4" />Send Notice</Button>
         </section>
@@ -3547,18 +3595,19 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
       <AlertDialog open={!!verifyAction} onOpenChange={() => setVerifyAction(null)}>
         <AlertDialogContent className="rounded-2xl border-amber-100">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-black">{verifyAction?.verify ? "Verify Landlord" : "Revoke Verification"}</AlertDialogTitle>
+            <AlertDialogTitle className="font-black">{verifyAction?.verify ? "Verify Landlord?" : "Revoke Verification?"}</AlertDialogTitle>
             <AlertDialogDescription>
               {verifyAction?.verify
-                ? "This landlord will be able to add and edit apartments on the platform."
+                ? "You are about to verify this landlord. Please confirm that you have reviewed the submitted credentials."
                 : "This landlord will no longer be able to add or edit apartments."}
             </AlertDialogDescription>
+            {verifyAction?.verify && verifyAction.credentialsIncomplete && <div className="mt-3 flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-left text-sm font-medium leading-6 text-amber-900"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><span>Some credentials may be incomplete. You may still continue if the submitted documents have been manually reviewed and considered acceptable.</span></div>}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmVerification}
               className={`rounded-xl font-bold ${verifyAction?.verify ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}>
-              {verifyAction?.verify ? "Verify" : "Revoke"}
+              {verifyAction?.verify ? "Confirm Verification" : "Confirm Revoke"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

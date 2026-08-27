@@ -185,6 +185,8 @@ export interface ApartmentInsertRow {
   features: Record<string, unknown>;
 }
 
+export type ApartmentUpdateRow = Omit<ApartmentInsertRow, 'landlord_id' | 'is_published' | 'price' | 'bedrooms' | 'bathrooms' | 'status'>;
+
 const EMPTY_FORM_VALUES: ApartmentFormValues = {
   title: '',
   price: '',
@@ -458,8 +460,31 @@ export const apartmentFormValuesToInsertRow = (
 
 export const apartmentFormValuesToUpdateRow = (
   values: ApartmentFormValues,
-  landlordId?: string,
-): ApartmentInsertRow => apartmentFormValuesToInsertRow(values, landlordId);
+): ApartmentUpdateRow => {
+  const customFeatures = (values.customFeatures ?? []).map((feature) => feature.trim()).filter(Boolean);
+  const verification = Object.fromEntries(Object.entries(values.verification ?? {}).filter(([, value]) => value.trim().length > 0));
+  const address = values.address.trim();
+  const lat = toNumber(values.lat, Number.NaN);
+  const lng = toNumber(values.lng, Number.NaN);
+  if (Number.isFinite(lat) && Number.isFinite(lng) && !address) throw new Error('Complete address is required when saving a map location.');
+  return {
+    title: values.title.trim(),
+    sqft: toNumber(values.sqft),
+    address,
+    city: values.city.trim(),
+    state: values.state.trim(),
+    zip: values.zip.trim(),
+    description: values.description.trim(),
+    amenities: parseStringList(values.amenities),
+    pet_friendly: values.petFriendly,
+    parking: values.parking,
+    furnished: values.furnished,
+    utilities: values.utilityItems?.length ? values.utilityItems.map((item) => item.trim()).filter(Boolean) : values.utilities ? ['Utilities Included'] : [],
+    lat: toNumber(values.lat),
+    lng: toNumber(values.lng),
+    features: { availableDate: values.availableDate, customFeatures, verification },
+  };
+};
 
 export {
   createApartment, createApartmentRoom, deleteApartment, deleteApartmentRoom, fetchApartmentInspectionDetails, fetchApartmentRooms, fetchApartmentWithImages, fetchApartments, fetchApartmentsForLandlord, getApartmentById, getCurrentSessionUser,

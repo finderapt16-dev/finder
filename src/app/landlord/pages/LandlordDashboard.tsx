@@ -602,9 +602,18 @@ export function LandlordDashboard() {
       .on("postgres_changes", { event: "*", schema: "public", table: "apartments", filter: `landlord_id=eq.${user.id}` }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "apartment_rooms" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "apartment_images" }, scheduleRefresh)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "app_users", filter: `id=eq.${user.id}` }, scheduleRefresh)
       .subscribe();
+    const refreshOnFocus = () => scheduleRefresh();
+    const refreshOnVisibility = () => {
+      if (document.visibilityState === "visible") scheduleRefresh();
+    };
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnVisibility);
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer);
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnVisibility);
       void supabase.removeChannel(channel);
     };
   }, [user?.id]);
@@ -823,7 +832,7 @@ export function LandlordDashboard() {
   const landlordFavoriteRows = favoriteRows.filter((favorite) => propertyIds.has(favorite.apartment_id ?? favorite.apartmentId ?? ""));
   const landlordViewRows = viewRows.filter((view) => propertyIds.has(view.apartment_id ?? view.apartmentId ?? ""));
   const landlordAccount = favoriteUsers.find((entry) => entry.id === user?.id);
-  const landlordVerified = user?.isVerified ?? landlordAccount?.isVerified ?? landlordAccount?.is_verified ?? false;
+  const landlordVerified = landlordAccount?.isVerified ?? landlordAccount?.is_verified ?? user?.isVerified ?? false;
   const landlordPermit = landlordAccount?.permit_number ?? landlordAccount?.permitNumber ?? user?.permitNumber ?? "";
   const getViewWeight = (view: DashboardApartmentViewRow) => Math.max(0, Number(view.view_count) || 0);
   const totalViews     = landlordViewRows.reduce((total, view) => total + getViewWeight(view), 0);

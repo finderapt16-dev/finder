@@ -367,9 +367,21 @@ export function AdminApartmentDetail() {
       .on("postgres_changes", { event: "*", schema: "public", table: "apartments", filter: `id=eq.${id}` }, refreshInspection)
       .on("postgres_changes", { event: "*", schema: "public", table: "apartment_rooms", filter: `apartment_id=eq.${id}` }, refreshInspection)
       .on("postgres_changes", { event: "*", schema: "public", table: "apartment_images", filter: `apartment_id=eq.${id}` }, refreshInspection)
+      .on("postgres_changes", { event: "*", schema: "public", table: "apartment_verification_documents", filter: `apartment_id=eq.${id}` }, refreshInspection)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "app_users" }, refreshInspection)
       .on("postgres_changes", { event: "*", schema: "public", table: "appeals" }, () => { void fetchPendingAppeals().then(setAppeals); })
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    const refreshOnFocus = () => refreshInspection();
+    const refreshOnVisibility = () => {
+      if (document.visibilityState === "visible") refreshInspection();
+    };
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnVisibility);
+    return () => {
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnVisibility);
+      void supabase.removeChannel(channel);
+    };
   }, [id]);
 
   useEffect(() => {

@@ -12,14 +12,11 @@ import { useAuth } from "@/app/shared/contexts/AuthContext";
 import {
   apartmentFormValuesFromApartment,
   createApartment,
-  createApartmentRoom,
+  deleteApartment,
   fetchApartmentWithImages,
   resolveAppUserId,
-  updateApartmentRoom,
   uploadApartmentImage,
-  uploadApartmentRoomImage,
   type Apartment,
-  type ApartmentStatus,
 } from "@/app/shared/data/apartments";
 import {
   VERIFICATION_DOCUMENT_TYPES,
@@ -67,35 +64,16 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 // ── Room type ─────────────────────────────────────────────────────────────────
-type Room = {
-  id: string;
-  roomName: string;              // Room number or name (e.g., "Room 101", "Unit A")
-  type: string;
-  sqft: number;
-  maxOccupants?: number;
-  rent?: number;
-  hasPrivateBath: boolean;
-  bathroomType: string;        // "en-suite" | "separate" | ""
-  sharedBathLocation: string;
-  status: ApartmentStatus;
-  isOccupied: boolean;
-  hasAC: boolean;
-  description: string;           // Room description
-  images: string[];              // Room images (URLs or data URLs)
-};
-
 type PropertyDraft = {
   version: 2;
   savedAt: string;
   currentStep: number;
   formData: Partial<Apartment>;
-  rooms: Room[];
   amenitiesInput: string;
   utilitiesInput: string;
   features: string[];
   featureInput: string;
   verificationData: {
-    propertyAddress: string;
     businessPermit: string;
     tinNumber: string;
     idType: string;
@@ -113,22 +91,6 @@ function isPropertyDraft(value: unknown): value is PropertyDraft {
   return draft.version === 2 && typeof draft.savedAt === "string" && Number.isFinite(draft.currentStep);
 }
 
-const makeRoom = (): Room => ({
-  id: Date.now().toString() + Math.random(),
-  roomName: "",
-  type: "Bedroom",
-  sqft: 150,
-  maxOccupants: undefined,
-  rent: undefined,
-  hasPrivateBath: false,
-  bathroomType: "",
-  sharedBathLocation: "",
-  status: "available",
-  isOccupied: false,
-  hasAC: false,
-  description: "",
-  images: [],
-});
 // ─────────────────────────────────────────────────────────────────────────────
 
 const VALID_ID_TYPES = [
@@ -150,25 +112,28 @@ const VALID_ID_TYPES = [
 
 const SUGGESTED_FEATURES = [
   "Pet Friendly",
-  "Parking",
   "Furnished",
   "Semi-Furnished",
-  "WiFi Ready",
-  "CCTV",
-  "Security Guard",
-  "Swimming Pool",
-  "Gym",
   "Balcony",
   "Garden",
-  "Elevator",
-  "Generator / Backup Power",
-  "Water Heater",
-  "Laundry Area",
   "Storage Room",
   "Near Market",
   "Near Hospital",
   "Near School",
 ];
+
+const SUGGESTED_AMENITIES = [
+  "WiFi", "Parking", "Laundry Area", "Gym", "Swimming Pool", "CCTV", "Elevator", "Generator", "Water Heater",
+];
+
+const normalizeListValues = (value: string): string[] => {
+  const canonical = new Map(SUGGESTED_AMENITIES.map((item) => [item.toLowerCase(), item]));
+  return value.split(",").map((item) => item.trim()).filter(Boolean).reduce<string[]>((items, item) => {
+    const normalized = canonical.get(item.toLowerCase()) ?? item;
+    if (!items.some((existing) => existing.toLowerCase() === normalized.toLowerCase())) items.push(normalized);
+    return items;
+  }, []);
+};
 
 const INITIAL_FORM_DATA: Partial<Apartment> = {
   title: "",
@@ -190,7 +155,6 @@ const INITIAL_FORM_DATA: Partial<Apartment> = {
 };
 
 const INITIAL_VERIFICATION_DATA = {
-  propertyAddress: "",
   businessPermit: "",
   tinNumber: "",
   idType: "",
@@ -210,10 +174,10 @@ export function AddApartment() {
   const totalSteps = 4;
 
   const stepConfig = [
-    { number: 1, title: "Property Information", description: "Photos, title, and basic details" },
-    { number: 2, title: "Verification", description: "Permit details and supporting documents" },
-    { number: 3, title: "Location", description: "Address and map location" },
-    { number: 4, title: "Amenities & Features", description: "Utilities and additional features" },
+    { number: 1, title: "Property Information", description: "Photos, name, and basic details" },
+    { number: 2, title: "Location", description: "Address and exact map location" },
+    { number: 3, title: "Amenities & Features", description: "Amenities, utilities, and additional features" },
+    { number: 4, title: "Property Verification", description: "Permit details and verification documents" },
   ];
   // ─────────────────────────────────────────────────────────────────────
 
@@ -224,7 +188,6 @@ export function AddApartment() {
   const lastAutoGeocodedAddressRef = useRef("");
 
   // ── Rooms state ───────────────────────────────────────────────────────
-  const [rooms, setRooms] = useState<Room[]>([makeRoom()]);
 
   // ─────────────────────────────────────────────────────────────────────
 
@@ -301,20 +264,6 @@ export function AddApartment() {
   };
 
   const hasDraftContent = useMemo(() => {
-    const roomHasContent = rooms.length > 1 || rooms.some((room) =>
-      Boolean(
-        room.roomName.trim()
-        || room.description.trim()
-        || Number(room.rent) > 0
-        || room.images.length > 0
-        || room.hasPrivateBath
-        || room.hasAC
-        || room.status !== "available"
-        || room.type !== "Bedroom"
-        || room.sqft !== 150
-        || (Number(room.maxOccupants) > 0 && Number(room.maxOccupants) !== 1),
-      ),
-    );
     const verificationHasContent = Object.values(verificationData).some((value) => value.trim().length > 0);
 
     return Boolean(
@@ -327,16 +276,14 @@ export function AddApartment() {
       || featureInput.trim()
       || uploadedImages.length > 0
       || verificationDocuments.length > 0
-      || roomHasContent
       || verificationHasContent
       || currentStep > 1,
     );
-  }, [amenitiesInput, currentStep, featureInput, features, formData, rooms, uploadedImages, utilitiesInput, verificationData, verificationDocuments]);
+  }, [amenitiesInput, currentStep, featureInput, features, formData, uploadedImages, utilitiesInput, verificationData, verificationDocuments]);
 
   const resetDraftForm = () => {
     setCurrentStep(1);
     setFormData({ ...INITIAL_FORM_DATA });
-    setRooms([makeRoom()]);
     setUploadedImages([]);
     setAmenitiesInput("");
     setUtilitiesInput("");
@@ -375,7 +322,6 @@ export function AddApartment() {
     const restoredFormData = { ...INITIAL_FORM_DATA, ...pendingDraft.formData, image: "", images: [] };
     setFormData(restoredFormData);
     setLocationPinned(hasValidApartmentCoordinates(restoredFormData.lat, restoredFormData.lng));
-    setRooms(pendingDraft.rooms.length > 0 ? pendingDraft.rooms : [makeRoom()]);
     setUploadedImages(pendingDraft.uploadedImages ?? []);
     setAmenitiesInput(pendingDraft.amenitiesInput ?? "");
     setUtilitiesInput(pendingDraft.utilitiesInput ?? "");
@@ -422,25 +368,19 @@ export function AddApartment() {
       .filter((image) => !image.file && /^https?:\/\//i.test(image.url))
       .map((image) => ({ ...image, file: undefined }));
     const hasLocalPropertyImages = uploadedImages.some((image) => Boolean(image.file) || /^(data:|blob:)/i.test(image.url));
-    const safeRooms = rooms.map((room) => ({
-      ...room,
-      images: room.images.filter((image) => /^https?:\/\//i.test(image)),
-    }));
-    const hasLocalRoomImages = rooms.some((room) => room.images.some((image) => !/^https?:\/\//i.test(image)));
     const { image: _image, images: _images, ...safeFormData } = formData;
     const draft: PropertyDraft = {
       version: 2,
       savedAt: new Date().toISOString(),
       currentStep,
       formData: safeFormData,
-      rooms: safeRooms,
       amenitiesInput,
       utilitiesInput,
       features,
       featureInput,
       verificationData: INITIAL_VERIFICATION_DATA,
       uploadedImages: persistentImages,
-      requiresImageReupload: hasLocalPropertyImages || hasLocalRoomImages || imageReuploadRequired,
+      requiresImageReupload: hasLocalPropertyImages || imageReuploadRequired,
     };
 
     try {
@@ -450,7 +390,7 @@ export function AddApartment() {
       console.error("Unable to save the Add Property draft:", error);
       if (updateStatus) setDraftStatus("error");
     }
-  }, [amenitiesInput, currentStep, featureInput, features, formData, hasDraftContent, imageReuploadRequired, rooms, uploadedImages, user?.id, utilitiesInput, verificationData]);
+  }, [amenitiesInput, currentStep, featureInput, features, formData, hasDraftContent, imageReuploadRequired, uploadedImages, user?.id, utilitiesInput, verificationData]);
 
   useEffect(() => {
     if (!draftReady || !user?.id || submissionCompleteRef.current) return;
@@ -498,7 +438,7 @@ export function AddApartment() {
   );
 
   useEffect(() => {
-    if (currentStep !== 3) return;
+    if (currentStep !== 2) return;
     if (!String(formData.address ?? "").trim()) return;
 
     const normalizedQuery = locationAddressQuery.trim().replace(/\s+/g, " ").toLowerCase();
@@ -513,8 +453,7 @@ export function AddApartment() {
     return () => window.clearTimeout(timer);
   }, [currentStep, formData.address, locationAddressQuery]);
 
-  const getSubmittedAmenities = () =>
-    amenitiesInput.split(",").map((amenity) => amenity.trim()).filter(Boolean);
+  const getSubmittedAmenities = () => normalizeListValues(amenitiesInput);
 
   const getSubmittedFeatures = () => {
     const submittedFeatures = featureInput.trim() ? [...features, featureInput.trim()] : features;
@@ -526,7 +465,7 @@ export function AddApartment() {
   const validateAllFields = (): { isValid: boolean; errors: Record<string, string>; firstStep: number } => {
     const errors: Record<string, string> = {};
 
-    if (!String(formData.title ?? "").trim()) errors.title = "Property title is required.";
+    if (!String(formData.title ?? "").trim()) errors.title = "Property name is required.";
     if (!Number(formData.sqft)) errors.sqft = "Total property area is required.";
     if (!String(formData.description ?? "").trim()) errors.description = "Property description is required.";
     if (uploadedImages.length === 0) errors.images = "Upload at least one property image.";
@@ -535,27 +474,18 @@ export function AddApartment() {
     if (locationResolving) {
       errors.mapLocation = "Finding this address on the map. Please wait a moment.";
     } else if (!locationPinned || !hasValidApartmentCoordinates(formData.lat, formData.lng)) {
-      errors.mapLocation = "Pin this apartment's real map location before submitting.";
+      errors.mapLocation = "Select the property's real map location before submitting.";
     }
 
     if (!String(verificationData.businessPermit).trim()) errors.businessPermit = "Business permit number is required.";
 
-    if (getSubmittedAmenities().length === 0) {
-      errors.amenities = "Please select at least one amenity before submitting your property.";
-    }
-    if (getSubmittedFeatures().length === 0) {
-      errors.features = "Please add at least one feature before submitting your property.";
-    }
-
     const firstStep = errors.title || errors.sqft || errors.description || errors.images
       ? 1
-      : errors.businessPermit
+      : errors.address || errors.mapLocation
         ? 2
-        : errors.address || errors.mapLocation
-          ? 3
-          : errors.amenities || errors.features
-            ? 4
-            : currentStep;
+        : errors.businessPermit
+          ? 4
+          : currentStep;
 
     return { isValid: Object.keys(errors).length === 0, errors, firstStep };
   };
@@ -565,9 +495,9 @@ export function AddApartment() {
     const { errors } = validateAllFields();
     const belongsToStep = (field: string) => {
       if (step === 1) return ["title", "sqft", "description", "images"].includes(field);
-      if (step === 2) return field === "businessPermit";
-      if (step === 3) return ["address", "mapLocation"].includes(field);
-      if (step === 4) return ["amenities", "features"].includes(field);
+      if (step === 2) return ["address", "mapLocation"].includes(field);
+      if (step === 3) return false;
+      if (step === 4) return field === "businessPermit";
       return false;
     };
     const stepErrors = Object.fromEntries(Object.entries(errors).filter(([field]) => belongsToStep(field)));
@@ -686,6 +616,8 @@ export function AddApartment() {
       status: formData.status ?? "available",
     };
 
+    let createdApartmentId: string | null = null;
+    let requiredSetupComplete = false;
     setIsSubmitting(true);
     try {
       const formValues = {
@@ -694,7 +626,7 @@ export function AddApartment() {
         customFeatures: submittedFeatures,
         verification: {
           propertyName: formData.title || "",
-          propertyAddress: verificationData.propertyAddress || formData.address || "",
+          propertyAddress: [formData.address, formData.city, formData.state, formData.zip].filter(Boolean).join(", "),
           businessPermit: verificationData.businessPermit,
           tinNumber: verificationData.tinNumber,
           idType: verificationData.idType,
@@ -713,6 +645,7 @@ export function AddApartment() {
         { ...formValues, landlordId: resolvedLandlordId },
         resolvedLandlordId,
       );
+      createdApartmentId = created.id;
       const { error: profileSyncError } = await supabase.from("landlord_profiles").upsert({
         user_id: resolvedLandlordId,
         permit_number: verificationData.businessPermit.trim(),
@@ -774,57 +707,36 @@ export function AddApartment() {
         if (imageMetadataError) throw new Error(imageMetadataError.message || "Unable to save apartment images.");
       }
 
-      for (const room of rooms) {
-        const createdRoom = await createApartmentRoom(created.id, {
-          name: room.roomName,
-          type: room.type,
-          sqft: room.sqft,
-          maxOccupants: room.maxOccupants,
-          price: room.rent,
-          hasPrivateBath: room.hasPrivateBath,
-          bathroomType: room.bathroomType,
-          sharedBathLocation: room.sharedBathLocation,
-          status: room.status,
-          isOccupied: room.status === "occupied",
-          hasAC: room.hasAC,
-          description: room.description,
-          images: [],
-        }, resolvedLandlordId);
-
-        if (createdRoom.id && room.images.length > 0) {
-          const roomImageUrls: string[] = [];
-          for (let imageIndex = 0; imageIndex < room.images.length; imageIndex += 1) {
-            const source = room.images[imageIndex];
-            if (/^https?:\/\//i.test(source)) {
-              roomImageUrls.push(source);
-              continue;
-            }
-            const blob = await (await fetch(source)).blob();
-            const extension = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
-            roomImageUrls.push(await uploadApartmentRoomImage(created.id, createdRoom.id, blob, `room-image-${imageIndex}.${extension}`));
-          }
-          await updateApartmentRoom(created.id, createdRoom.id, { ...createdRoom, images: roomImageUrls }, resolvedLandlordId);
-        }
-      }
-
       await uploadVerificationDocuments(created.id, resolvedLandlordId, verificationDocuments);
 
       const persistedApartment = await fetchApartmentWithImages(created.id);
       if (!persistedApartment || persistedApartment.images.length !== uploadedImageUrls.length) {
-        throw new Error("The apartment was created, but its permanent images could not be verified.");
+        throw new Error("The property was created, but its permanent images could not be verified.");
       }
+      requiredSetupComplete = true;
 
       await refreshApartments();
       submissionCompleteRef.current = true;
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
       await deletePropertyDraft(user.id);
       setDraftStatus("idle");
-      toast.success("Apartment added successfully!");
+      toast.success("Property submitted successfully and is awaiting admin review.");
       navigate("/dashboard");
     } catch (error) {
       console.error("Failed to submit apartment:", error);
       const message = error instanceof Error ? error.message : "Unable to save apartment.";
-      toast.error(message);
+      let rollbackFailed = false;
+      if (createdApartmentId && !requiredSetupComplete) {
+        try {
+          await deleteApartment(createdApartmentId);
+        } catch (rollbackError) {
+          rollbackFailed = true;
+          console.error("Failed to roll back incomplete apartment:", rollbackError);
+        }
+      }
+      toast.error(rollbackFailed
+        ? `${message} The incomplete property may still appear in My Properties; please remove it before trying again.`
+        : message);
     } finally {
       setIsSubmitting(false);
     }
@@ -859,7 +771,7 @@ export function AddApartment() {
       <div className="app-shell-content app-shell-content-mobile-nav mx-auto max-w-[1200px] px-4 py-6 pt-16 md:px-8 lg:pt-6">
         <div className="mb-8">
           <h1 className="text-3xl font-black text-[#302820]">Add Property</h1>
-          <p className="mt-1 text-sm font-medium text-[#756A60]">Create a new apartment listing and add its room details.</p>
+          <p className="mt-1 text-sm font-medium text-[#756A60]">Submit property information for review, then manage individual rooms separately.</p>
           <p className="mt-3 text-sm font-semibold text-[#8B735B]">Step {currentStep} of {totalSteps}</p>
           <div className="mt-3 flex min-h-8 flex-wrap items-center gap-2">
             {draftStatus !== "idle" && (
@@ -892,7 +804,7 @@ export function AddApartment() {
             <AlertCircle className="h-5 w-5 text-[#756A60]" />
             <AlertTitle className="text-[#302820]">Verification Pending</AlertTitle>
             <AlertDescription className="text-slate-600">
-              You can save and manage this property now. Tenants will only see it after an admin verifies your landlord account.
+              You can submit and manage the property while verification is pending. It will only become visible to tenants after the required admin verification and publication approval.
             </AlertDescription>
           </Alert>
         )}
@@ -927,7 +839,7 @@ export function AddApartment() {
               </div>
             ))}
           </div>
-          <div className="mt-4 grid grid-cols-5 gap-2">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {stepConfig.map((step) => (
               <button
                 key={step.number}
@@ -980,6 +892,7 @@ export function AddApartment() {
                       maxImages={10}
                       maxFileSize={5}
                     />
+                    <p className="text-xs font-medium text-slate-500">Upload clear photos of the property exterior, common areas, and facilities. Individual room photos can be managed separately in Manage Rooms.</p>
                     {imageReuploadRequired && (
                       <Alert className="rounded-lg border-[#E8DED1] bg-[#FAF8F5]">
                         <Upload className="h-4 w-4 text-[#756A60]" />
@@ -996,14 +909,14 @@ export function AddApartment() {
                     </div>
 
                     <div className="space-y-3">
-                      <Label className="text-slate-700 font-bold">Property Title *</Label>
+                      <Label className="text-slate-700 font-bold">Property Name *</Label>
                       <Input
                         value={formData.title}
                         onChange={(e) => {
                           setFormData({ ...formData, title: e.target.value });
                           if (e.target.value.trim()) clearValidationError("title");
                         }}
-                        placeholder="e.g., Modern Loft"
+                        placeholder="e.g., Sunset Residences"
                         required
                         aria-invalid={Boolean(validationErrors.title)}
                         className={fieldClass("title")}
@@ -1013,7 +926,7 @@ export function AddApartment() {
 
                     <div className="grid grid-cols-1 gap-6">
                       <div className="space-y-3">
-                        <Label className="text-slate-700 font-bold">Total Property Area (sqft) *</Label>
+                        <Label className="text-slate-700 font-bold">Total Property Area (sq ft) *</Label>
                         <Input
                           type="number"
                           value={formData.sqft || ""}
@@ -1025,6 +938,7 @@ export function AddApartment() {
                           aria-invalid={Boolean(validationErrors.sqft)}
                           className={`${fieldClass("sqft")} hide-number-spinners`}
                         />
+                        <p className="text-xs font-medium text-slate-500">Enter the approximate total floor area of the property.</p>
                         <FieldError field="sqft" />
                       </div>
                     </div>
@@ -1040,7 +954,7 @@ export function AddApartment() {
                         rows={4}
                         required
                         aria-invalid={Boolean(validationErrors.description)}
-                        placeholder="Describe your property..."
+                        placeholder="Describe the property, surrounding area, accessibility, and other important details."
                         className={`${fieldClass("description")} resize-none`}
                       />
                       <FieldError field="description" />
@@ -1050,7 +964,7 @@ export function AddApartment() {
               )}
 
               {/* ──────── STEP 3: Location ──────── */}
-              {currentStep === 3 && (
+              {currentStep === 2 && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">
                     <MapPin className="h-5 w-5 text-[#756A60]" />
@@ -1058,7 +972,7 @@ export function AddApartment() {
                   </div>
 
                   <div className="space-y-3">
-                    <Label className="text-slate-700 font-bold">Street Address *</Label>
+                    <Label className="text-slate-700 font-bold">Detailed Address / Street Address *</Label>
                     <Input
                       value={formData.address}
                       onChange={(e) => {
@@ -1076,13 +990,13 @@ export function AddApartment() {
                     <FieldError field="address" />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
                     <div className="space-y-3">
-                      <Label className="text-slate-700 font-bold">City</Label>
+                      <Label className="text-slate-700 font-bold">District / Area</Label>
                       <Input value={formData.city} readOnly className="bg-slate-50 rounded-xl" />
                     </div>
                     <div className="space-y-3">
-                      <Label className="text-slate-700 font-bold">Province</Label>
+                      <Label className="text-slate-700 font-bold">City</Label>
                       <Input value={formData.state} readOnly className="bg-slate-50 rounded-xl" />
                     </div>
                     <div className="space-y-3">
@@ -1093,14 +1007,24 @@ export function AddApartment() {
 
                   <div className="space-y-3">
                     <Label className="text-slate-700 font-bold">Map Location</Label>
-                    <p className="text-xs text-slate-500">Enter the address, then use the map result or drag the marker to the exact apartment location.</p>
-                    <div className="rounded-2xl border-2 border-[#E8DED1] overflow-hidden bg-white shadow-sm" style={{ height: "500px" }}>
+                    <p className="text-xs text-slate-500">Enter the property address to locate it automatically, or click/drag the map pin to select the exact location. The detected location updates from the selected point.</p>
+                    <div className="w-full overflow-hidden rounded-2xl border-2 border-[#E8DED1] bg-white shadow-sm">
                       <LocationPicker
                         lat={Number.isFinite(Number(formData.lat)) ? Number(formData.lat) : DEFAULT_LA_PAZ_MAP_CENTER.lat}
                         lng={Number.isFinite(Number(formData.lng)) ? Number(formData.lng) : DEFAULT_LA_PAZ_MAP_CENTER.lng}
                         addressQuery={locationAddressQuery}
                         geocodeRequestKey={locationLookupRequest}
                         onGeocodeStatusChange={(status) => setLocationResolving(status === "loading")}
+                        onMapAddressChange={(detectedAddress) => {
+                          setFormData((current) => ({
+                            ...current,
+                            // Preserve detailed landlord-entered directions; the detected
+                            // map address remains visible below the map while coordinates
+                            // provide the authoritative exact point.
+                            address: String(current.address ?? "").trim() || detectedAddress,
+                          }));
+                          clearValidationError("address");
+                        }}
                         onLocationChange={(lat, lng) => {
                           setFormData((current) => ({ ...current, lat, lng }));
                           setLocationPinned(hasValidApartmentCoordinates(lat, lng));
@@ -1114,7 +1038,7 @@ export function AddApartment() {
               )}
 
               {/* ──────── STEP 4: Amenities & Features ──────── */}
-              {currentStep === 4 && (
+              {currentStep === 3 && (
                 <>
                   <div className="space-y-6">
                     <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">
@@ -1122,7 +1046,7 @@ export function AddApartment() {
                       <h3 className="text-sm font-bold text-[#756A60] uppercase">Amenities</h3>
                     </div>
                     <div className="space-y-3">
-                      <Label className="text-slate-700 font-bold">Amenities (comma-separated) *</Label>
+                      <Label className="text-slate-700 font-bold">Amenities (comma-separated)</Label>
                       <Textarea
                         value={amenitiesInput}
                         onChange={(e) => {
@@ -1137,6 +1061,18 @@ export function AddApartment() {
                         className={`${fieldClass("amenities")} resize-none`}
                       />
                       <FieldError field="amenities" />
+                      <div className="flex flex-wrap gap-2">
+                        {SUGGESTED_AMENITIES.filter((suggestion) => !getSubmittedAmenities().some((item) => item.toLowerCase() === suggestion.toLowerCase())).map((suggestion) => (
+                          <button
+                            key={suggestion}
+                            type="button"
+                            onClick={() => setAmenitiesInput((current) => [...normalizeListValues(current), suggestion].join(", "))}
+                            className="inline-flex items-center gap-1 rounded-full border border-[#E8DED1] bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-[#FAF8F5]"
+                          >
+                            <Plus className="h-3 w-3" /> {suggestion}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -1180,6 +1116,7 @@ export function AddApartment() {
                       </Button>
                     </div>
                     <FieldError field="features" />
+                    <p className="text-xs font-medium text-slate-500">Additional features are optional. Add only features the property actually has.</p>
 
                     {features.length > 0 && (
                       <div className="flex flex-wrap gap-2">
@@ -1219,16 +1156,16 @@ export function AddApartment() {
               )}
 
               {/* ──────── STEP 2: Verification ──────── */}
-              {currentStep === 2 && (
+              {currentStep === 4 && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">
                     <ShieldCheck className="h-5 w-5 text-[#756A60]" />
-                    <h3 className="text-sm font-bold text-[#756A60] uppercase">Legitimacy & Verification</h3>
+                    <h3 className="text-sm font-bold text-[#756A60] uppercase">Property Verification</h3>
                   </div>
 
                   <div className="space-y-3">
                     <Label className="text-slate-700 font-bold flex items-center gap-1.5">
-                      <Building2 className="h-3.5" /> Property / Apartment Name
+                      <Building2 className="h-3.5" /> Property Name
                     </Label>
                     <Input
                       value={String(formData.title ?? "")}
@@ -1241,25 +1178,20 @@ export function AddApartment() {
 
                   <div className="space-y-3">
                     <Label className="text-slate-700 font-bold flex items-center gap-1.5">
-                      <MapPin className="h-3.5" /> Complete Property Address
+                      <MapPin className="h-3.5" /> Property Address
                     </Label>
                     <Input
-                      value={verificationData.propertyAddress}
-                      onChange={(e) => {
-                        setVerificationData({ ...verificationData, propertyAddress: e.target.value });
-                        if (e.target.value.trim()) clearValidationError("verificationPropertyAddress");
-                      }}
-                      aria-invalid={Boolean(validationErrors.verificationPropertyAddress)}
-                      placeholder="Full address"
-                      className={fieldClass("verificationPropertyAddress")}
+                      value={[formData.address, formData.city, formData.state, formData.zip].filter(Boolean).join(", ")}
+                      readOnly
+                      className="rounded-xl border-slate-200 bg-slate-50 font-semibold text-slate-700"
                     />
-                    <FieldError field="verificationPropertyAddress" />
+                    <p className="text-xs font-medium text-slate-500">Carried from Location. Go back to step 2 to change this address.</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <div className="space-y-3">
                       <Label className="text-slate-700 font-bold flex items-center gap-1.5">
-                        <FileText className="h-3.5" /> Business Permit # *
+                        <FileText className="h-3.5" /> Business Permit Number *
                       </Label>
                       <Input
                         value={verificationData.businessPermit}
@@ -1275,7 +1207,7 @@ export function AddApartment() {
                     </div>
 
                     <div className="space-y-3">
-                      <Label className="text-slate-700 font-bold">TIN Number (optional)</Label>
+                      <Label className="text-slate-700 font-bold">TIN (optional)</Label>
                       <Input
                         value={verificationData.tinNumber}
                         onChange={(e) => {
@@ -1290,7 +1222,7 @@ export function AddApartment() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <div className="space-y-3">
                       <Label className="text-slate-700 font-bold">Valid ID Type (optional)</Label>
                       <select
@@ -1332,8 +1264,8 @@ export function AddApartment() {
 
                   <div className="space-y-4 border-t border-[#F3EFEA] pt-6">
                     <div>
-                      <h3 className="font-black text-slate-900">Supporting documents</h3>
-                      <p className="mt-1 text-sm font-medium text-slate-500">Upload available documents now. Missing items appear as “Not provided” for the admin and can be supplied later.</p>
+                      <h3 className="font-black text-slate-900">Verification Documents</h3>
+                      <p className="mt-1 text-sm font-medium text-slate-500">Upload the available property and identification documents for admin review. Documents that are not uploaded will be marked as “Not provided.”</p>
                       <p className="mt-1 text-xs font-bold text-[#5F5145]">JPG, JPEG, PNG, WebP, or PDF · maximum 10 MB each</p>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
@@ -1398,7 +1330,7 @@ export function AddApartment() {
                   </Button>
                 ) : (
                   <Button type="submit" disabled={isSubmitting || locationResolving} className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl h-12 font-bold disabled:opacity-60 disabled:cursor-not-allowed">
-                    <Check className="h-5 w-5" /> {isSubmitting ? "Submitting..." : locationResolving ? "Finding location..." : "List Property"}
+                    <Check className="h-5 w-5" /> {isSubmitting ? "Submitting..." : locationResolving ? "Finding location..." : "Submit Property"}
                   </Button>
                 )}
               </div>

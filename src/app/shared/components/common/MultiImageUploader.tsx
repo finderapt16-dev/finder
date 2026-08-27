@@ -53,6 +53,7 @@ export function MultiImageUploader({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
+  const previewUrlsRef = useRef(new Set<string>());
 
   const [isDragging, setIsDragging] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -61,6 +62,8 @@ export function MultiImageUploader({
 
   useEffect(() => () => {
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    previewUrlsRef.current.clear();
   }, []);
 
   const validateFile = (file: File): boolean => {
@@ -102,37 +105,20 @@ export function MultiImageUploader({
     }
 
     const filesToAdd = validFiles.slice(0, remainingSlots);
-    // Load all data URLs properly
-    const promises = filesToAdd.map(
-      (file) =>
-        new Promise<UploadedImage>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const dataUrl = e.target?.result as string;
-            resolve({
-              id: `${Date.now()}-${Math.random()}`,
-              url: dataUrl,
-              file,
-              isPrimary: images.length === 0,
-              sortOrder: images.length,
-              fingerprint: `${file.name}:${file.size}:${file.lastModified}`,
-            });
-          };
-          reader.readAsDataURL(file);
-        })
-    );
-
-    Promise.all(promises).then((loadedImages) => {
-      const updatedImages = [
-        ...images,
-        ...loadedImages.map((img, idx) => ({
-          ...img,
-          sortOrder: images.length + idx,
-        })),
-      ];
-      onImagesChange(updatedImages);
-      toast.success(`${loadedImages.length} image(s) added`);
+    const loadedImages = filesToAdd.map((file, index): UploadedImage => {
+      const previewUrl = URL.createObjectURL(file);
+      previewUrlsRef.current.add(previewUrl);
+      return {
+        id: `${Date.now()}-${index}-${Math.random()}`,
+        url: previewUrl,
+        file,
+        isPrimary: images.length === 0 && index === 0,
+        sortOrder: images.length + index,
+        fingerprint: `${file.name}:${file.size}:${file.lastModified}`,
+      };
     });
+    onImagesChange([...images, ...loadedImages]);
+    toast.success(`${loadedImages.length} image(s) added`);
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,6 +174,11 @@ export function MultiImageUploader({
   };
 
   const removeImage = (id: string) => {
+    const removed = images.find((image) => image.id === id);
+    if (removed?.url.startsWith("blob:") && previewUrlsRef.current.has(removed.url)) {
+      URL.revokeObjectURL(removed.url);
+      previewUrlsRef.current.delete(removed.url);
+    }
     const updated = images.filter((img) => img.id !== id);
     // Reassign sort orders
     const reordered = updated.map((img, idx) => ({
