@@ -7,8 +7,9 @@
 -- HOW TO USE:
 --   1. Supabase Dashboard → SQL Editor → New query
 --   2. Copy and paste this ENTIRE file
---   3. Click "Run" to execute all migrations
---   4. Safe to re-run on existing projects
+--   3. Click "Run" once to execute the complete migration
+--   4. The enum preflight commits tenant/super_admin before later references
+--   5. Recommended for the fresh Supabase project used by AptFindr
 --
 -- WHAT THIS CREATES:
 --   - Complete database schema for all features
@@ -31,11 +32,29 @@
 
 create extension if not exists pgcrypto;
 
--- Enums
+-- =============================================================================
+-- 00_ENUM_PREFLIGHT
+-- Required enum values are created/added and COMMITTED before later
+-- functions, triggers, policies, and casts reference them.
+-- This prevents PostgreSQL error 55P04:
+--   unsafe use of new value "super_admin" of enum type app_user_role
+-- =============================================================================
+begin;
+
 do $$ begin
-  create type public.app_user_role as enum ('student', 'employee', 'landlord', 'admin');
+  create type public.app_user_role as enum (
+    'student',
+    'employee',
+    'tenant',
+    'landlord',
+    'admin',
+    'super_admin'
+  );
 exception when duplicate_object then null;
 end $$;
+
+-- Compatibility for databases where app_user_role already exists.
+alter type public.app_user_role add value if not exists 'tenant';
 alter type public.app_user_role add value if not exists 'super_admin';
 
 do $$ begin
@@ -61,12 +80,22 @@ exception when duplicate_object then null;
 end $$;
 
 do $$ begin
-  create type public.appeal_status as enum ('pending', 'under_review', 'approved', 'rejected');
+  create type public.appeal_status as enum (
+    'pending',
+    'under_review',
+    'needs_information',
+    'approved',
+    'rejected',
+    'dismissed'
+  );
 exception when duplicate_object then null;
 end $$;
 
+-- Compatibility for databases where appeal_status already exists.
 alter type public.appeal_status add value if not exists 'needs_information';
 alter type public.appeal_status add value if not exists 'dismissed';
+
+commit;
 
 -- app_users table
 create table if not exists public.app_users (
@@ -93,6 +122,12 @@ create table if not exists public.app_users (
   department text,
   admin_level text,
   signup_source text,
+  terms_accepted boolean not null default false,
+  terms_accepted_at timestamptz,
+  terms_version text,
+  landlord_verification_policy_accepted boolean not null default false,
+  landlord_verification_policy_accepted_at timestamptz,
+  landlord_verification_policy_version text,
   preferences jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -111,6 +146,12 @@ alter table public.app_users add column if not exists permit_number text;
 alter table public.app_users add column if not exists department text;
 alter table public.app_users add column if not exists admin_level text;
 alter table public.app_users add column if not exists signup_source text;
+alter table public.app_users add column if not exists terms_accepted boolean not null default false;
+alter table public.app_users add column if not exists terms_accepted_at timestamptz;
+alter table public.app_users add column if not exists terms_version text;
+alter table public.app_users add column if not exists landlord_verification_policy_accepted boolean not null default false;
+alter table public.app_users add column if not exists landlord_verification_policy_accepted_at timestamptz;
+alter table public.app_users add column if not exists landlord_verification_policy_version text;
 alter table public.app_users add column if not exists preferences jsonb not null default '{}'::jsonb;
 
 -- Username login identifier.
@@ -1459,6 +1500,40 @@ as $$
   select id from public.app_users where auth_id = auth.uid() limit 1
 $$;
 
+
+-- Resolve an AptFindr username to the internal Supabase Auth email before
+-- authentication. Direct anonymous SELECT on app_users remains blocked by RLS.
+-- Only an exact normalized username is accepted.
+create or replace function public.fn_resolve_username_login(p_username text)
+returns text
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_username text := lower(trim(coalesce(p_username, '')));
+  v_email text;
+begin
+  if v_username !~ '^[a-z0-9_]{4,30}$' then
+    return null;
+  end if;
+
+  select u.email
+  into v_email
+  from public.app_users u
+  where lower(u.username) = v_username
+    and u.status <> 'disabled'
+    and u.auth_id is not null
+  limit 1;
+
+  return v_email;
+end;
+$$;
+
+revoke all on function public.fn_resolve_username_login(text) from public;
+grant execute on function public.fn_resolve_username_login(text) to anon, authenticated, service_role;
+
 create or replace function public.current_user_is_admin()
 returns boolean
 language sql
@@ -1995,6 +2070,19 @@ as $$
 begin
   if not public.current_user_is_admin() then
     raise exception 'Administrator access required' using errcode = '42501';
+  end if;
+
+  if p_verified and not exists (
+    select 1
+    from public.app_users app_user
+    join public.landlord_profiles profile on profile.user_id = app_user.id
+    where app_user.id = p_landlord_id
+      and app_user.role = 'landlord'
+      and nullif(trim(coalesce(app_user.permit_number, profile.permit_number, profile.business_permit_number)), '') is not null
+      and nullif(trim(profile.verification_document_url), '') is not null
+      and nullif(trim(profile.id_document_url), '') is not null
+  ) then
+    raise exception 'Business Permit and Valid ID documents are required before landlord approval' using errcode = '23514';
   end if;
 
   update public.app_users
@@ -2641,6 +2729,7 @@ grant execute on function public.apartment_is_tenant_visible(uuid) to anon, auth
 grant execute on function public.get_public_landlords() to anon, authenticated, service_role;
 grant execute on function public.get_apartment_view_counts() to authenticated, service_role;
 grant execute on function public.fn_delete_my_account() to authenticated;
+grant execute on function public.fn_resolve_username_login(text) to anon, authenticated, service_role;
 revoke execute on function public.handle_new_auth_user() from public, anon, authenticated;
 
 do $$
@@ -2713,14 +2802,10 @@ where landlord.id = profile.user_id
 
 -- =============================================================================
 -- 13_tenant_role_enum
--- Dedicated transaction that adds the tenant enum value. Run it by itself.
+-- Compatibility checkpoint only.
 -- =============================================================================
--- Normalize renter accounts under the tenant system role while retaining
--- student and employee profile data and accepting legacy enum values.
-begin;
-alter type public.app_user_role add value if not exists 'tenant';
-alter type public.app_user_role add value if not exists 'super_admin';
-commit;
+-- tenant and super_admin are already created and committed in 00_ENUM_PREFLIGHT.
+-- Tenant profile normalization is performed in Section 15.
 
 -- 14_secure_2fa_backup_codes
 -- Hashed one-time backup-code table, index and authenticated RPC functions.
@@ -2872,13 +2957,20 @@ create unique index if not exists app_users_username_unique
 alter table public.app_users alter column username set not null;
 
 -- =============================================================================
--- 15A_super_admin_bootstrap
--- Pre-create the trusted Super Admin application profile before creating the
--- matching Supabase Auth user in Authentication > Users.
--- Passwords remain exclusively in Supabase Auth and are never stored here.
+-- 15A_privileged_account_bootstrap
+-- Trusted Admin + Super Admin application profiles.
+--
+-- AptFindr UI login identifiers:
+--   Admin:       admin
+--   Super Admin: superadmin
+--
+-- Supabase Auth still requires an internal email + password underneath:
+--   Admin:       admin@aptfindr.com
+--   Super Admin: superadmin@aptfindr.com
+--
+-- Passwords MUST be created only in Supabase Authentication and are never
+-- stored in public tables or in this migration.
 -- =============================================================================
-
-alter type public.app_user_role add value if not exists 'super_admin';
 
 insert into public.app_users (
   username,
@@ -2893,40 +2985,71 @@ insert into public.app_users (
   admin_level,
   department
 )
-values (
-  'superadmin',
-  'superadmin@aptfindr.com',
-  'Super Administrator',
-  'super_admin'::public.app_user_role,
-  'active',
-  true,
-  false,
-  'pending_email_verification',
-  'manual_super_admin_bootstrap',
-  'Super Administrator',
-  'Platform Administration'
-)
+values
+  (
+    'admin',
+    'admin@aptfindr.com',
+    'AptFindr Administrator',
+    'admin'::public.app_user_role,
+    'active',
+    true,
+    false,
+    'pending_auth_link',
+    'manual_admin_bootstrap',
+    'Full Administrator',
+    'Platform Administration'
+  ),
+  (
+    'superadmin',
+    'superadmin@aptfindr.com',
+    'Super Administrator',
+    'super_admin'::public.app_user_role,
+    'active',
+    true,
+    false,
+    'pending_auth_link',
+    'manual_super_admin_bootstrap',
+    'Super Administrator',
+    'Platform Administration'
+  )
 on conflict (email) do update set
   username = case
-    when app_users.role = 'super_admin' then excluded.username
+    when app_users.role in ('admin', 'super_admin') then excluded.username
     else app_users.username
   end,
   name = case
-    when app_users.role = 'super_admin' then excluded.name
+    when app_users.role in ('admin', 'super_admin') then excluded.name
     else app_users.name
   end,
   status = case
-    when app_users.role = 'super_admin' then 'active'
+    when app_users.role in ('admin', 'super_admin') then 'active'
     else app_users.status
   end,
   admin_level = case
-    when app_users.role = 'super_admin' then excluded.admin_level
+    when app_users.role in ('admin', 'super_admin') then excluded.admin_level
     else app_users.admin_level
   end,
   department = case
-    when app_users.role = 'super_admin' then excluded.department
+    when app_users.role in ('admin', 'super_admin') then excluded.department
     else app_users.department
+  end,
+  signup_source = case
+    when app_users.role in ('admin', 'super_admin') then excluded.signup_source
+    else app_users.signup_source
   end;
+
+insert into public.admin_profiles (user_id, admin_level, department)
+select
+  u.id,
+  case when u.role = 'super_admin' then 'Super Administrator' else 'Full Administrator' end,
+  coalesce(nullif(u.department, ''), 'Platform Administration')
+from public.app_users u
+where lower(u.email) in ('admin@aptfindr.com', 'superadmin@aptfindr.com')
+  and u.role in ('admin', 'super_admin')
+on conflict (user_id) do update set
+  admin_level = excluded.admin_level,
+  department = excluded.department,
+  updated_at = now();
 
 create or replace function public.handle_new_auth_user()
 returns trigger
@@ -2977,12 +3100,14 @@ begin
     else v_existing_tenant_type
   end;
 
-  if v_role = 'tenant' and v_tenant_type is null then
-    raise exception 'Tenant specification is required';
+  if v_role in ('tenant', 'landlord')
+     and coalesce((new.raw_user_meta_data ->> 'termsAccepted')::boolean, false) is not true then
+    raise exception 'Terms of Use and Privacy Policy agreement is required';
   end if;
 
-  if v_tenant_type = 'other' and nullif(trim(new.raw_user_meta_data ->> 'otherOccupation'), '') is null then
-    raise exception 'Occupation / Tenant Type is required for Other tenant accounts';
+  if v_role = 'landlord'
+     and coalesce((new.raw_user_meta_data ->> 'landlordVerificationAccepted')::boolean, false) is not true then
+    raise exception 'Landlord Verification Policy agreement is required';
   end if;
 
   -- Username is the AptFindr sign-in identifier. Email remains the verified
@@ -3012,8 +3137,11 @@ begin
 
   insert into public.app_users (
     auth_id, username, email, name, role, tenant_type, status, mobile, middle_initial,
-    address, is_verified, permit_number, signup_source, other_occupation,
-    other_organization, other_workplace
+    address, is_verified, email_verified, verification_status, permit_number,
+    signup_source, other_occupation, other_organization, other_workplace,
+    terms_accepted, terms_accepted_at, terms_version,
+    landlord_verification_policy_accepted, landlord_verification_policy_accepted_at,
+    landlord_verification_policy_version
   )
   values (
     new.id, v_username, new.email, v_name, v_role, v_tenant_type,
@@ -3022,11 +3150,16 @@ begin
     nullif(new.raw_user_meta_data ->> 'middleInitial', ''),
     nullif(new.raw_user_meta_data ->> 'address', ''),
     v_role <> 'landlord',
+    new.email_confirmed_at is not null,
+    case when new.email_confirmed_at is null then 'pending_email_verification' else 'email_verified' end,
     case when v_role = 'landlord' then nullif(new.raw_user_meta_data ->> 'permitNumber', '') else null end,
     'web',
     case when v_tenant_type = 'other' then nullif(trim(new.raw_user_meta_data ->> 'otherOccupation'), '') else null end,
     case when v_tenant_type = 'other' then nullif(trim(new.raw_user_meta_data ->> 'otherOrganization'), '') else null end,
-    case when v_tenant_type = 'other' then nullif(trim(new.raw_user_meta_data ->> 'otherWorkplace'), '') else null end
+    case when v_tenant_type = 'other' then nullif(trim(new.raw_user_meta_data ->> 'otherWorkplace'), '') else null end,
+    true, now(), 'terms-privacy-2026-08-27',
+    v_role = 'landlord', case when v_role = 'landlord' then now() else null end,
+    case when v_role = 'landlord' then 'landlord-verification-2026-08-27' else null end
   )
   on conflict (email) do update set
     auth_id = excluded.auth_id,
@@ -3039,7 +3172,13 @@ begin
     permit_number = coalesce(app_users.permit_number, excluded.permit_number),
     other_occupation = coalesce(excluded.other_occupation, app_users.other_occupation),
     other_organization = coalesce(excluded.other_organization, app_users.other_organization),
-    other_workplace = coalesce(excluded.other_workplace, app_users.other_workplace)
+    other_workplace = coalesce(excluded.other_workplace, app_users.other_workplace),
+    terms_accepted = excluded.terms_accepted,
+    terms_accepted_at = coalesce(app_users.terms_accepted_at, excluded.terms_accepted_at),
+    terms_version = excluded.terms_version,
+    landlord_verification_policy_accepted = excluded.landlord_verification_policy_accepted,
+    landlord_verification_policy_accepted_at = coalesce(app_users.landlord_verification_policy_accepted_at, excluded.landlord_verification_policy_accepted_at),
+    landlord_verification_policy_version = coalesce(excluded.landlord_verification_policy_version, app_users.landlord_verification_policy_version)
   where app_users.auth_id is null or app_users.auth_id = excluded.auth_id
   returning id into v_user_id;
 
@@ -3199,10 +3338,9 @@ grant execute on function public.current_user_is_super_admin() to authenticated,
 grant execute on function public.current_app_user_role() to authenticated, service_role;
 
 
--- Verify the Super Admin bootstrap/link status.
--- Before creating the Auth user, auth_id is expected to be NULL.
--- After creating superadmin@aptfindr.com in Authentication > Users, auth_id
--- should become the Supabase Auth UUID automatically through the trigger.
+-- Verify Admin + Super Admin bootstrap/link status.
+-- Before matching Auth users are created, auth_id is expected to be NULL.
+-- After creating the matching Authentication users, auth_id must be populated.
 select
   id,
   auth_id,
@@ -3211,10 +3349,13 @@ select
   name,
   role,
   status,
+  email_verified,
+  verification_status,
   admin_level,
   department
 from public.app_users
-where lower(email) = lower('superadmin@aptfindr.com');
+where lower(email) in ('admin@aptfindr.com', 'superadmin@aptfindr.com')
+order by case role when 'super_admin' then 0 else 1 end;
 
 -- =============================================================================
 -- 15B_super_admin_platform_control
@@ -3538,8 +3679,10 @@ commit;
 
 -- =============================================================================
 -- MIGRATION COMPLETE
--- All 15 labeled SQL Editor blocks have been created/updated.
 -- Username support is integrated in 01, 09, and 15/15A.
--- Email remains the Supabase Auth verification/recovery address.
--- Safe to re-run. Run the blocks in numeric order.
+-- fn_resolve_username_login() provides the pre-auth username → internal Auth
+-- email lookup without opening app_users to anonymous table reads.
+-- Admin and Super Admin application profiles are bootstrapped in 15A.
+-- Email remains internal to Supabase Auth/recovery; AptFindr UI uses username.
+-- For a fresh project, run this complete file once from top to bottom.
 -- =============================================================================

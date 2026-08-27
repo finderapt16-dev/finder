@@ -743,7 +743,7 @@ export function Landing() {
       {/* ─── Footer ──────────────────────────────────────────── */}
       <footer className="order-[11] border-t border-slate-200 bg-white pb-8 pt-16 text-slate-500">
         <div className="container mx-auto px-4 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-12">
             {/* Brand */}
             <div className="lg:col-span-2">
               <div className="flex items-center gap-3 mb-4">
@@ -758,29 +758,6 @@ export function Landing() {
                   <Mail className="h-3.5 w-3.5" />rentiloilo@example.com
                 </a>
               </div>
-            </div>
-
-            {/* Quick links */}
-            <div>
-              <h4 className="mb-4 text-sm font-black uppercase tracking-widest text-slate-950">Quick Links</h4>
-              <ul className="space-y-2">
-                {[
-                  { to: "/browse", label: "Browse Listings", protected: true },
-                  { to: "/favorites", label: "Favorites", protected: true },
-                  { to: "/signup", label: "Create Account", protected: false },
-                  { to: "/login", label: "Log In", protected: false },
-                  { to: "/flowchart", label: "Platform Flowchart", protected: false },
-                  { to: "/design-guide", label: "Design Guide", protected: false },
-                ].map(({ to, label, protected: isProtected }) => (
-                  <li key={to}>
-                    <Link to={to} onClick={isProtected ? handleProtectedAction : undefined}
-                      className="group flex items-center gap-1.5 text-sm transition-colors hover:text-slate-950">
-                      <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
             </div>
 
             {/* About / Legal */}

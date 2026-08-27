@@ -3,17 +3,15 @@ import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallba
 import { Alert, AlertDescription } from "@/app/shared/components/ui/alert";
 import { Button } from "@/app/shared/components/ui/button";
 import { useAuth, type UserRole } from "@/app/shared/contexts/AuthContext";
-import type { TenantType } from "@/app/shared/services/authService";
 import {
   AlertCircle,
   BadgeCheck,
-  Briefcase, Building2,
+  Building2,
   Check,
   CheckCircle2,
   ChevronDown, ChevronRight,
   ClipboardList,
   Eye, EyeOff,
-  GraduationCap,
   Home,
   Key,
   Lock, Mail,
@@ -150,16 +148,15 @@ export function Signup() {
   const idRef = useRef<HTMLInputElement>(null);
   const [permitFile, setPermitFile] = useState<File | null>(null);
   const [idFile, setIdFile] = useState<File | null>(null);
+  const [tenantTermsAccepted, setTenantTermsAccepted] = useState(false);
+  const [landlordAgreementAccepted, setLandlordAgreementAccepted] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", middleInitial: "",
     username: "", email: "", mobileNumber: "", address: "",
     password: "", confirmPassword: "",
     role: "" as UserRole | "",
-    tenantType: "" as TenantType | "",
-    school: "", guardian: "", guardianAddress: "", guardianContact: "",
-    company: "", workAddress: "", permitNumber: "",
-    otherOccupation: "", otherOrganization: "", otherWorkplace: "",
+    permitNumber: "",
   });
 
   const set = (key: string, value: string) =>
@@ -171,17 +168,7 @@ export function Signup() {
   const donePersonal =
     !!formData.firstName && !!formData.lastName && !!formData.address;
   const doneContact = !!formData.mobileNumber;
-  const doneRole = (() => {
-    if (!formData.role) return false;
-    if (formData.role === "tenant" && formData.tenantType === "student")
-      return !!formData.school && !!formData.guardian && !!formData.guardianContact;
-    if (formData.role === "tenant" && formData.tenantType === "employee")
-      return !!formData.company && !!formData.workAddress;
-    if (formData.role === "tenant" && formData.tenantType === "other")
-      return !!formData.otherOccupation;
-    if (formData.role === "landlord") return !!formData.permitNumber;
-    return false;
-  })();
+  const doneRole = formData.role === "landlord" && !!formData.permitNumber;
   const doneSecurity =
     /^[A-Za-z0-9_]{4,30}$/.test(formData.username) &&
     /^\S+@\S+\.\S+$/.test(formData.email.trim()) &&
@@ -195,11 +182,9 @@ export function Signup() {
     if (submissionInFlightRef.current) return;
     setError("");
     if (!formData.role) { setError("Please select a role."); return; }
-    if (formData.role === "tenant" && !formData.tenantType) { setError("Please select a tenant type."); return; }
-    if (formData.role === "tenant" && formData.tenantType === "student" && (!formData.school || !formData.guardian || !formData.guardianContact || !formData.guardianAddress)) { setError("Please complete the required student details."); return; }
-    if (formData.role === "tenant" && formData.tenantType === "employee" && (!formData.company || !formData.workAddress)) { setError("Please complete the required employment details."); return; }
-    if (formData.role === "tenant" && formData.tenantType === "other" && !formData.otherOccupation.trim()) { setError("Occupation / Tenant Type is required."); return; }
     if (formData.role === "landlord" && !formData.permitNumber.trim()) { setError("Business permit number is required."); return; }
+    if (formData.role === "tenant" && !tenantTermsAccepted) { setError("You must agree to the Terms of Use and Privacy Policy to continue."); return; }
+    if (formData.role === "landlord" && !landlordAgreementAccepted) { setError("You must agree to the Terms of Use and Landlord Verification Policy to continue."); return; }
     if (!formData.firstName || !formData.lastName) { setError("Full name is required."); return; }
     if (!formData.address) { setError("Home address is required."); return; }
     if (!formData.mobileNumber) { setError("Mobile number is required."); return; }
@@ -219,22 +204,14 @@ export function Signup() {
         email: formData.email,
         password: formData.password,
         role: formData.role as UserRole,
-        tenantType: formData.role === "tenant" ? formData.tenantType as TenantType : undefined,
         middleInitial: formData.middleInitial,
         address: formData.address,
         mobileNumber: formData.mobileNumber,
-        school: formData.tenantType === "student" ? formData.school : undefined,
-        guardianName: formData.tenantType === "student" ? formData.guardian : undefined,
-        guardianAddress: formData.tenantType === "student" ? formData.guardianAddress : undefined,
-        guardianContact: formData.tenantType === "student" ? formData.guardianContact : undefined,
-        company: formData.tenantType === "employee" ? formData.company : undefined,
-        workAddress: formData.tenantType === "employee" ? formData.workAddress : undefined,
-        otherOccupation: formData.tenantType === "other" ? formData.otherOccupation : undefined,
-        otherOrganization: formData.tenantType === "other" ? formData.otherOrganization : undefined,
-        otherWorkplace: formData.tenantType === "other" ? formData.otherWorkplace : undefined,
-        permitNumber: formData.permitNumber,
+        permitNumber: formData.role === "landlord" ? formData.permitNumber : undefined,
         permitDocument: permitFile ?? undefined,
         idDocument: idFile ?? undefined,
+        termsAccepted: formData.role === "tenant" ? tenantTermsAccepted : landlordAgreementAccepted,
+        landlordVerificationAccepted: formData.role === "landlord" ? landlordAgreementAccepted : undefined,
       });
       if (result.success && result.signup?.existingAccount) {
         setError("An account may already exist for this email. Sign in, resend verification, or reset your password instead of registering again.");
@@ -397,16 +374,6 @@ export function Signup() {
                         onClick={() => setFormData((previous) => ({
                           ...previous,
                           role: item.id as UserRole,
-                          tenantType: item.id === "tenant" ? previous.tenantType : "",
-                          school: item.id === "tenant" ? previous.school : "",
-                          guardian: item.id === "tenant" ? previous.guardian : "",
-                          guardianAddress: item.id === "tenant" ? previous.guardianAddress : "",
-                          guardianContact: item.id === "tenant" ? previous.guardianContact : "",
-                          company: item.id === "tenant" ? previous.company : "",
-                          workAddress: item.id === "tenant" ? previous.workAddress : "",
-                          otherOccupation: item.id === "tenant" ? previous.otherOccupation : "",
-                          otherOrganization: item.id === "tenant" ? previous.otherOrganization : "",
-                          otherWorkplace: item.id === "tenant" ? previous.otherWorkplace : "",
                         }))}
                         className={`relative flex flex-col items-center text-center p-4 rounded-2xl border-2 transition-all duration-200 ${
                           selected
@@ -432,39 +399,6 @@ export function Signup() {
                     );
                   })}
                 </div>
-                <AnimatePresence initial={false}>
-                  {formData.role === "tenant" && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                      <div className="mt-3 rounded-2xl border-2 border-amber-100 bg-amber-50/30 p-3">
-                        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-500">Select tenant type</p>
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                          {[
-                            { id: "student", label: "Student", icon: GraduationCap },
-                            { id: "employee", label: "Employee", icon: Briefcase },
-                            { id: "other", label: "Other", icon: User },
-                          ].map(({ id, label, icon: Icon }) => {
-                            const selected = formData.tenantType === id;
-                            return <button key={id} type="button" onClick={() => setFormData((previous) => ({
-                              ...previous,
-                              tenantType: id as TenantType,
-                              school: id === "student" ? previous.school : "",
-                              guardian: id === "student" ? previous.guardian : "",
-                              guardianAddress: id === "student" ? previous.guardianAddress : "",
-                              guardianContact: id === "student" ? previous.guardianContact : "",
-                              company: id === "employee" ? previous.company : "",
-                              workAddress: id === "employee" ? previous.workAddress : "",
-                              otherOccupation: id === "other" ? previous.otherOccupation : "",
-                              otherOrganization: id === "other" ? previous.otherOrganization : "",
-                              otherWorkplace: id === "other" ? previous.otherWorkplace : "",
-                            }))} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-sm font-bold transition ${selected ? "border-amber-500 bg-white text-amber-700 shadow-sm" : "border-slate-200 bg-white text-slate-600 hover:border-amber-200"}`}>
-                              <Icon className="h-4 w-4" />{label}{selected && <Check className="h-3.5 w-3.5" />}
-                            </button>;
-                          })}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
 
               {/* ── Accordion: Personal Info ─────────────────────── */}
@@ -499,62 +433,21 @@ export function Signup() {
               >
                 <FloatInput id="mobile" label="Mobile Number" type="tel" value={formData.mobileNumber} onChange={(v) => set("mobileNumber", v)} required icon={<Phone className="h-4 w-4" />} />
                 <div className="flex justify-end">
-                  <button type="button" onClick={() => toggle("role-details")}
+                  <button type="button" onClick={() => toggle(formData.role === "landlord" ? "role-details" : "security")}
                     className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors">
-                    Next: {formData.tenantType === "student" ? "Student" : formData.tenantType === "employee" ? "Employment" : formData.tenantType === "other" ? "Tenant" : "Verification"} Details <ChevronRight className="h-3.5 w-3.5" />
+                    Next: {formData.role === "landlord" ? "Verification Details" : "Account Security"} <ChevronRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </AccordionSection>
 
               {/* ── Accordion: Role-specific ─────────────────────── */}
-              <AccordionSection
-                title={formData.tenantType === "student" ? "Student Details" : formData.tenantType === "employee" ? "Employment Details" : formData.tenantType === "other" ? "Tenant Details" : formData.role === "landlord" ? "Landlord Verification" : "Role Details"}
-                icon={formData.tenantType === "student" ? <GraduationCap className="h-4 w-4" /> : formData.tenantType === "employee" ? <Briefcase className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
+              {formData.role === "landlord" && <AccordionSection
+                title="Landlord Verification"
+                icon={<ClipboardList className="h-4 w-4" />}
                 open={openSection === "role-details"}
                 onToggle={() => toggle("role-details")}
                 done={doneRole}
               >
-                {!formData.role && (
-                  <p className="text-sm text-slate-400 italic py-2">Select a role above to see the relevant fields.</p>
-                )}
-
-                {formData.role === "tenant" && formData.tenantType === "student" && (
-                  <div className="space-y-4">
-                    <FloatInput id="school" label="School / University" value={formData.school} onChange={(v) => set("school", v)} required icon={<GraduationCap className="h-4 w-4" />} />
-                    <div className="rounded-xl border-2 border-amber-100 bg-amber-50/40 p-4 space-y-4">
-                      <div className="flex items-center gap-2 text-amber-700 mb-1">
-                        <Users className="h-4 w-4" />
-                        <span className="text-xs font-bold uppercase tracking-widest">Guardian Information</span>
-                      </div>
-                      <FloatInput id="guardian" label="Guardian Full Name" value={formData.guardian} onChange={(v) => set("guardian", v)} required />
-                      <FloatInput id="guardianContact" label="Guardian Contact Number" type="tel" value={formData.guardianContact} onChange={(v) => set("guardianContact", v)} required icon={<Phone className="h-4 w-4" />} />
-                      <FloatInput id="guardianAddress" label="Guardian Address" value={formData.guardianAddress} onChange={(v) => set("guardianAddress", v)} required icon={<MapPin className="h-4 w-4" />} />
-                    </div>
-                  </div>
-                )}
-
-                {formData.role === "tenant" && formData.tenantType === "employee" && (
-                  <div className="space-y-4">
-                    <div className="rounded-xl border-2 border-orange-100 bg-orange-50/40 p-4 space-y-4">
-                      <div className="flex items-center gap-2 text-orange-700 mb-1">
-                        <Briefcase className="h-4 w-4" />
-                        <span className="text-xs font-bold uppercase tracking-widest">Employment Information</span>
-                      </div>
-                      <FloatInput id="company" label="Company / Organization" value={formData.company} onChange={(v) => set("company", v)} required icon={<Building2 className="h-4 w-4" />} />
-                      <FloatInput id="workAddress" label="Work Address" value={formData.workAddress} onChange={(v) => set("workAddress", v)} required icon={<MapPin className="h-4 w-4" />} />
-                    </div>
-                  </div>
-                )}
-
-                {formData.role === "tenant" && formData.tenantType === "other" && (
-                  <div className="space-y-4 rounded-xl border-2 border-orange-100 bg-orange-50/40 p-4">
-                    <div className="mb-1 flex items-center gap-2 text-orange-700"><User className="h-4 w-4" /><span className="text-xs font-bold uppercase tracking-widest">Tenant Information</span></div>
-                    <FloatInput id="otherOccupation" label="Occupation / Tenant Type" value={formData.otherOccupation} onChange={(value) => set("otherOccupation", value)} required placeholder="Freelancer, self-employed, job seeker, business owner, retiree" icon={<Briefcase className="h-4 w-4" />} />
-                    <FloatInput id="otherOrganization" label="Organization / Affiliation" value={formData.otherOrganization} onChange={(value) => set("otherOrganization", value)} placeholder="Business, organization, or group name" icon={<Building2 className="h-4 w-4" />} />
-                    <FloatInput id="otherWorkplace" label="Workplace / Main Activity Location" value={formData.otherWorkplace} onChange={(value) => set("otherWorkplace", value)} placeholder="Office, business location, or usual destination" icon={<MapPin className="h-4 w-4" />} />
-                  </div>
-                )}
-
                 {formData.role === "landlord" && (
                   <div className="space-y-4">
                     <FloatInput id="permitNumber" label="Business Permit Number" value={formData.permitNumber} onChange={(v) => set("permitNumber", v)} required icon={<ClipboardList className="h-4 w-4" />} />
@@ -565,6 +458,7 @@ export function Signup() {
                       ].map(({ label, ref, file, setFile }) => (
                         <div key={label}>
                           <p className="text-xs font-semibold text-slate-600 mb-1.5">{label}</p>
+                          <p className="mb-2 text-[11px] font-medium text-slate-500">Optional during signup — required for verification</p>
                           <button type="button" onClick={() => ref.current?.click()}
                             className={`w-full rounded-xl border-2 border-dashed p-4 flex flex-col items-center gap-1.5 transition-all text-center ${
                               file ? "border-amber-400 bg-amber-50" : "border-slate-200 bg-slate-50 hover:border-amber-300 hover:bg-amber-50/50"
@@ -581,7 +475,7 @@ export function Signup() {
                     <div className="flex gap-3 p-3.5 bg-rose-50 border border-rose-200 rounded-xl">
                       <ShieldCheck className="h-4 w-4 text-rose-500 flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-rose-700 font-medium leading-relaxed">
-                        Landlord verification information must be reviewed before apartment listings can be published.
+                        You may upload your verification documents now or complete them later. Your apartment listings cannot be published until your landlord verification is approved.
                       </p>
                     </div>
                   </div>
@@ -595,7 +489,7 @@ export function Signup() {
                     </button>
                   </div>
                 )}
-              </AccordionSection>
+              </AccordionSection>}
 
               {/* ── Accordion: Account Security ──────────────────── */}
               <AccordionSection
@@ -711,6 +605,20 @@ export function Signup() {
               )}
 
               {/* ── Submit ──────────────────────────────────────────── */}
+              {formData.role === "tenant" && (
+                <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700">
+                  <input type="checkbox" checked={tenantTermsAccepted} onChange={(event) => setTenantTermsAccepted(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-amber-500" />
+                  <span><strong>I agree to AptFindr&apos;s Terms of Use and Privacy Policy.</strong> I understand that the information I provide will be used to manage my AptFindr account and that I am responsible for using the platform appropriately.</span>
+                </label>
+              )}
+
+              {formData.role === "landlord" && (
+                <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700">
+                  <input type="checkbox" checked={landlordAgreementAccepted} onChange={(event) => setLandlordAgreementAccepted(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-amber-500" />
+                  <span><strong>I agree to AptFindr&apos;s Terms of Use, Privacy Policy, and Landlord Verification Policy.</strong> I understand that my Business Permit Number and submitted verification information may be reviewed by the administrator, and that my apartment listings cannot be published until my landlord account is verified.</span>
+                </label>
+              )}
+
               <Button
                 type="submit"
                 disabled={loading}

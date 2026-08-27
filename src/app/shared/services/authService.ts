@@ -96,6 +96,8 @@ export interface CreateUserInput {
   adminLevel?: string;
   permitDocument?: File;
   idDocument?: File;
+  termsAccepted?: boolean;
+  landlordVerificationAccepted?: boolean;
   otherOccupation?: string;
   otherOrganization?: string;
   otherWorkplace?: string;
@@ -638,8 +640,8 @@ export async function signupUser(input: CreateUserInput): Promise<SignupResult> 
   const role: UserRole = isTenantRole(input.role) ? 'tenant' : input.role;
   const tenantType = normalizeTenantType(input.tenantType, input.role);
   if (role !== 'tenant' && role !== 'landlord') throw new SignupFlowError('Public registration supports tenant and landlord accounts only.', 'validation', 'invalid_public_role');
-  if (role === 'tenant' && !tenantType) throw new SignupFlowError('Please select a tenant type.', 'validation', 'missing_tenant_type');
-  if (tenantType === 'other' && !nonEmptyString(input.otherOccupation)) throw new SignupFlowError('Occupation / Tenant Type is required.', 'validation', 'missing_occupation');
+  if (input.termsAccepted !== true) throw new SignupFlowError('You must agree to the Terms of Use and Privacy Policy to continue.', 'validation', 'terms_required');
+  if (role === 'landlord' && input.landlordVerificationAccepted !== true) throw new SignupFlowError('You must agree to the Terms of Use and Landlord Verification Policy to continue.', 'validation', 'landlord_policy_required');
   if (!/^[a-z0-9_]{4,30}$/.test(username)) throw new SignupFlowError('Username must be 4–30 characters using only letters, numbers, or underscores.', 'validation', 'invalid_username');
   if (!/^\S+@\S+\.\S+$/.test(email)) throw new SignupFlowError('Enter a valid email address.', 'validation', 'invalid_email');
 
@@ -654,20 +656,12 @@ export async function signupUser(input: CreateUserInput): Promise<SignupResult> 
         username,
         name: input.name,
         role,
-        tenantType,
         mobile: input.mobile ?? input.mobileNumber,
         middleInitial: input.middleInitial,
         address: input.address,
-        school: input.school,
-        guardianName: input.guardianName,
-        guardianAddress: input.guardianAddress,
-        guardianContact: input.guardianContact,
-        company: input.company,
-        workAddress: input.workAddress,
-        permitNumber: input.permitNumber,
-        otherOccupation: input.otherOccupation,
-        otherOrganization: input.otherOrganization,
-        otherWorkplace: input.otherWorkplace,
+        permitNumber: role === 'landlord' ? input.permitNumber : undefined,
+        termsAccepted: true,
+        landlordVerificationAccepted: role === 'landlord' ? true : undefined,
         requires_email_verification: true,
       },
     },
@@ -738,41 +732,49 @@ export async function loginUser(credentials: AuthCredentials): Promise<User> {
     throw new Error('Username and password are required.');
   }
 
-  // Username resolution stays server-side. The function authenticates against
-  // Supabase Auth and returns only session tokens; it must never return a user's
-  // recovery email to an anonymous caller.
-  const { data: response, error } = await supabaseClient.functions.invoke('username-login', {
-    body: { username, password },
+  // Resolve only the internal Supabase Auth email. Password verification still
+  // happens through Supabase Auth, and app_users remains protected by RLS.
+  const { data: resolvedEmail, error: resolveError } = await supabaseClient.rpc('fn_resolve_username_login', {
+    p_username: username,
   });
-  const result = isRecord(response) ? response : {};
 
-  if (error || result.success === false) {
-    const message = getStringValue(result, ['error'], error?.message ?? '');
-    console.error('[AUTH] Username sign-in failed', { message });
-    if (/email.*not.*confirm|confirm.*email|verify.*email/i.test(message)) {
-      throw new Error('Please verify your email before signing in.');
-    }
-    if (/rate|too many/i.test(message)) {
+  if (resolveError) {
+    console.error('[AUTH] Username resolution failed', {
+      message: resolveError.message,
+      code: resolveError.code,
+      details: resolveError.details,
+    });
+    throw new Error('Username sign-in is temporarily unavailable. Please try again later.');
+  }
+
+  if (typeof resolvedEmail !== 'string' || !resolvedEmail.trim()) {
+    throw new Error('Invalid username or password.');
+  }
+
+  const { data, error: signInError } = await supabaseClient.auth.signInWithPassword({
+    email: resolvedEmail.trim(),
+    password,
+  });
+
+  if (signInError || !data.user) {
+    const message = signInError?.message ?? '';
+    console.error('[AUTH] Password sign-in failed', {
+      message,
+      status: signInError?.status,
+      code: signInError?.code,
+    });
+    if (signInError?.status === 429 || /rate|too many/i.test(message)) {
       throw new Error('Too many sign-in attempts. Please wait before trying again.');
     }
-    if (/function.*not.*found|failed to send|edge function|fetch/i.test(message)) {
-      throw new Error('Username sign-in is temporarily unavailable. Please try again later.');
+    if (/email.*not.*confirm|confirm.*email|verify.*email/i.test(message)) {
+      throw new Error('Please verify your account before signing in.');
     }
     throw new Error('Invalid username or password.');
   }
-
-  const accessToken = getStringValue(result, ['access_token', 'accessToken']);
-  const refreshToken = getStringValue(result, ['refresh_token', 'refreshToken']);
-  if (!accessToken || !refreshToken) {
-    throw new Error('Invalid username or password.');
-  }
-
-  const { data, error: sessionError } = await supabaseClient.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-  if (sessionError || !data.user) throw new Error('Invalid username or password.');
 
   if (requiresPendingEmailVerification(data.user)) {
     await supabaseClient.auth.signOut();
-    throw new Error('Please verify your email before signing in.');
+    throw new Error('Please verify your account before signing in.');
   }
 
   const profile = await ensureProfileForAuthUser(data.user);
