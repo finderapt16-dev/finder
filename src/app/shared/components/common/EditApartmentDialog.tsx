@@ -1,4 +1,4 @@
-import { Home, Images, Star, X } from "lucide-react";
+import { FileCheck2, Home, Images, Star, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Apartment } from "../../data/apartments";
@@ -34,6 +34,16 @@ const getEditableFeatures = (apartment: Apartment): string[] => {
   return features;
 };
 
+const getPropertyVerification = (apartment: Apartment): Record<string, string> => {
+  const value = apartment.features && !Array.isArray(apartment.features)
+    ? apartment.features.verification
+    : null;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+  );
+};
+
 export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: EditApartmentDialogProps) {
   const [formData, setFormData] = useState<Apartment>(apartment);
   const [isSaving, setIsSaving] = useState(false);
@@ -47,6 +57,7 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
   const [featuresInput, setFeaturesInput] = useState(() => {
     return getEditableFeatures(apartment).join(", ");
   });
+  const [verification, setVerification] = useState(() => getPropertyVerification(apartment));
 
   // ── Image Management State ─────────────────────────────────────────────
   const [existingImages, setExistingImages] = useState<UploadedImage[]>(
@@ -64,6 +75,7 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
     setAmenitiesInput(apartment.amenities.join(", "));
     setUtilitiesInput(Array.isArray(apartment.utilities) ? apartment.utilities.join(", ") : "");
     setFeaturesInput(getEditableFeatures(apartment).join(", "));
+    setVerification(getPropertyVerification(apartment));
     setLocationLookupRequest(0);
     setLocationResolving(false);
     lastAutoGeocodedAddressRef.current = [apartment.address, apartment.city, apartment.state, apartment.zip, "Philippines"]
@@ -164,7 +176,7 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
         petFriendly: normalizedFeatureNames.includes("pet friendly"),
         parking: normalizedFeatureNames.includes("parking"),
         furnished: normalizedFeatureNames.includes("furnished"),
-        features: { ...existingFeatureRecord, customFeatures },
+        features: { ...existingFeatureRecord, customFeatures, verification },
         bedrooms: apartment.bedrooms,
         bathrooms: apartment.bathrooms,
         price: apartment.price,
@@ -280,6 +292,37 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
                 required
                 className="hide-number-spinners"
               />
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] p-4">
+            <div className="flex items-center gap-2">
+              <FileCheck2 className="h-5 w-5 text-[#756A60]" />
+              <div>
+                <Label className="font-bold text-[#5F5145]">Property Permit</Label>
+                <p className="text-xs text-slate-500">This permit belongs only to this property and is shown to Admin for review.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="businessPermit">Business Permit Number</Label>
+                <Input
+                  id="businessPermit"
+                  value={verification.businessPermit || ""}
+                  onChange={(event) => setVerification((current) => ({ ...current, businessPermit: event.target.value }))}
+                  placeholder="BP-XXXX-XXXX"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="permitExpiry">Permit Expiry Date</Label>
+                <Input
+                  id="permitExpiry"
+                  type="date"
+                  value={verification.permitExpiry || ""}
+                  onChange={(event) => setVerification((current) => ({ ...current, permitExpiry: event.target.value }))}
+                />
+              </div>
             </div>
           </div>
 

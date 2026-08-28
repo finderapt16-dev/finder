@@ -2,7 +2,6 @@ import { AppLogo } from "@/app/shared/components/common/AppLogo";
 import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
 import { LandingListingsSection } from "@/app/shared/components/landing/LandingApartmentPreview";
 import { Button } from "@/app/shared/components/ui/button";
-import apartmentCategoriesIllustration from "@/assets/landing/apartment-categories-illustration.png";
 import locationMapIllustration from "@/assets/landing/location-map-illustration.png";
 import {
   Sheet,
@@ -20,13 +19,11 @@ import {
   BadgeCheck,
   BedDouble,
   Bot,
-  Briefcase,
   Building2,
   CalendarCheck,
   CheckCircle2,
   DollarSign,
   Flag,
-  GraduationCap,
   Heart,
   Mail,
   Map as MapIcon,
@@ -36,11 +33,8 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Smartphone,
-  Star,
   TrendingUp,
   UserCheck,
-  UserCog,
-  Users,
   Zap
 } from "lucide-react";
 import { AnimatePresence, motion, useInView } from "motion/react";
@@ -113,46 +107,6 @@ const getInventoryLocation = (apartment: Apartment): string | null => {
 
   return null;
 };
-
-/* ─── Categories ────────────────────────────────────────── */
-const categories = [
-  { icon: Building2, label: "Apartments", color: "from-[#A68B70] to-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#E8DED1]" },
-  { icon: GraduationCap, label: "Student Housing", color: "from-[#A68B70] to-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#E8DED1]" },
-  { icon: Users, label: "Family Units", color: "from-[#A68B70] to-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#E8DED1]" },
-  { icon: Briefcase, label: "Professional Housing", color: "from-[#A68B70] to-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#E8DED1]" },
-  { icon: BedDouble, label: "Furnished Units", color: "from-[#8B735B] to-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#E8DED1]" },
-];
-
-/* ─── Community users ───────────────────────────────────── */
-const communityCards = [
-  {
-    role: "Student",
-    icon: GraduationCap,
-    name: "Housing near school",
-    quote: "Compare prices, available rooms, amenities, and locations before arranging a visit.",
-    color: "border-[#E8DED1]",
-    iconBg: "bg-[#F3EFEA]",
-    iconColor: "text-[#5F5145]",
-  },
-  {
-    role: "Working Professional",
-    icon: Briefcase,
-    name: "Housing near work",
-    quote: "Use search filters and the map view to review apartments within a preferred area and budget.",
-    color: "border-[#E8DED1]",
-    iconBg: "bg-[#F3EFEA]",
-    iconColor: "text-[#5F5145]",
-  },
-  {
-    role: "Family",
-    icon: Users,
-    name: "Housing for a household",
-    quote: "Review room details, rental prices, amenities, and landlord verification information in one place.",
-    color: "border-[#E8DED1]",
-    iconBg: "bg-rose-100",
-    iconColor: "text-rose-700",
-  },
-];
 
 export function Landing() {
   const { user } = useAuth();
@@ -443,16 +397,6 @@ export function Landing() {
               </form>
             </motion.div>
 
-            <motion.div variants={fadeUp} className="mt-2.5 flex max-w-[600px] flex-wrap items-center justify-start gap-1.5 text-xs text-[#756A60] sm:gap-2">
-              <span className="font-semibold text-[#8B8178]">Popular:</span>
-              {["Divinagracia", "Sto. Rosario", "Near CPU", "Near schools"].map((s) => (
-                <button key={s} type="button"
-                  onClick={() => { setLandingSearch(s); }}
-                  className="rounded-md border border-[#E8DED1] bg-white px-2.5 py-1 text-xs font-medium transition-colors hover:bg-[#FAF8F5] hover:text-[#8B735B]">
-                  {s}
-                </button>
-              ))}
-            </motion.div>
           </motion.div>
           <div className="relative h-[320px] min-w-0 overflow-hidden rounded-3xl border border-slate-200 sm:h-[420px] lg:h-[580px] lg:rounded-none lg:rounded-bl-[48px] lg:border-0 xl:h-[610px]">
             <AnimatePresence mode="sync">
@@ -461,67 +405,6 @@ export function Landing() {
               </motion.div>
             </AnimatePresence>
           </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Stats bar ───────────────────────────────────────── */}
-      <section className="landing-feature-row order-2 mt-8 border-t border-slate-200 bg-white py-7 lg:mt-9">
-        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-12">
-          <div className="landing-open-features mx-auto grid max-w-5xl grid-cols-2 border-y border-[#E8DED1] md:grid-cols-4">
-            {[
-              { label: "Search & Filters", value: "Browse", icon: Building2 },
-              { label: "Room Availability", value: "Check", icon: BedDouble },
-              { label: "Verification Status", value: "Review", icon: BadgeCheck },
-              { label: "Map Locations", value: "Compare", icon: TrendingUp },
-            ].map(({ label, value, icon: Icon }, i) => (
-              <AnimatedSection key={label} delay={i * 0.06}>
-                <div className="flex items-center gap-3 px-3 py-5 text-[#302820]">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center text-[#8B735B]">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-black leading-none">{value}</div>
-                    <div className="mt-0.5 text-xs font-medium text-[#756A60]">{label}</div>
-                  </div>
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Categories ──────────────────────────────────────── */}
-      <section className="landing-category-section order-4 border-t border-[#E8DED1] bg-white py-14 md:py-20">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="mb-10 grid items-center gap-5 md:grid-cols-[.75fr_1.25fr] md:gap-8">
-            <AnimatedSection>
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-[#8B735B]">Browse by Type</p>
-              <h2 className="mb-3 text-3xl font-black text-[#302820] md:text-4xl">Apartment Categories</h2>
-              <p className="max-w-lg text-base text-[#756A60]">Explore listings by housing type and room features.</p>
-            </AnimatedSection>
-            <AnimatedSection className="flex min-h-56 items-center justify-center md:min-h-72" delay={0.08}>
-              <img src={apartmentCategoriesIllustration} alt="" className="landing-dimensional-art h-auto w-full object-contain" />
-            </AnimatedSection>
-          </div>
-
-          <div className="landing-category-nav mx-auto grid max-w-6xl grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-            {categories.map(({ icon: Icon, label }, i) => (
-              <AnimatedSection key={label} delay={i * 0.07}>
-                <Link to="/browse" onClick={handleProtectedAction} className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#8B735B]/30">
-                  <motion.div
-                    whileTap={{ scale: 0.99 }}
-                    className="group flex min-h-36 cursor-pointer flex-col items-center justify-center px-4 py-6 text-center"
-                  >
-                    <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-[#E8DED1] bg-[#F7F3EE] text-[#8B735B] transition-colors duration-200 group-hover:bg-[#F3EFEA] group-hover:text-[#75614E]">
-                      <Icon className="h-6 w-6" strokeWidth={1.8} />
-                    </div>
-                    <p className="text-[15px] font-semibold leading-tight text-[#302820] transition-colors duration-200 group-hover:text-[#8B735B]">{label}</p>
-                    <span className="mt-4 h-[2px] w-6 bg-[#9B8065] transition-all duration-200 group-hover:w-8" />
-                  </motion.div>
-                </Link>
-              </AnimatedSection>
-            ))}
           </div>
         </div>
       </section>
@@ -576,17 +459,15 @@ export function Landing() {
       <section className="order-9 bg-white py-14 md:py-20">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-12">
-            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">Platform users</p>
-            <h2 className="mb-3 text-3xl font-black text-slate-950 md:text-4xl">Who Uses AptFindr</h2>
-            <p className="mx-auto max-w-xl text-slate-500">Tools for renters, landlords, and platform administrators.</p>
+            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">For the community</p>
+            <h2 className="mb-3 text-3xl font-black text-slate-950 md:text-4xl">Built for Tenants and Landlords</h2>
+            <p className="mx-auto max-w-xl text-slate-500">Practical tools for finding and managing apartments in La Paz.</p>
           </AnimatedSection>
 
-          <div className="landing-user-directory mx-auto grid max-w-6xl grid-cols-1 border-y border-[#E8DED1] sm:grid-cols-2 lg:grid-cols-4">
+          <div className="landing-user-directory mx-auto grid max-w-4xl grid-cols-1 border-y border-[#E8DED1] sm:grid-cols-2">
             {[
-              { icon: GraduationCap, role: "Students", desc: "Search by location and budget, compare rooms, save favorites, and review listing information.", gradient: "from-[#8B735B] to-[#756A60]" },
-              { icon: Briefcase, role: "Employees", desc: "Compare rental prices, amenities, availability, and locations near work.", gradient: "from-[#8B735B] to-[#756A60]" },
-              { icon: Building2, role: "Landlords", desc: "Create listings, manage rooms and availability, upload images, and monitor recorded engagement.", gradient: "from-[#8B735B] to-[#756A60]" },
-              { icon: UserCog, role: "Administrators", desc: "Review verification information, manage listings and reports, and monitor platform activity.", gradient: "from-[#8B735B] to-[#756A60]" },
+              { icon: Search, role: "Tenants", desc: "Find and compare apartments by location, budget, amenities, room availability, and saved preferences." },
+              { icon: Building2, role: "Landlords", desc: "Create and manage properties, rooms, availability, listing information, and verification requirements." },
             ].map(({ icon: Icon, role, desc }, i) => (
               <AnimatedSection key={role} delay={i * 0.08}>
                 <motion.div
@@ -668,35 +549,6 @@ export function Landing() {
                   </div>
                   <h3 className="text-lg font-black text-slate-900 mb-2">{title}</h3>
                   <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
-                </motion.div>
-              </AnimatedSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Community Section ───────────────────────────────── */}
-      <section className="order-8 bg-white py-14 md:py-20">
-        <div className="container mx-auto px-4 lg:px-8">
-          <AnimatedSection className="text-center mb-12">
-            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">Renter needs</p>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Ways to Compare Apartments</h2>
-            <p className="text-slate-500 max-w-lg mx-auto">Use listing information to review options for school, work, or household needs.</p>
-          </AnimatedSection>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {communityCards.map(({ role, icon: Icon, name, quote }, i) => (
-              <AnimatedSection key={role} delay={i * 0.09}>
-                <motion.div whileHover={{ y: -2 }} className="flex h-full flex-col rounded-xl border border-[#E8DED1] bg-white p-6 shadow-[0_2px_10px_rgba(48,40,32,0.03)]">
-                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center text-[#8B735B]">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">{role}</p>
-                  <p className="font-bold text-slate-800 text-sm mb-3">{name}</p>
-                  <p className="text-slate-500 text-sm leading-relaxed flex-1 italic">"{quote}"</p>
-                  <div className="flex gap-0.5 mt-4">
-                      {[...Array(5)].map((_, j) => <Star key={j} className="h-3.5 w-3.5 fill-[#8B735B] text-[#8B735B]" />)}
-                  </div>
                 </motion.div>
               </AnimatedSection>
             ))}

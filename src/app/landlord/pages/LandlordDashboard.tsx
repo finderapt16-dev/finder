@@ -982,39 +982,17 @@ export function LandlordDashboard() {
 
   type LandlordBusiness = {
     businessName: string;
-    permitNumber: string;
-    permitExpiry: string;
     taxId: string;
     businessType: string;
     yearsActive: string;
-    totalUnits: string;
-    serviceAreas: string;
-    depositPolicy: string;
-    advancePolicy: string;
-    minLeaseTerm: string;
-    petPolicy: string;
-    smokingPolicy: string;
-    maintenanceResponse: string;
-    listingVisibility: string;
   };
 
   const [business, setBusiness] = useState<LandlordBusiness>(() => {
     return {
       businessName: "",
-      permitNumber: user?.permitNumber || "",
-      permitExpiry: "",
       taxId: "",
       businessType: "sole_proprietor",
       yearsActive: "",
-      totalUnits: "",
-      serviceAreas: "",
-      depositPolicy: "1",
-      advancePolicy: "1",
-      minLeaseTerm: "1",
-      petPolicy: "no",
-      smokingPolicy: "no",
-      maintenanceResponse: "24",
-      listingVisibility: "public",
     };
   });
 
@@ -1085,20 +1063,9 @@ export function LandlordDashboard() {
       };
       const nextBusiness: LandlordBusiness = {
         businessName: String(landlordRow?.business_name ?? ""),
-        permitNumber: String(landlordRow?.business_permit_number ?? landlordRow?.permit_number ?? user.permitNumber ?? ""),
-        permitExpiry: String(landlordRow?.permit_expiry ?? ""),
         taxId: String(landlordRow?.tin_number ?? ""),
         businessType: String(landlordRow?.business_type ?? "sole_proprietor"),
         yearsActive: landlordRow?.years_active == null ? "" : String(landlordRow.years_active),
-        totalUnits: landlordRow?.total_units == null ? "" : String(landlordRow.total_units),
-        serviceAreas: String(landlordRow?.service_areas ?? ""),
-        depositPolicy: String(landlordRow?.deposit_months ?? "1"),
-        advancePolicy: String(landlordRow?.advance_months ?? "1"),
-        minLeaseTerm: String(landlordRow?.min_lease_months ?? "1"),
-        petPolicy: String(landlordRow?.pet_policy ?? "no"),
-        smokingPolicy: String(landlordRow?.smoking_policy ?? "no"),
-        maintenanceResponse: String(landlordRow?.maintenance_response_hours ?? "24"),
-        listingVisibility: String(landlordRow?.listing_visibility ?? "public"),
       };
       setProfile(nextProfile);
       setSavedProfile(nextProfile);
@@ -1138,7 +1105,7 @@ export function LandlordDashboard() {
     });
   };
 
-  const setB = (key: string, val: unknown) => {
+  const setB = (key: string, val: string) => {
     setBusiness((p) => {
       const updated = { ...p, [key]: val };
       return updated;
@@ -1197,14 +1164,12 @@ export function LandlordDashboard() {
           name: `${profile.firstName.trim()} ${profile.lastName.trim()}`,
           email: profile.email.trim(),
           mobileNumber: profile.mobile.trim(),
-          permitNumber: business.permitNumber,
         };
 
         await updateUser(user.id, {
           name: updatedUser.name,
           email: updatedUser.email,
           mobileNumber: updatedUser.mobileNumber,
-          permitNumber: updatedUser.permitNumber,
         });
 
         const synced = await updateUserProfile({
@@ -1215,8 +1180,6 @@ export function LandlordDashboard() {
           mobile: updatedUser.mobileNumber,
           avatar_url: profile.avatar,
           bio: profile.bio,
-          permit_number: business.permitNumber,
-          business_permit_number: business.permitNumber,
         });
 
         if (!synced) {
@@ -1248,29 +1211,8 @@ export function LandlordDashboard() {
   };
 
   const handleSaveBusiness = async () => {
-    // Validation
-    if (!business.permitNumber.trim()) {
-      toast.error("Business permit number is required");
-      return;
-    }
-    if (!business.permitExpiry) {
-      toast.error("Permit expiry date is required");
-      return;
-    }
-    if (new Date(business.permitExpiry) < new Date()) {
-      toast.error("Permit has expired. Please renew it.");
-      return;
-    }
-    if (!business.taxId.trim() || !/^\d{3}-\d{3}-\d{3}-\d{3}$/.test(business.taxId)) {
+    if (business.taxId.trim() && !/^\d{3}-\d{3}-\d{3}-\d{3}$/.test(business.taxId)) {
       toast.error("Please enter a valid BIR TIN (XXX-XXX-XXX-000)");
-      return;
-    }
-    if (!business.totalUnits || parseInt(business.totalUnits) <= 0) {
-      toast.error("Total units must be at least 1");
-      return;
-    }
-    if (!business.serviceAreas.trim()) {
-      toast.error("Service areas are required");
       return;
     }
 
@@ -1279,7 +1221,6 @@ export function LandlordDashboard() {
         await updateUser(user.id, {
           name: user.name,
           email: user.email,
-          permitNumber: business.permitNumber,
         });
 
         const synced = await updateUserProfile({
@@ -1287,29 +1228,17 @@ export function LandlordDashboard() {
           email: user.email,
           name: user.name,
           role: "landlord",
-          permit_number: business.permitNumber,
-          business_permit_number: business.permitNumber,
           business_name: business.businessName,
           tin_number: business.taxId,
-          permit_expiry: business.permitExpiry,
           business_type: business.businessType,
           years_active: business.yearsActive,
-          total_units: business.totalUnits,
-          service_areas: business.serviceAreas,
-          deposit_months: business.depositPolicy,
-          advance_months: business.advancePolicy,
-          min_lease_months: business.minLeaseTerm,
-          pet_policy: business.petPolicy,
-          smoking_policy: business.smokingPolicy,
-          maintenance_response_hours: business.maintenanceResponse,
-          listing_visibility: business.listingVisibility,
         });
 
         if (!synced) {
           throw new Error("Unable to sync business information.");
         }
 
-        addAuditLog("BUSINESS_INFO_UPDATED", `Updated business permit: ${business.permitNumber}`);
+        addAuditLog("BUSINESS_INFO_UPDATED", "Updated landlord-level business information");
         setSavedBusiness(business);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unable to save business information.";
@@ -1677,13 +1606,12 @@ export function LandlordDashboard() {
     // ── Business Tab ───────────────────────────────────────────────────────
     const renderBusinessTab = () => (
       <div className="space-y-5">
-        {/* Business Registration */}
-        <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 space-y-4">
-          <SectionTitle icon="📋" title="Business Registration" subtitle="Permits and legal information required for verification" />
+        <div className="space-y-4 rounded-2xl border-2 border-slate-100 bg-white p-5">
+          <SectionTitle icon="🏢" title="Business Information" subtitle="Information that applies to your landlord business" />
           <Field label="Business / Trade Name" hint="Leave blank to use your personal name">
             <SettingsInput value={business.businessName} onChange={(e: any) => setB("businessName", e.target.value)} placeholder="e.g. Santos Apartments" />
           </Field>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Business Type">
               <SettingsSelect value={business.businessType} onChange={(e: any) => setB("businessType", e.target.value)}>
                 <option value="sole_proprietor">Sole Proprietor</option>
@@ -1695,101 +1623,41 @@ export function LandlordDashboard() {
               <SettingsInput type="number" min="0" value={business.yearsActive} onChange={(e: any) => setB("yearsActive", e.target.value)} placeholder="e.g. 5" />
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Business Permit No." hint="e.g. BP-2024-ILO-XXXXX">
-              <SettingsInput value={business.permitNumber} onChange={(e: any) => setB("permitNumber", e.target.value)} placeholder="BP-XXXX-XXXX" />
-            </Field>
-            <Field label="Permit Expiry Date">
-              <SettingsInput type="date" value={business.permitExpiry} onChange={(e: any) => setB("permitExpiry", e.target.value)} />
-            </Field>
-          </div>
-          <Field label="BIR TIN" hint="Required for official receipts / Tax Identification Number">
+          <Field label="BIR TIN" hint="Tax Identification Number, if applicable">
             <SettingsInput value={business.taxId} onChange={(e: any) => setB("taxId", e.target.value)} placeholder="XXX-XXX-XXX-000" />
           </Field>
+        </div>
 
-          {business.permitExpiry && new Date(business.permitExpiry) < new Date(Date.now() + 30 * 86400000) && (
-            <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-xl">
-              <span className="text-base shrink-0">⚠️</span>
-              <p className="text-xs font-bold text-red-700">Your business permit expires soon. Please renew it and update the date to maintain verified status.</p>
+        <div className="space-y-4 rounded-2xl border-2 border-slate-100 bg-white p-5">
+          <SectionTitle icon="🏘️" title="Property Portfolio" subtitle="Calculated automatically from your registered properties and rooms" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {[
+              { label: "Properties", value: myApartments.length },
+              { label: "Total Rooms", value: allRooms.length },
+              { label: "Available Rooms", value: availableCount },
+            ].map((item) => <div key={item.label} className="rounded-xl border border-[#E8DED1] bg-[#FAF8F5] p-4"><p className="text-xs font-bold text-slate-500">{item.label}</p><p className="mt-1 text-2xl font-black text-slate-900">{item.value}</p></div>)}
+          </div>
+        </div>
+
+        <div className="space-y-4 rounded-2xl border-2 border-slate-100 bg-white p-5">
+          <SectionTitle icon="📄" title="Property Verification & Permits" subtitle="Manage permit and verification information for each of your properties." />
+          {myApartments.length === 0 ? (
+            <div className="flex flex-col items-center rounded-xl border border-dashed border-[#DCC9B4] bg-[#FAF8F5] p-8 text-center">
+              <Building2 className="h-9 w-9 text-[#C9B8A5]" /><h3 className="mt-3 font-black text-slate-900">No properties yet</h3><p className="mt-1 text-sm text-slate-500">Add a property first to manage its permit and verification information.</p>
+              <Link to="/add-apartment"><Button className="mt-4 bg-[#8B735B] font-bold text-white hover:bg-[#756A60]"><Plus className="mr-2 h-4 w-4" />Add Property</Button></Link>
+            </div>
+          ) : (
+            <div className="divide-y divide-[#EEE6DC] overflow-hidden rounded-xl border border-[#E8DED1]">
+              {myApartments.map((apartment) => {
+                const featureRecord = apartment.features && !Array.isArray(apartment.features) ? apartment.features : {};
+                const propertyVerification = featureRecord.verification && typeof featureRecord.verification === "object" && !Array.isArray(featureRecord.verification) ? featureRecord.verification as Record<string, unknown> : {};
+                const permit = typeof propertyVerification.businessPermit === "string" ? propertyVerification.businessPermit : "";
+                const expiry = typeof propertyVerification.permitExpiry === "string" ? propertyVerification.permitExpiry : "";
+                const status = apartment.approvalStatus === "approved" ? "Verified" : apartment.approvalStatus === "rejected" ? "Rejected" : "Pending Verification";
+                return <div key={apartment.id} className="grid gap-4 bg-white p-4 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto] lg:items-center"><div className="min-w-0"><p className="truncate font-black text-slate-900">{apartment.title || "Untitled property"}</p><p className="mt-1 flex items-center gap-1 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5" />{formatApartmentLocation(apartment, "Address unavailable")}</p></div><div><p className="text-[10px] font-bold uppercase text-slate-400">Verification Status</p><Badge className="mt-1 bg-[#FAF8F5] text-[#5F5145]">{status}</Badge></div><div><p className="text-[10px] font-bold uppercase text-slate-400">Business Permit No.</p><p className="mt-1 text-sm font-bold text-slate-700">{permit || "Not provided"}</p><p className="mt-1 text-xs text-slate-500">Expiry: {expiry ? new Date(`${expiry}T00:00:00`).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : "Not provided"}</p></div><Button variant="outline" onClick={() => setEditingApartment(apartment as Apartment)} className="border-[#DCC9B4] font-bold text-[#8B735B] hover:bg-[#FAF8F5]">View / Update Permit</Button></div>;
+              })}
             </div>
           )}
-        </div>
-
-        {/* Property Portfolio */}
-        <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 space-y-4">
-          <SectionTitle icon="🏘️" title="Property Portfolio" subtitle="Scope and coverage of your rental properties" />
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Total Units Managed">
-              <SettingsInput type="number" min="1" value={business.totalUnits} onChange={(e: any) => setB("totalUnits", e.target.value)} placeholder="e.g. 4" />
-            </Field>
-            <Field label="Service Areas">
-              <SettingsInput value={business.serviceAreas} onChange={(e: any) => setB("serviceAreas", e.target.value)} placeholder="e.g. Jaro, Mandurriao" />
-            </Field>
-          </div>
-        </div>
-
-        {/* Rental Policies */}
-        <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 space-y-4">
-          <SectionTitle icon="📝" title="Rental Policies" subtitle="Default terms applied to all your listings" />
-          <div className="grid grid-cols-3 gap-4">
-            <Field label="Security Deposit (months)">
-              <SettingsSelect value={business.depositPolicy} onChange={(e: any) => setB("depositPolicy", e.target.value)}>
-                <option value="1">1 month</option>
-                <option value="2">2 months</option>
-                <option value="3">3 months</option>
-              </SettingsSelect>
-            </Field>
-            <Field label="Advance Payment (months)">
-              <SettingsSelect value={business.advancePolicy} onChange={(e: any) => setB("advancePolicy", e.target.value)}>
-                <option value="1">1 month</option>
-                <option value="2">2 months</option>
-              </SettingsSelect>
-            </Field>
-            <Field label="Min. Lease Term (months)">
-              <SettingsSelect value={business.minLeaseTerm} onChange={(e: any) => setB("minLeaseTerm", e.target.value)}>
-                <option value="1">1 month</option>
-                <option value="3">3 months</option>
-                <option value="6">6 months</option>
-                <option value="12">12 months</option>
-              </SettingsSelect>
-            </Field>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Pet Policy">
-              <SettingsSelect value={business.petPolicy} onChange={(e: any) => setB("petPolicy", e.target.value)}>
-                <option value="no">No pets allowed</option>
-                <option value="small">Small pets only</option>
-                <option value="case_by_case">Case-by-case basis</option>
-                <option value="yes">Pets welcome</option>
-              </SettingsSelect>
-            </Field>
-            <Field label="Smoking Policy">
-              <SettingsSelect value={business.smokingPolicy} onChange={(e: any) => setB("smokingPolicy", e.target.value)}>
-                <option value="no">Non-smoking</option>
-                <option value="outdoor">Outdoor areas only</option>
-                <option value="yes">Smoking allowed</option>
-              </SettingsSelect>
-            </Field>
-          </div>
-          <Field label="Maintenance Response Time">
-            <SettingsSelect value={business.maintenanceResponse} onChange={(e: any) => setB("maintenanceResponse", e.target.value)}>
-              <option value="24">Within 24 hours</option>
-              <option value="48">Within 48 hours</option>
-              <option value="72">Within 72 hours</option>
-            </SettingsSelect>
-          </Field>
-        </div>
-
-        {/* Visibility */}
-        <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 space-y-4">
-          <SectionTitle icon="👁️" title="Visibility" subtitle="Control who can see your listings" />
-          <Field label="Listing Visibility">
-            <SettingsSelect value={business.listingVisibility} onChange={(e: any) => setB("listingVisibility", e.target.value)}>
-              <option value="public">Public – visible to everyone</option>
-              <option value="registered">Registered users only</option>
-              <option value="hidden">Hidden – not searchable</option>
-            </SettingsSelect>
-          </Field>
         </div>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -1799,7 +1667,6 @@ export function LandlordDashboard() {
       </div>
     );
 
-    // ── Security Tab ───────────────────────────────────────────────────────
     const renderSecurityTab = () => (
       <div className="space-y-5">
         {/* Password */}
@@ -2399,6 +2266,7 @@ export function LandlordDashboard() {
         </div>
       </motion.div>
     );
+
   };
 
   const handleProfilePhoto = async (file?: File) => {

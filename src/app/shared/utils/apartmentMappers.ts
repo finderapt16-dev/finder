@@ -10,6 +10,11 @@ export function apartmentToFormValues(apartment: Apartment): ApartmentFormValues
     : apartment.features && Array.isArray(apartment.features.customFeatures)
       ? apartment.features.customFeatures.filter((item): item is string => typeof item === 'string')
       : [];
+  const verification = apartment.features && !Array.isArray(apartment.features)
+    && apartment.features.verification && typeof apartment.features.verification === 'object'
+    && !Array.isArray(apartment.features.verification)
+      ? Object.fromEntries(Object.entries(apartment.features.verification).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))
+      : {};
 
   return {
     title: apartment.title,
@@ -32,6 +37,7 @@ export function apartmentToFormValues(apartment: Apartment): ApartmentFormValues
     utilities: utilitiesToFormFlag(apartment.utilities),
     utilityItems: Array.isArray(apartment.utilities) ? apartment.utilities : [],
     customFeatures,
+    verification,
     lat: String(apartment.lat),
     lng: String(apartment.lng),
     isPublished: apartment.isPublished ?? true,

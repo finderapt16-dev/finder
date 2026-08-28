@@ -75,6 +75,7 @@ type PropertyDraft = {
   featureInput: string;
   verificationData: {
     businessPermit: string;
+    permitExpiry: string;
     tinNumber: string;
     idType: string;
     idNumber: string;
@@ -156,6 +157,7 @@ const INITIAL_FORM_DATA: Partial<Apartment> = {
 
 const INITIAL_VERIFICATION_DATA = {
   businessPermit: "",
+  permitExpiry: "",
   tinNumber: "",
   idType: "",
   idNumber: "",
@@ -628,6 +630,7 @@ export function AddApartment() {
           propertyName: formData.title || "",
           propertyAddress: [formData.address, formData.city, formData.state, formData.zip].filter(Boolean).join(", "),
           businessPermit: verificationData.businessPermit,
+          permitExpiry: verificationData.permitExpiry,
           tinNumber: verificationData.tinNumber,
           idType: verificationData.idType,
           idNumber: verificationData.idNumber,
@@ -646,22 +649,6 @@ export function AddApartment() {
         resolvedLandlordId,
       );
       createdApartmentId = created.id;
-      const { error: profileSyncError } = await supabase.from("landlord_profiles").upsert({
-        user_id: resolvedLandlordId,
-        permit_number: verificationData.businessPermit.trim(),
-        business_permit_number: verificationData.businessPermit.trim(),
-        tin_number: verificationData.tinNumber.trim() || null,
-        id_type: verificationData.idType || null,
-        id_number: verificationData.idNumber.trim() || null,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id" });
-      if (profileSyncError) throw new Error(profileSyncError.message || "Unable to synchronize verification details.");
-      const { error: userPermitError } = await supabase.from("app_users").update({
-        permit_number: verificationData.businessPermit.trim(),
-        updated_at: new Date().toISOString(),
-      }).eq("id", resolvedLandlordId);
-      if (userPermitError) throw new Error(userPermitError.message || "Unable to synchronize the permit number.");
-
       // Upload all images and collect their URLs
       const uploadedImageUrls: string[] = [];
       for (let i = 0; i < uploadedImages.length; i++) {
@@ -1204,6 +1191,15 @@ export function AddApartment() {
                         className={fieldClass("businessPermit")}
                       />
                       <FieldError field="businessPermit" />
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-slate-700 font-bold">Permit Expiry Date (optional)</Label>
+                      <Input
+                        type="date"
+                        value={verificationData.permitExpiry}
+                        onChange={(e) => setVerificationData({ ...verificationData, permitExpiry: e.target.value })}
+                      />
                     </div>
 
                     <div className="space-y-3">
