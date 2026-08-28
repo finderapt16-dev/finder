@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/app/shared/components/ui/button";
 import { fetchAdminAnalyticsData, type AdminAnalyticsData } from "@/app/shared/services/dashboardSupabaseService";
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 
 type PeriodDays = 7 | 30 | 90;
 type PeriodSelection = PeriodDays | "custom";

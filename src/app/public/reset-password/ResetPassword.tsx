@@ -3,7 +3,7 @@ import { Alert, AlertDescription } from "@/app/shared/components/ui/alert";
 import { Button } from "@/app/shared/components/ui/button";
 import { Input } from "@/app/shared/components/ui/input";
 import { Label } from "@/app/shared/components/ui/label";
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 import { AlertCircle, CheckCircle2, KeyRound, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";

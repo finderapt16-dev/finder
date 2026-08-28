@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
-// Usage: node src/scripts/migrateLocalToSupabase.js ./migrations
+// Usage: node scripts/database/migrateLocalToSupabase.mjs ./migrations
 // Expect files inside the folder: users.json, customApartments.json, apartmentReports.json, adminNotifications.json, adminViolations.json, favorites.json
 
 const USERS_TABLE = 'app_users';

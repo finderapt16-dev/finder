@@ -2,7 +2,7 @@ import { Bot, MessageCircle, Send, Sparkles, User, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { supabase } from "../../../../lib/supabaseclient";
+import { supabase } from "../../../../lib/supabaseClient";
 import { useApartmentsContext } from "../../contexts/ApartmentsContext";
 import { useAuth } from "../../contexts/AuthContext";
 import type { UserRole } from "../../services/authService";

@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 import type { DashboardAuditLogRow, DashboardUserRow } from "@/app/shared/services/dashboardSupabaseService";
 
 export class SuperAdminFunctionError extends Error {

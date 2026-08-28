@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { supabase } from '../../../lib/supabaseclient';
+import { supabase } from '../../../lib/supabaseClient';
 import { clearLegacyApplicationStorage } from '../utils/legacyStorageCleanup';
 import {
   deleteUser as deleteUserRecord,

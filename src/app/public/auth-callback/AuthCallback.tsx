@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 import { getCurrentAuthenticatedUser } from "@/app/shared/services/authService";
 
 export function AuthCallback() {

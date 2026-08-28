@@ -1,5 +1,5 @@
 import { uploadUserAvatar } from "@/app/shared/services/dashboardSupabaseService";
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 
 export type SuperAdminProfile = {
   id: string;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
-import { hasSupabaseConfig } from "@/lib/supabaseclient";
+import { hasSupabaseConfig } from "@/lib/supabaseClient";
 import { AuthProvider } from "./shared/contexts/AuthContext";
 import { router } from "./routes";
 

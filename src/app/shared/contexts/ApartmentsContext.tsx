@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { supabase } from '../../../lib/supabaseclient';
+import { supabase } from '../../../lib/supabaseClient';
 import type { Apartment } from '../data/apartments';
 import { fetchApartments } from '../data/apartments';
 import { useAuth } from './AuthContext';

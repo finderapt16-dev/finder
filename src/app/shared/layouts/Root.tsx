@@ -6,7 +6,7 @@ import { ApartmentsProvider } from "../contexts/ApartmentsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { pageTransition } from "../utils/motionPresets";
 import { isTenantRole } from "../services/authService";
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useState } from "react";
 
 function RootContent() {

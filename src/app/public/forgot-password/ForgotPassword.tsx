@@ -2,7 +2,7 @@ import { AppLogo } from "@/app/shared/components/common/AppLogo";
 import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
 import { Alert, AlertDescription } from "@/app/shared/components/ui/alert";
 import { Button } from "@/app/shared/components/ui/button";
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 import {
   AlertCircle,
   ArrowLeft, ArrowRight,

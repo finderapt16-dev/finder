@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 
 export const VERIFICATION_DOCUMENT_TYPES = [
   { key: "proof_of_ownership", label: "Proof of Ownership or Authority" },

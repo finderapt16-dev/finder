@@ -1,4 +1,4 @@
-import { supabase as supabaseClient } from '../../../lib/supabaseclient';
+import { supabase as supabaseClient } from '../../../lib/supabaseClient';
 import { safeRandomId } from '../utils/safeRandomId';
 
 export type UserRole = 'tenant' | 'landlord' | 'admin' | 'super_admin' | 'student' | 'employee';

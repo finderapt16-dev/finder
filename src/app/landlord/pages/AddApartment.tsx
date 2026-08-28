@@ -34,7 +34,7 @@ import {
   DEFAULT_LA_PAZ_MAP_CENTER,
   hasValidApartmentCoordinates,
 } from "@/app/shared/utils/mapCoordinates";
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 import {
   AlertCircle,
   ArrowLeft,

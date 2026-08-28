@@ -67,7 +67,7 @@ import {
 import { getReportEvidence } from "@/app/shared/services/reportEvidenceService";
 import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
 import { formatAuditLogForDisplay, formatNotificationType, safeNotificationText } from "@/app/shared/utils/auditLogDisplay";
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 import {
   Activity,
   AlertOctagon,

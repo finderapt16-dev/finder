@@ -36,7 +36,7 @@ import {
 } from "@/app/shared/services/verificationDocumentsService";
 import { formatAuditLogForDisplay } from "@/app/shared/utils/auditLogDisplay";
 import { fetchApartmentRatings, subscribeToApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 import { clearAdminNavigationMemory, getAdminModulePath, rememberAdminModuleLocation, type AdminModule } from "@/app/admin/utils/adminNavigationMemory";
 import {
   AlertTriangle,

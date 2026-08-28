@@ -1,4 +1,4 @@
-import { supabase } from "../../../lib/supabaseclient";
+import { supabase } from "../../../lib/supabaseClient";
 import { safeRandomId } from "../utils/safeRandomId";
 import { apartmentRowToApartment, type ApartmentRow } from "../data/apartments";
 import { resolveAppUserId } from "./apartmentsService";

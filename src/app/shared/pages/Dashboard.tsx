@@ -6,7 +6,7 @@ import { isTenantRole } from "@/app/shared/services/authService";
 const AdminDashboard = lazy(() => import("@/app/admin/pages/AdminDashboard").then((module) => ({ default: module.AdminDashboard })));
 const SuperAdminDashboard = lazy(() => import("@/app/super-admin/pages/SuperAdminDashboard").then((module) => ({ default: module.SuperAdminDashboard })));
 const LandlordDashboard = lazy(() => import("@/app/landlord/pages/LandlordDashboard").then((module) => ({ default: module.LandlordDashboard })));
-const StudentEmployeeDashboard = lazy(() => import("@/app/tenant/pages/StudentEmployeeDashboard").then((module) => ({ default: module.StudentEmployeeDashboard })));
+const TenantDashboard = lazy(() => import("@/app/tenant/pages/TenantDashboard").then((module) => ({ default: module.TenantDashboard })));
 
 function DashboardLoader() {
   return <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 text-center text-sm font-semibold text-slate-600">Loading your dashboard...</div>;
@@ -45,7 +45,7 @@ export function Dashboard() {
     if (!new URLSearchParams(location.search).get("section")) {
       return <Navigate to="/browse" replace />;
     }
-    return <Suspense fallback={<DashboardLoader />}><StudentEmployeeDashboard /></Suspense>;
+    return <Suspense fallback={<DashboardLoader />}><TenantDashboard /></Suspense>;
   }
 
   return (

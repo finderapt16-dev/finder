@@ -8,7 +8,7 @@
  * - Anti-abuse measures
  */
 
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 
 export interface ReportEvidenceInput {
   reportId: string;

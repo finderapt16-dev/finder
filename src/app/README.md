@@ -1,24 +1,11 @@
-# App Folder Guide
+# Application Folder Guide
 
-Use this map when you need to find or change a feature quickly.
+- `public` — Landing Page and authentication pages
+- `tenant` — Tenant dashboard, apartment browsing, favorites, and notifications
+- `landlord` — Landlord dashboard, properties, rooms, and market overview
+- `admin` — Admin dashboards and verification/review tools
+- `super-admin` — Super Admin pages and services
+- `shared` — reusable components, contexts, services, data, hooks, layouts, and utilities
+- `routes.tsx` — URL route definitions
 
-## Pages
-
-- `admin/pages` - admin dashboard, apartment inspection, reports, verification, violations, and notices
-- `landlord/pages` - landlord dashboard, property creation, room management, and landlord browse views
-- `tenant/pages` - student/employee tenant dashboard, browse, apartment details, favorites, reports, and preferences
-- `public` - landing, login, signup, forgot password, and not found pages
-- `shared/pages` - role-neutral pages such as the dashboard router, settings, design guide, and flowchart
-
-## Shared App Code
-
-- `shared/layouts` - app shell/layout wrappers
-- `shared/components/common` - reusable app-specific UI like the app logo, apartment card, and chatbot
-- `shared/components/features` - feature-specific components such as the map view
-- `shared/components/landing` - landing-page-only components
-- `shared/components/ui` - base shadcn-style UI primitives
-- `shared/contexts` - React providers for auth and apartment state
-- `shared/data` - data models and adapters used by pages/components
-- `shared/hooks` - reusable React hooks
-- `shared/services` - Supabase read/write logic
-- `shared/utils` - pure helper functions
+See `docs/PROJECT_STRUCTURE.md` at the repository root for the full navigation guide.

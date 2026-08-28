@@ -35,7 +35,7 @@ import { Switch } from "@/app/shared/components/ui/switch";
 import { Textarea } from "@/app/shared/components/ui/textarea";
 import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 import {
   createApartmentRoom,
   deleteApartmentRoom,

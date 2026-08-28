@@ -151,7 +151,7 @@ const NAV_ACCOUNT = [
 
 const DASHBOARD_SECTIONS = ["overview", "favorites", "suggested", "popular", "notifications", "settings", "report", "help"];
 
-export function StudentEmployeeDashboard() {
+export function TenantDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

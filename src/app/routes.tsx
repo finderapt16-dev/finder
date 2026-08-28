@@ -19,7 +19,7 @@ const DesignGuide = lazy(() => import("./shared/pages/tools/DesignGuide").then((
 const Flowchart = lazy(() => import("./shared/pages/tools/Flowchart").then((module) => ({ default: module.Flowchart })));
 const ApartmentDetail = lazy(() => import("./tenant/pages/ApartmentDetail").then((module) => ({ default: module.ApartmentDetail })));
 const Favorites = lazy(() => import("./tenant/pages/Favorites").then((module) => ({ default: module.Favorites })));
-const Home = lazy(() => import("./tenant/pages/Home").then((module) => ({ default: module.Home })));
+const ApartmentBrowse = lazy(() => import("./tenant/pages/ApartmentBrowse").then((module) => ({ default: module.ApartmentBrowse })));
 const AuthCallback = lazy(() => import("./public/auth-callback/AuthCallback").then((module) => ({ default: module.AuthCallback })));
 
 const APARTMENT_LOGIN_MESSAGE = "Please sign in or create an account to view apartment details.";
@@ -53,7 +53,7 @@ export const router = createBrowserRouter([
     path: "/",
     element: <Root />,
     children: [
-      { path: "browse", element: <ProtectedRoute preserveReturnDestination loginMessage={APARTMENT_LOGIN_MESSAGE}><PageLoader><Home /></PageLoader></ProtectedRoute> },
+      { path: "browse", element: <ProtectedRoute preserveReturnDestination loginMessage={APARTMENT_LOGIN_MESSAGE}><PageLoader><ApartmentBrowse /></PageLoader></ProtectedRoute> },
       { path: "apartment/:id", element: <ProtectedRoute preserveReturnDestination loginMessage={APARTMENT_LOGIN_MESSAGE}><PageLoader><ApartmentDetail /></PageLoader></ProtectedRoute> },
       { path: "landlord/market/:id", element: <ProtectedRoute allowedRoles={["landlord"]}><PageLoader><ApartmentDetail /></PageLoader></ProtectedRoute> },
       { path: "admin/apartment/:id", element: <ProtectedRoute allowedRoles={["admin", "super_admin"]}><PageLoader><AdminApartmentDetail /></PageLoader></ProtectedRoute> },

@@ -1,6 +1,6 @@
 import { AppLogo } from "@/app/shared/components/common/AppLogo";
 import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
-import { LandingListingsSection } from "@/app/shared/components/landing/LandingApartmentPreview";
+import { LandingListingsSection } from "./LandingApartmentPreview";
 import { Button } from "@/app/shared/components/ui/button";
 import locationMapIllustration from "@/assets/landing/location-map-illustration.png";
 import {

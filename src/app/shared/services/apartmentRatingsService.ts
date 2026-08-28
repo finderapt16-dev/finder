@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 import { safeRandomId } from "../utils/safeRandomId";
 
 export interface ApartmentRatingRow { id: string; apartment_id: string; tenant_id: string; rating: number; created_at: string; updated_at: string; }

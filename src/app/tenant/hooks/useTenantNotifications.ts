@@ -9,7 +9,7 @@ import {
   markNotificationUnread,
   type DashboardNotificationRow,
 } from "@/app/shared/services/dashboardSupabaseService";
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 
 export function useTenantNotifications(enabled = true) {
   const { user } = useAuth();

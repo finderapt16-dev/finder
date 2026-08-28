@@ -75,7 +75,7 @@ import { rankApartments, type TenantPreferences } from "@/app/shared/utils/ranki
 import { geocodeLocationWithinLaPaz, GeocodingError, type GeocodedLocation } from "@/app/shared/services/geocodingService";
 import { findNearbyApartments, formatDistance, parseNearbySearchIntent } from "@/app/shared/utils/geospatialSearch";
 import { toast } from "sonner";
-import { LandlordBrowse } from "@/app/landlord/pages/LandlordBrowse";
+import { MarketOverview } from "@/app/landlord/pages/MarketOverview";
 import { TenantMobileNavigation } from "@/app/tenant/components/TenantMobileNavigation";
 import { TenantSidebar } from "@/app/tenant/components/TenantSidebar";
 import { useTenantNotifications } from "@/app/tenant/hooks/useTenantNotifications";
@@ -165,7 +165,7 @@ function BrowseContent() {
   const { user } = useAuth();
 
   if (user?.role === "landlord") {
-    return <LandlordBrowse />;
+    return <MarketOverview />;
   }
 
   return <TenantBrowse />;
@@ -1031,6 +1031,6 @@ function Pagination({
   );
 }
 
-export function Home() {
+export function ApartmentBrowse() {
   return <BrowseContent />;
 }

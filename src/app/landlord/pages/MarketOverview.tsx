@@ -47,7 +47,7 @@ type SortOption = "newest" | "most_viewed" | "most_favorited" | "price_low" | "p
 
 const getImageUrl = (apartment: Apartment) => getApartmentImageUrl(apartment);
 
-export function LandlordBrowse() {
+export function MarketOverview() {
   const navigate = useNavigate();
   const { user, users, logout } = useAuth();
   const {

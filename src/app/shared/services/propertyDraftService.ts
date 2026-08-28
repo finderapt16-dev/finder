@@ -1,4 +1,4 @@
-import { supabase } from "../../../lib/supabaseclient";
+import { supabase } from "../../../lib/supabaseClient";
 
 const DRAFT_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 

@@ -1,22 +1,39 @@
+# AptFindr
 
-  # Apartment Finder PWA
+AptFindr is a Progressive Web Application for discovering and managing apartment listings in La Paz, Iloilo City. It provides separate Tenant, Landlord, Admin, and Super Admin workflows backed by Supabase.
 
-  This is a code bundle for Apartment Finder PWA. The original project is available at https://www.figma.com/design/fWnV04HCoOpou2gRr2QTPH/Apartment-Finder-PWA.
+## Setup
 
-  ## Running the code
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env` and provide the project-specific public Supabase values.
+3. Start development with `npm run dev`.
 
-  Run `npm i` to install the dependencies.
+Never commit `.env`, service-role keys, passwords, or other secrets.
 
-  Run `npm run dev` to start the development server.
+## Commands
 
-## Tenant discovery
+- `npm run dev` — start the Vite development server
+- `npm run typecheck` — run TypeScript checks
+- `npm run lint` — run strict TypeScript unused-code checks
+- `npm run build` — create the production build
+- `npm run migrate:supabase -- <folder>` — import supported local JSON data using the database utility script
 
-Browse All keeps saved preferences separate from temporary search. Preferences influence weighted recommendations, while searches such as `near ISAT U` geocode a La Paz landmark and show coordinate-bearing listings within 500 meters, ordered nearest-first by Haversine distance before pagination.
+## Project map
 
-## Auth profile repair
+- `src/app/public` — Landing Page and authentication pages
+- `src/app/tenant` — Tenant dashboard, apartment browsing, favorites, and notifications
+- `src/app/landlord` — Landlord dashboard, properties, rooms, and market overview
+- `src/app/admin` — Admin dashboard and apartment/landlord review
+- `src/app/super-admin` — Super Admin management and system controls
+- `src/app/shared` — shared components, contexts, services, layouts, and utilities
+- `src/lib/supabaseClient.ts` — browser Supabase client configuration
+- `src/assets` — source images and visual assets
+- `src/styles` — global styles and theme rules
+- `scripts/database` — database-related utility scripts
+- `database` — recommended location for local SQL files; the current master migration remains ignored by Git
 
-Run the current `supabase-master-migration.sql` once in the Supabase SQL Editor after deploying this version. It transactionally synchronizes `auth.users` with `app_users`, backfills incomplete signups, and keeps email verification separate from landlord approval.
+See [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) for a concise navigation guide.
 
-In Supabase Authentication URL Configuration, set the deployed app as the Site URL and allow both `/auth/callback` and `/reset-password` for production. For local Vite development, allow `http://localhost:5173/auth/callback` and `http://localhost:5173/reset-password`.
+## Supabase
 
-Production confirmation and recovery mail should use Supabase custom SMTP with a verified sender/domain. Keep the SMTP password or provider API key in Supabase only; browser code must contain only `VITE_SUPABASE_URL` and the public anon key.
+The local `supabase-master-migration.sql` is intentionally ignored and must not be committed. Run the current migration manually in the Supabase SQL Editor when required. Configure production Site URL, allowed `/auth/callback` and `/reset-password` redirects, and custom SMTP in Supabase.

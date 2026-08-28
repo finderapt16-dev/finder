@@ -1,4 +1,4 @@
-import { supabase } from "../../../lib/supabaseclient";
+import { supabase } from "../../../lib/supabaseClient";
 
 export async function generateBackupCodes(): Promise<string[]> {
   const { data, error } = await supabase.rpc("fn_generate_backup_codes");

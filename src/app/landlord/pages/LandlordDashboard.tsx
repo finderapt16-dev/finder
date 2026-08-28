@@ -51,7 +51,7 @@ import {
 } from "@/app/shared/services/dashboardSupabaseService";
 import { apartmentToFormValues } from "@/app/shared/utils/apartmentMappers";
 import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
-import { supabase } from "@/lib/supabaseclient";
+import { supabase } from "@/lib/supabaseClient";
 import {
   AlertCircle,
   AlertTriangle,

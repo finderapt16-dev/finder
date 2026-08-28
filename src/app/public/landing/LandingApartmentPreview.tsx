@@ -2,13 +2,13 @@ import { ArrowRight, Bath, Bed, Building2, Loader2, MapPin } from "lucide-react"
 import { motion } from "motion/react";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useApartmentsContext } from "../../contexts/ApartmentsContext";
-import type { Apartment } from "../../data/apartments";
-import { getImageUrl } from "../../utils/images";
-import { isTenantVisibleApartment } from "../../utils/listingVisibility";
-import { VerifiedBadge } from "../common/VerifiedBadge";
-import { ImageWithFallback } from "../figma/ImageWithFallback";
-import { Button } from "../ui/button";
+import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
+import type { Apartment } from "@/app/shared/data/apartments";
+import { getImageUrl } from "@/app/shared/utils/images";
+import { isTenantVisibleApartment } from "@/app/shared/utils/listingVisibility";
+import { VerifiedBadge } from "@/app/shared/components/common/VerifiedBadge";
+import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
+import { Button } from "@/app/shared/components/ui/button";
 
 const PREVIEW_LIMIT = 4;
 

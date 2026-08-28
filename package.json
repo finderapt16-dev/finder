@@ -8,7 +8,7 @@
     "lint": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
     "typecheck": "tsc --noEmit",
     "dev": "vite",
-    "migrate:supabase": "node src/scripts/migrateLocalToSupabase.js migrations"
+    "migrate:supabase": "node scripts/database/migrateLocalToSupabase.mjs migrations"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "1.1.6",
