@@ -148,11 +148,6 @@ const components = [
     notes: ["Room selection", "Fallback images", "Tenant detail UX"],
   },
   {
-    name: "Chatbot",
-    description: "Role-aware project support assistant using loaded app context.",
-    notes: ["Listing answers", "Role-specific guidance", "Reports/help topics", "No external mock data"],
-  },
-  {
     name: "EvidenceUploader / EvidenceViewer",
     description: "Report and appeal evidence upload/display helpers.",
     notes: ["Supabase storage", "Evidence count", "Admin review support"],

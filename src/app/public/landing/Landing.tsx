@@ -18,7 +18,6 @@ import {
   ArrowRight,
   BadgeCheck,
   BedDouble,
-  Bot,
   Building2,
   CalendarCheck,
   CheckCircle2,
@@ -501,7 +500,6 @@ export function Landing() {
               { icon: ShieldCheck, title: "Verification Information", desc: "Landlords submit required information for administrative review through the platform.", color: "text-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#F3EFEA]" },
               { icon: Flag, title: "Listing Reports", desc: "Users can report inaccurate or concerning listing information for administrator review.", color: "text-rose-600", bg: "bg-[#FAF8F5]", border: "border-rose-100" },
               { icon: MapIcon, title: "GIS Map View", desc: "Compare apartment locations in La Paz and review nearby listing options.", color: "text-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#F3EFEA]" },
-              { icon: Bot, title: "Platform Guide", desc: "The built-in assistant explains platform features and helps users navigate available options.", color: "text-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#F3EFEA]" },
               { icon: TrendingUp, title: "Listing Activity", desc: "Landlords can monitor recorded views and favorites, while renters receive suggestions based on their preferences.", color: "text-[#756A60]", bg: "bg-[#FAF8F5]", border: "border-[#E8DED1]" },
             ].map(({ icon: Icon, title, desc }, i) => (
               <AnimatedSection key={title} delay={i * 0.07}>

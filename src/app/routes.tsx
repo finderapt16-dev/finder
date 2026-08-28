@@ -41,7 +41,7 @@ function PublicLandingRoute() {
 }
 
 export const router = createBrowserRouter([
-  // Standalone pages — no Root wrapper (no app Header / Chatbot)
+  // Standalone pages — no Root wrapper or app header
   { path: "/flowchart", element: <PageLoader><Flowchart /></PageLoader> },
   { path: "/design-guide", element: <PageLoader><DesignGuide /></PageLoader> },
   { path: "/", element: <PublicLandingRoute /> },
