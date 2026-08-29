@@ -44,18 +44,16 @@ import {
 const STATUS_LABEL: Record<string, string> = {
   available: "Available",
   occupied: "Occupied",
-  reserved: "Unavailable",
-  maintenance: "Maintenance",
+  maintenance: "Under Maintenance",
 };
 
 const STATUS_CLASS: Record<string, string> = {
   available: "bg-emerald-600 text-white",
   occupied: "bg-rose-600 text-white",
-  reserved: "bg-amber-500 text-white",
   maintenance: "bg-slate-600 text-white",
 };
 
-type FavoriteFilter = "all" | "available" | "unavailable";
+type FavoriteFilter = "all" | "available";
 type FavoriteSort = "newest" | "price-low" | "price-high" | "name";
 type ViewMode = "grid" | "list";
 
@@ -128,7 +126,6 @@ export function Favorites() {
     return [...favoriteApartments]
       .filter((apartment) => {
         if (filter === "available") return isApartmentAvailable(apartment);
-        if (filter === "unavailable") return !isApartmentAvailable(apartment);
         return true;
       })
       .sort((a, b) => {
@@ -361,7 +358,6 @@ export function Favorites() {
               <select value={filter} onChange={(event) => setFilter(event.target.value as FavoriteFilter)} className="h-12 rounded-lg border border-[#e8ded1] bg-white px-4 text-sm font-bold text-[#302820] outline-none focus:border-[#8b735b] focus:ring-2 focus:ring-[#8b735b]/15">
                 <option value="all">All Favorites ({favoriteCount})</option>
                 <option value="available">Available Only</option>
-                <option value="unavailable">Unavailable</option>
               </select>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <select value={sort} onChange={(event) => setSort(event.target.value as FavoriteSort)} className="h-12 rounded-lg border border-[#e8ded1] bg-white px-4 text-sm font-bold text-[#302820] outline-none focus:border-[#8b735b] focus:ring-2 focus:ring-[#8b735b]/15">

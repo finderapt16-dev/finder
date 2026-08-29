@@ -75,7 +75,6 @@ const ACTION_LABELS: Record<string, string> = {
 const STATUS_LABELS: Record<string, string> = {
   available: "Available",
   occupied: "Occupied",
-  reserved: "Reserved",
   maintenance: "Under Maintenance",
   pending: "Pending",
   approved: "Approved",

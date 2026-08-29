@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Apartment } from "../../data/apartments";
 import { useFavorites } from "../../hooks/useFavorites";
+import { isTenantRole } from "../../services/authService";
 import { formatApartmentLocation } from "../../utils/apartmentLocation";
 import { getImageUrl } from "../../utils/images";
 import { Badge } from "../ui/badge";
@@ -26,14 +27,12 @@ interface ApartmentCardProps {
 const STATUS_BADGE: Record<string, string> = {
   available: "bg-green-600 text-white",
   occupied: "bg-red-600 text-white",
-  reserved: "bg-yellow-500 text-white",
   maintenance: "bg-slate-500 text-white",
 };
 
 const STATUS_LABEL: Record<string, string> = {
   available: "Available",
   occupied: "Occupied",
-  reserved: "Unavailable",
   maintenance: "Under Maintenance",
 };
 
@@ -42,7 +41,7 @@ export function ApartmentCard({ apartment, detailState, ratingStats, ratingsLoad
   const { user, users } = useAuth();
   const favorite = isFavorite(apartment.id);
   const isOwnListing = user?.role === "landlord" && apartment.landlordId === user.id;
-  const showFavoriteButton = user?.role !== "admin" && !isOwnListing;
+  const showFavoriteButton = isTenantRole(user?.role) && !isOwnListing;
 
   const landlord = apartment.landlordId ? users.find((entry) => entry.id === apartment.landlordId) : undefined;
   const verifiedLandlord = apartment.landlordVerified ?? landlord?.isVerified === true;

@@ -13,6 +13,7 @@ import {
 } from '../data/apartments';
 import { isTenantRole } from './authService';
 import { optimizeImageForUpload } from '../utils/imageUpload';
+import { isTenantVisibleApartment } from '../utils/listingVisibility';
 
 const APARTMENT_SELECT =
   '*, apartment_images(url, is_primary, sort_order), apartment_rooms(id, name, room_type, sqft, max_occupants, rent, has_private_bath, bathroom_type, shared_bath_location, has_ac, is_occupied, status, description, images, created_at)';
@@ -615,7 +616,7 @@ export const toggleFavorite = async (apartmentId: string, userId?: string): Prom
 
   const { data: apartmentRow, error: apartmentError } = await supabase
     .from('apartments')
-    .select('landlord_id')
+    .select(APARTMENT_SELECT)
     .eq('id', apartmentId)
     .maybeSingle();
 
@@ -623,8 +624,18 @@ export const toggleFavorite = async (apartmentId: string, userId?: string): Prom
     throw new Error(unwrapErrorMessage(apartmentError, 'Unable to verify listing ownership.'));
   }
 
+  if (!apartmentRow) {
+    throw new Error('This listing is not available to favorite.');
+  }
+
   if (isRecord(apartmentRow) && apartmentRow.landlord_id === resolvedUserId) {
     throw new Error('You cannot favorite your own listing.');
+  }
+
+  const apartment = apartmentRowToApartment(apartmentRow as ApartmentRow);
+  const landlordVerified = await getLandlordVerification(apartment.landlordId);
+  if (!isTenantVisibleApartment({ ...apartment, landlordVerified })) {
+    throw new Error('This listing is not currently available to favorite.');
   }
 
   const { error: insertError } = await supabase.from('favorites').insert({
@@ -786,9 +797,11 @@ const apartmentRoomToPayload = (apartmentId: string, room: ApartmentRoom) => {
 
 const apartmentRoomRowToRoom = (row: Record<string, unknown>): ApartmentRoom => {
   const statusValue = typeof row.status === 'string' ? row.status : row.is_occupied ? 'occupied' : 'available';
-  const status = statusValue === 'occupied' || statusValue === 'reserved' || statusValue === 'maintenance'
-    ? statusValue
-    : 'available';
+  const status = statusValue === 'reserved'
+    ? 'occupied'
+    : statusValue === 'occupied' || statusValue === 'maintenance'
+      ? statusValue
+      : 'available';
 
   const images = Array.isArray(row.images)
     ? row.images.filter((image): image is string => typeof image === 'string' && image.trim().length > 0)

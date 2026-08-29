@@ -23,7 +23,7 @@ export const getLowestAvailableRoomPrice = (apartment: Apartment): number | null
  *
  * Tenant discovery is intentionally stricter than internal Admin/Landlord
  * management. A listing must be fully approved, active, published, live, and
- * backed by at least one real available room before renters can see it.
+ * backed by at least one real available room before tenants can see it.
  */
 export const isTenantVisibleApartment = (apartment: Apartment): boolean => {
   if (apartment.landlordVerified !== true) return false;

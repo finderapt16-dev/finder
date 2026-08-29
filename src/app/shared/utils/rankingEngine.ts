@@ -1,5 +1,6 @@
 import type { Apartment } from "../data/apartments";
 import { getNormalizedApartmentAmenities } from "./apartmentAmenities";
+import { getLowestAvailableRoomPrice, isRoomAvailable } from "./listingVisibility";
 
 /**
  * WEIGHTED RANKING ALGORITHM FOR APARTMENT DISCOVERY
@@ -16,8 +17,6 @@ import { getNormalizedApartmentAmenities } from "./apartmentAmenities";
  * - Popularity & Engagement (3%)
  * - Recent Activity (2%)
  */
-
-export type TenantType = 'student' | 'employee' | 'other';
 
 export interface RankingScoreBreakdown {
   locationScore: number;           // 0-100 (30% weight)
@@ -37,8 +36,6 @@ export interface RankingScoreBreakdown {
 export interface TenantPreferences {
   maxBudget?: number;
   preferredArea?: string;
-  preferredBarangay?: string;
-  tenantType?: TenantType;
   petFriendly?: boolean;
   parking?: boolean;
   furnished?: boolean;
@@ -52,10 +49,8 @@ export interface TenantPreferences {
 
 export interface RankingContext {
   userPreferences?: TenantPreferences;
-  userFavoriteIds?: string[];
   userViewedIds?: string[];
   landlordVerifications?: Map<string, boolean>;
-  apartmentApplications?: Map<string, number>;
   apartmentViewCounts?: Map<string, number>;
   apartmentFavoriteCounts?: Map<string, number>;
   apartmentRatingStats?: Map<string, { average: number; count: number }>;
@@ -98,22 +93,16 @@ function calculateLocationScore(
   let score = 0;
 
   // Base: La Paz areas get highest score (primary market)
-  const isPrimaryArea = (city: string): boolean => {
+  const isPrimaryArea = (location: string): boolean => {
     const laPazAliases = ['la paz', 'lapaz', 'lapaz city'];
-    return laPazAliases.some(alias => city.toLowerCase().includes(alias));
+    return laPazAliases.some(alias => location.toLowerCase().includes(alias));
   };
 
-  const isSecondaryArea = (city: string): boolean => {
-    const secondary = ['iloilo', 'jaro', 'mandurriao', 'arevalo'];
-    return secondary.some(area => city.toLowerCase().includes(area));
-  };
-
-  if (isPrimaryArea(apartment.city)) {
+  const locationText = [apartment.address, apartment.city, apartment.state].filter(Boolean).join(' ');
+  if (isPrimaryArea(locationText)) {
     score += 70; // La Paz apartments score high
-  } else if (isSecondaryArea(apartment.city)) {
-    score += 40; // Secondary areas get moderate boost
   } else {
-    score += 20; // Other areas get minimal boost
+    score += 0; // Discovery is scoped to La Paz; no secondary-district bonus.
   }
 
   // Preferred area match
@@ -124,14 +113,6 @@ function calculateLocationScore(
       score += 30; // Exact match bonus
     } else if (apartment.description.toLowerCase().includes(query)) {
       score += 15; // Mentioned in description
-    }
-  }
-
-  // Preferred barangay match (if specified)
-  if (preferences?.preferredBarangay) {
-    const barangay = preferences.preferredBarangay.toLowerCase();
-    if (apartment.address.toLowerCase().includes(barangay)) {
-      score += 30; // Barangay match bonus
     }
   }
 
@@ -153,7 +134,7 @@ function calculateBudgetScore(
     return 50; // Neutral if no preference
   }
 
-  const { price } = apartment;
+  const price = getLowestAvailableRoomPrice(apartment) ?? apartment.price;
   const { maxBudget } = preferences;
 
   // Within budget: highest score
@@ -193,8 +174,6 @@ function calculateAvailabilityScore(apartment: Apartment, preferences?: TenantPr
   // Check apartment status
   if (apartment.status === 'available') {
     score += 50;
-  } else if (apartment.status === 'reserved') {
-    score += 25;
   } else if (apartment.status === 'occupied') {
     score += 10;
   } else if (apartment.status === 'maintenance') {
@@ -203,14 +182,14 @@ function calculateAvailabilityScore(apartment: Apartment, preferences?: TenantPr
 
   // Check room availability
   if (apartment.rooms && apartment.rooms.length > 0) {
-    const availableRooms = apartment.rooms.filter(r => r.status === 'available' || !r.isOccupied).length;
+    const availableRooms = apartment.rooms.filter(isRoomAvailable).length;
     const totalRooms = apartment.rooms.length;
     const availabilityRatio = availableRooms / totalRooms;
     
     // More available rooms = higher score
     score += availabilityRatio * 50;
   } else {
-    score += 50; // No rooms listed = assume unit is available
+    score += 0; // Tenant-visible listings require at least one actual room.
   }
 
   // Availability date bonus (recently available or immediately available)
@@ -314,7 +293,7 @@ function calculateVerificationScore(
 // ============================================================================
 
 /**
- * Calculate popularity score based on views, favorites, and applications
+ * Calculate popularity score based on current views and favorites.
  */
 function calculatePopularityScore(
   apartment: Apartment,
@@ -325,19 +304,12 @@ function calculatePopularityScore(
   // View count (up to 50 views)
   const views = context?.apartmentViewCounts?.get(apartment.id) ?? 0;
   const normalizedViews = Math.min(views / 50, 1);
-  score += normalizedViews * 40;
+  score += normalizedViews * 50;
 
   // Favorite count (up to 20 favorites)
   const favorites = context?.apartmentFavoriteCounts?.get(apartment.id) ?? 0;
   const normalizedFavorites = Math.min(favorites / 20, 1);
-  score += normalizedFavorites * 40;
-
-  // Application count (if available)
-  if (context?.apartmentApplications) {
-    const applications = context.apartmentApplications.get(apartment.id) || 0;
-    const normalizedApps = Math.min(applications / 10, 1);
-    score += normalizedApps * 20;
-  }
+  score += normalizedFavorites * 50;
 
   return Math.min(score, 100);
 }
@@ -438,14 +410,11 @@ export function calculateRankingScoreBreakdown(
 export function rankApartments(
   apartments: Apartment[],
   preferences?: TenantPreferences,
-  userFavoriteIds?: string[],
   context?: Partial<RankingContext>
 ): Array<Apartment & { rankingScore: number; scoreBreakdown: RankingScoreBreakdown }> {
   const rankingContext: RankingContext = {
     userPreferences: preferences,
-    userFavoriteIds,
     landlordVerifications: context?.landlordVerifications,
-    apartmentApplications: context?.apartmentApplications,
     apartmentViewCounts: context?.apartmentViewCounts,
     apartmentFavoriteCounts: context?.apartmentFavoriteCounts,
     apartmentRatingStats: context?.apartmentRatingStats,
@@ -456,40 +425,13 @@ export function rankApartments(
     .map(apt => {
       const scoreBreakdown = calculateRankingScoreBreakdown(apt, preferences, rankingContext);
       
-      // Boost score if user has favorited
-      let finalScore = scoreBreakdown.finalScore;
-      if (userFavoriteIds?.includes(apt.id)) {
-        finalScore = Math.min(100, finalScore + 15); // 15 point boost for favorites
-      }
-
       return {
         ...apt,
-        rankingScore: finalScore,
+        rankingScore: scoreBreakdown.finalScore,
         scoreBreakdown,
       };
     })
     .sort((a, b) => b.rankingScore - a.rankingScore);
-}
-
-/**
- * Get student-specific recommendations
- * Prioritizes: student-friendly, near schools, affordable, shared rooms
- */
-export function getStudentRecommendations(
-  apartments: Apartment[],
-  preferences?: TenantPreferences
-): Array<Apartment & { rankingScore: number; scoreBreakdown: RankingScoreBreakdown }> {
-  return rankApartments(apartments, preferences);
-}
-
-/**
- * Get employee-specific recommendations  * Prioritizes: near workplace, private rooms, professional-friendly
- */
-export function getEmployeeRecommendations(
-  apartments: Apartment[],
-  preferences?: TenantPreferences
-): Array<Apartment & { rankingScore: number; scoreBreakdown: RankingScoreBreakdown }> {
-  return rankApartments(apartments, preferences);
 }
 
 /**

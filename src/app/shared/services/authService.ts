@@ -1,8 +1,7 @@
 import { supabase as supabaseClient } from '../../../lib/supabaseClient';
 import { safeRandomId } from '../utils/safeRandomId';
 
-export type UserRole = 'tenant' | 'landlord' | 'admin' | 'super_admin' | 'student' | 'employee';
-export type TenantType = 'student' | 'employee' | 'other';
+export type UserRole = 'tenant' | 'landlord' | 'admin' | 'super_admin';
 export type UserStatus = 'pending' | 'verified' | 'approved' | 'active' | 'disabled' | string;
 
 export interface User {
@@ -14,7 +13,6 @@ export interface User {
   middleInitial?: string;
   address?: string;
   role: UserRole;
-  tenantType?: TenantType;
   status: UserStatus;
   createdAt?: string;
   updatedAt?: string;
@@ -26,19 +24,6 @@ export interface User {
   department?: string;
   adminLevel?: string;
   permitNumber?: string;
-  school?: string;
-  guardianName?: string;
-  guardianAddress?: string;
-  guardianContact?: string;
-  yearLevel?: string;
-  studentId?: string;
-  course?: string;
-  company?: string;
-  position?: string;
-  employeeId?: string;
-  otherOccupation?: string;
-  otherOrganization?: string;
-  otherWorkplace?: string;
 }
 
 type AppUserRow = {
@@ -63,7 +48,6 @@ type AppUserRow = {
   permit_number?: string;
   department?: string;
   admin_level?: string;
-  tenant_type?: string | null;
   other_occupation?: string | null;
   other_organization?: string | null;
   other_workplace?: string | null;
@@ -80,28 +64,18 @@ export interface CreateUserInput {
   password: string;
   name: string;
   role: UserRole;
-  tenantType?: TenantType;
   status?: UserStatus;
   mobile?: string;
   mobileNumber?: string;
   middleInitial?: string;
   address?: string;
-  school?: string;
-  guardianName?: string;
-  guardianAddress?: string;
-  guardianContact?: string;
-  company?: string;
   department?: string;
-  workAddress?: string;
   permitNumber?: string;
   adminLevel?: string;
   permitDocument?: File;
   idDocument?: File;
   termsAccepted?: boolean;
   landlordVerificationAccepted?: boolean;
-  otherOccupation?: string;
-  otherOrganization?: string;
-  otherWorkplace?: string;
 }
 
 export interface SignupResult {
@@ -131,30 +105,19 @@ export interface UpdateUserInput {
   email?: string;
   password?: string;
   role?: UserRole;
-  tenantType?: TenantType;
   status?: UserStatus;
   isVerified?: boolean;
   mobile?: string;
   mobileNumber?: string;
   middleInitial?: string;
   address?: string;
-  school?: string;
-  guardianName?: string;
-  guardianAddress?: string;
-  guardianContact?: string;
-  company?: string;
   department?: string;
-  workAddress?: string;
   permitNumber?: string;
   adminLevel?: string;
-  otherOccupation?: string;
-  otherOrganization?: string;
-  otherWorkplace?: string;
 }
 
 const APP_USERS_TABLE = 'app_users';
-const VALID_ROLES = new Set<UserRole>(['tenant', 'student', 'employee', 'landlord', 'admin', 'super_admin']);
-const VALID_TENANT_TYPES = new Set<TenantType>(['student', 'employee', 'other']);
+const VALID_ROLES = new Set<UserRole>(['tenant', 'landlord', 'admin', 'super_admin']);
 let latestAuthProfileRequestId = 0;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -202,22 +165,13 @@ function normalizeStatus(row: Record<string, unknown>): string {
 }
 
 function normalizeRoleValue(value: unknown): string {
-  return typeof value === 'string' ? value.trim().toLowerCase() : '';
-}
-
-function normalizeTenantType(value: unknown, role?: string): TenantType | undefined {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  if (VALID_TENANT_TYPES.has(normalized as TenantType)) return normalized as TenantType;
-  if (role === 'student' || role === 'employee') return role;
-  return undefined;
+  // Keep legacy accounts usable while exposing only the current tenant role.
+  return normalized === 'student' || normalized === 'employee' ? 'tenant' : normalized;
 }
 
 export function isTenantRole(role: unknown): boolean {
-  return role === 'tenant' || role === 'student' || role === 'employee';
-}
-
-export function getTenantType(user: Pick<User, 'role' | 'tenantType'> | null | undefined): TenantType | undefined {
-  return normalizeTenantType(user?.tenantType, user?.role);
+  return normalizeRoleValue(role) === 'tenant';
 }
 
 function assertValidRole(role: string): void {
@@ -239,7 +193,6 @@ function normalizeUser(row: AppUserRow): User {
     middleInitial: getStringValue(record, ['middle_initial']),
     address: getStringValue(record, ['address']),
     role: role as UserRole,
-    tenantType: normalizeTenantType(record.tenant_type, role),
     status: normalizeStatus(record),
     createdAt: getStringValue(record, ['created_at']),
     updatedAt: getStringValue(record, ['updated_at']),
@@ -251,9 +204,6 @@ function normalizeUser(row: AppUserRow): User {
     permitNumber: getStringValue(record, ['permit_number']),
     department: getStringValue(record, ['department']),
     adminLevel: getStringValue(record, ['admin_level']),
-    otherOccupation: getStringValue(record, ['other_occupation']),
-    otherOrganization: getStringValue(record, ['other_organization']),
-    otherWorkplace: getStringValue(record, ['other_workplace']),
   };
 }
 
@@ -265,7 +215,6 @@ function toUserPayload(input: UpdateUserInput): Record<string, string | boolean 
   if (typeof input.middleInitial === 'string') payload.middle_initial = input.middleInitial;
   if (typeof input.address === 'string') payload.address = input.address;
   if (typeof input.role === 'string') payload.role = input.role;
-  if (typeof input.tenantType === 'string') payload.tenant_type = input.tenantType;
   if (typeof input.status === 'string') payload.status = input.status;
   if (typeof input.isVerified === 'boolean') {
     payload.is_verified = input.isVerified;
@@ -277,9 +226,6 @@ function toUserPayload(input: UpdateUserInput): Record<string, string | boolean 
   if (typeof input.permitNumber === 'string') payload.permit_number = input.permitNumber;
   if (typeof input.department === 'string') payload.department = input.department;
   if (typeof input.adminLevel === 'string') payload.admin_level = input.adminLevel;
-  if (typeof input.otherOccupation === 'string') payload.other_occupation = input.otherOccupation;
-  if (typeof input.otherOrganization === 'string') payload.other_organization = input.otherOrganization;
-  if (typeof input.otherWorkplace === 'string') payload.other_workplace = input.otherWorkplace;
 
   return payload;
 }
@@ -304,24 +250,8 @@ async function recordLogin(profile: User | null, authId: string, success = true,
 }
 
 async function ensureRoleProfile(userId: string, role: UserRole, input: Partial<CreateUserInput & UpdateUserInput>): Promise<void> {
-  let table: 'student_profiles' | 'employee_profiles' | 'landlord_profiles' | 'admin_profiles' | null = null;
+  let table: 'landlord_profiles' | 'admin_profiles' | null = null;
   let payload: Record<string, unknown> = { user_id: userId };
-
-  const tenantType = normalizeTenantType(input.tenantType, role);
-
-  if (tenantType === 'student') {
-    table = 'student_profiles';
-    if (typeof input.school === 'string') payload.school = nonEmptyString(input.school);
-    if (typeof input.guardianName === 'string') payload.guardian_name = nonEmptyString(input.guardianName);
-    if (typeof input.guardianAddress === 'string') payload.guardian_address = nonEmptyString(input.guardianAddress);
-    if (typeof input.guardianContact === 'string') payload.guardian_contact = nonEmptyString(input.guardianContact);
-  }
-
-  if (tenantType === 'employee') {
-    table = 'employee_profiles';
-    if (typeof input.company === 'string') payload.company = nonEmptyString(input.company);
-    if (typeof input.workAddress === 'string') payload.work_address = nonEmptyString(input.workAddress);
-  }
 
   if (role === 'landlord') {
     table = 'landlord_profiles';
@@ -435,13 +365,6 @@ async function ensureProfileForAuthUser(authUser: {
   if (existingByAuthId) {
     assertValidRole(existingByAuthId.role);
     await ensureRoleProfile(existingByAuthId.id, existingByAuthId.role, {
-      tenantType: existingByAuthId.tenantType ?? normalizeTenantType(authUser.user_metadata?.tenantType, existingByAuthId.role),
-      school: typeof authUser.user_metadata?.school === 'string' ? authUser.user_metadata.school : undefined,
-      guardianName: typeof authUser.user_metadata?.guardianName === 'string' ? authUser.user_metadata.guardianName : undefined,
-      guardianAddress: typeof authUser.user_metadata?.guardianAddress === 'string' ? authUser.user_metadata.guardianAddress : undefined,
-      guardianContact: typeof authUser.user_metadata?.guardianContact === 'string' ? authUser.user_metadata.guardianContact : undefined,
-      company: typeof authUser.user_metadata?.company === 'string' ? authUser.user_metadata.company : undefined,
-      workAddress: typeof authUser.user_metadata?.workAddress === 'string' ? authUser.user_metadata.workAddress : undefined,
       permitNumber: existingByAuthId.permitNumber,
       adminLevel: existingByAuthId.adminLevel,
       department: existingByAuthId.department,
@@ -468,7 +391,6 @@ async function ensureProfileForAuthUser(authUser: {
     const profile = normalizeUser(data as AppUserRow);
     assertValidRole(profile.role);
     await ensureRoleProfile(profile.id, profile.role, {
-      tenantType: profile.tenantType,
       adminLevel: profile.adminLevel,
       department: profile.department,
       permitNumber: profile.permitNumber,
@@ -478,14 +400,13 @@ async function ensureProfileForAuthUser(authUser: {
   }
 
   const role = normalizeRoleValue(authUser.user_metadata?.role);
-  if (role !== 'tenant' && role !== 'student' && role !== 'employee' && role !== 'landlord') {
+  if (role !== 'tenant' && role !== 'landlord') {
     throw new Error('A public account profile cannot be created with this role.');
   }
   const name = typeof authUser.user_metadata?.name === 'string' ? authUser.user_metadata.name : email.split('@')[0] || 'User';
   const middleInitial = typeof authUser.user_metadata?.middleInitial === 'string' ? authUser.user_metadata.middleInitial : null;
   const address = typeof authUser.user_metadata?.address === 'string' ? authUser.user_metadata.address : null;
   const mobile = typeof authUser.user_metadata?.mobile === 'string' ? authUser.user_metadata.mobile : null;
-  const tenantType = normalizeTenantType(authUser.user_metadata?.tenantType, role);
   const status = role === 'landlord' ? 'pending' : 'active';
 
   const { data, error } = await supabaseClient
@@ -498,10 +419,6 @@ async function ensureProfileForAuthUser(authUser: {
       address: nonEmptyString(address),
       mobile: nonEmptyString(mobile),
       role,
-      tenant_type: tenantType ?? null,
-      other_occupation: nonEmptyString(authUser.user_metadata?.otherOccupation),
-      other_organization: nonEmptyString(authUser.user_metadata?.otherOrganization),
-      other_workplace: nonEmptyString(authUser.user_metadata?.otherWorkplace),
       status,
       is_verified: role !== 'landlord',
     })
@@ -514,13 +431,6 @@ async function ensureProfileForAuthUser(authUser: {
 
   const profile = normalizeUser(data as AppUserRow);
   await ensureRoleProfile(profile.id, profile.role, {
-    tenantType: profile.tenantType ?? tenantType,
-    school: typeof authUser.user_metadata?.school === 'string' ? authUser.user_metadata.school : undefined,
-    guardianName: typeof authUser.user_metadata?.guardianName === 'string' ? authUser.user_metadata.guardianName : undefined,
-    guardianAddress: typeof authUser.user_metadata?.guardianAddress === 'string' ? authUser.user_metadata.guardianAddress : undefined,
-    guardianContact: typeof authUser.user_metadata?.guardianContact === 'string' ? authUser.user_metadata.guardianContact : undefined,
-    company: typeof authUser.user_metadata?.company === 'string' ? authUser.user_metadata.company : undefined,
-    workAddress: typeof authUser.user_metadata?.workAddress === 'string' ? authUser.user_metadata.workAddress : undefined,
     permitNumber: typeof authUser.user_metadata?.permitNumber === 'string' ? authUser.user_metadata.permitNumber : undefined,
     isVerified: profile.isVerified,
   });
@@ -625,7 +535,7 @@ function mapSignupError(error: { message?: string; status?: number; code?: strin
   return new SignupFlowError('We could not complete account registration. Please try again later.', 'auth', 'unexpected', { cause: error });
 }
 
-function pendingSignupUser(input: CreateUserInput, authId: string, role: UserRole, tenantType: TenantType | undefined): User {
+function pendingSignupUser(input: CreateUserInput, authId: string, role: UserRole): User {
   return {
     id: authId,
     authId,
@@ -633,7 +543,6 @@ function pendingSignupUser(input: CreateUserInput, authId: string, role: UserRol
     email: input.email.trim().toLowerCase(),
     username: input.username.trim().toLowerCase(),
     role,
-    tenantType,
     status: role === 'landlord' ? 'pending' : 'active',
     isVerified: role !== 'landlord',
     mobile: input.mobile ?? input.mobileNumber,
@@ -645,14 +554,13 @@ export async function signupUser(input: CreateUserInput): Promise<SignupResult> 
   const email = input.email.trim().toLowerCase();
   const username = input.username.trim().toLowerCase();
   const role: UserRole = isTenantRole(input.role) ? 'tenant' : input.role;
-  const tenantType = normalizeTenantType(input.tenantType, input.role);
   if (role !== 'tenant' && role !== 'landlord') throw new SignupFlowError('Public registration supports tenant and landlord accounts only.', 'validation', 'invalid_public_role');
   if (input.termsAccepted !== true) throw new SignupFlowError('You must agree to the Terms of Use and Privacy Policy to continue.', 'validation', 'terms_required');
   if (role === 'landlord' && input.landlordVerificationAccepted !== true) throw new SignupFlowError('You must agree to the Terms of Use and Landlord Verification Policy to continue.', 'validation', 'landlord_policy_required');
   if (!/^[a-z0-9_]{4,30}$/.test(username)) throw new SignupFlowError('Username must be 4–30 characters using only letters, numbers, or underscores.', 'validation', 'invalid_username');
   if (!/^\S+@\S+\.\S+$/.test(email)) throw new SignupFlowError('Enter a valid email address.', 'validation', 'invalid_email');
 
-  signupLog('[AUTH] Signup started', { email, role, tenantType });
+  signupLog('[AUTH] Signup started', { email, role });
 
   const { data: authData, error: authError } = await supabaseClient.auth.signUp({
     email,
@@ -688,7 +596,7 @@ export async function signupUser(input: CreateUserInput): Promise<SignupResult> 
   if (existingAccount) {
     signupLog('[AUTH] Existing account response received', { email });
     return {
-      user: pendingSignupUser(input, authData.user.id, role, tenantType),
+      user: pendingSignupUser(input, authData.user.id, role),
       accountCreated: false,
       profileCreated: false,
       requiresEmailVerification: true,
@@ -704,7 +612,7 @@ export async function signupUser(input: CreateUserInput): Promise<SignupResult> 
   // creation. A successful signUp therefore means the base app_users and role
   // profile upserts completed. With confirmation enabled there is no session,
   // so the client must not attempt anonymous writes to private profile tables.
-  let profile = pendingSignupUser(input, authData.user.id, role, tenantType);
+  let profile = pendingSignupUser(input, authData.user.id, role);
   let profileSetupError: string | undefined;
   if (authData.session) {
     try {

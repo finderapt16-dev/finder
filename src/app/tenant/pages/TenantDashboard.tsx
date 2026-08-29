@@ -10,7 +10,7 @@ import { Input } from "@/app/shared/components/ui/input";
 import { Label } from "@/app/shared/components/ui/label";
 import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
-import { getTenantType, isTenantRole } from "@/app/shared/services/authService";
+import { isTenantRole } from "@/app/shared/services/authService";
 import { getTimeBasedGreeting } from "@/app/tenant/utils/tenantGreeting";
 import { TenantNotifications } from "@/app/tenant/components/TenantNotifications";
 import { useTenantNotifications } from "@/app/tenant/hooks/useTenantNotifications";
@@ -146,7 +146,7 @@ const NAV_MAIN = [
 const NAV_ACCOUNT = [
   { icon: Settings,      label: "Settings",           section: "settings",  isLink: false },
   { icon: AlertTriangle, label: "Report a Problem",   section: "report",  isLink: false },
-  { icon: HelpCircle,    label: "Help",               section: "help",    isLink: false },
+  { icon: HelpCircle,    label: "Help & Support",     section: "help",    isLink: false },
 ];
 
 const DASHBOARD_SECTIONS = ["overview", "favorites", "suggested", "popular", "notifications", "settings", "report", "help"];
@@ -159,7 +159,7 @@ export function TenantDashboard() {
   const tenantNotifications = useTenantNotifications();
   const [activeSection, setActiveSection] = useState("suggested");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [favoriteFilter, setFavoriteFilter] = useState<"all" | "available" | "unavailable">("all");
+  const [favoriteFilter, setFavoriteFilter] = useState<"all" | "available">("all");
   const [favoriteSort, setFavoriteSort] = useState<"newest" | "price-low" | "price-high" | "name">("newest");
   const [favoriteView, setFavoriteView] = useState<"grid" | "list">("grid");
   const [removingFavoriteId, setRemovingFavoriteId] = useState<string | null>(null);
@@ -297,9 +297,8 @@ export function TenantDashboard() {
       parking: prefParking,
       furnished: prefFurnished,
       wifi: prefWifi, ac: prefAc, laundryArea: prefLaundry,
-      tenantType: getTenantType(user) ?? "other",
     };
-  }, [maxBudget, preferredArea, recommendationLocation, prefPetFriendly, prefParking, prefFurnished, prefWifi, prefAc, prefLaundry, user?.role, user?.tenantType]);
+  }, [maxBudget, preferredArea, recommendationLocation, prefPetFriendly, prefParking, prefFurnished, prefWifi, prefAc, prefLaundry]);
 
   // Personalized recommendations based on saved tenant preferences
   const suggestedApartments = useMemo(() => {
@@ -315,7 +314,7 @@ export function TenantDashboard() {
         if (apartmentId) apartmentFavoriteCounts.set(apartmentId, (apartmentFavoriteCounts.get(apartmentId) ?? 0) + 1);
       });
       const ratingSummary = summarizeApartmentRatings(dashboardRatingRows);
-      return rankApartments(publishedApartments, tenantRankingPreferences, favoriteIds, {
+      return rankApartments(publishedApartments, tenantRankingPreferences, {
         apartmentViewCounts,
         apartmentFavoriteCounts,
         apartmentRatingStats: ratingSummary.byApartment,
@@ -357,7 +356,6 @@ export function TenantDashboard() {
     return [...favoriteApartments]
       .filter((apartment) => {
         if (favoriteFilter === "available") return isApartmentAvailable(apartment);
-        if (favoriteFilter === "unavailable") return !isApartmentAvailable(apartment);
         return true;
       })
       .sort((a, b) => {
@@ -372,12 +370,7 @@ export function TenantDashboard() {
   }, [favoriteApartments, favoriteFilter, favoriteSort]);
   const displayName = user?.name?.trim();
   const tenantGreeting = getTimeBasedGreeting(user?.name);
-  const tenantType = getTenantType(user);
-  const dashboardSubtitle = tenantType === "student"
-    ? "Find a verified place that fits your study routine."
-    : tenantType === "employee"
-      ? "Discover your ideal home near your workplace."
-      : "Discover a verified home that fits your everyday needs.";
+  const dashboardSubtitle = "Discover a verified home that fits your everyday needs.";
 
   const handleLogout = () => { logout?.(); navigate("/"); };
 
@@ -403,6 +396,11 @@ export function TenantDashboard() {
       return;
     }
 
+    if (reportEvidenceFiles.length === 0) {
+      toast.error("Please upload at least one image or evidence file.");
+      return;
+    }
+
     if (!user?.id) {
       toast.error("Please sign in to submit a report.");
       return;
@@ -414,7 +412,7 @@ export function TenantDashboard() {
     try {
       const createdReport = await createReport({
         reporter_id: user.id,
-        reporter_role: getTenantType(user) ?? "tenant",
+        reporter_role: "tenant",
         apartment_id: reportForm.apartment,
         category: "Apartment problem",
         issue_type: "Tenant-submitted problem",
@@ -709,14 +707,12 @@ export function TenantDashboard() {
     const statusClass: Record<string, string> = {
       available: "bg-emerald-600 text-white",
       occupied: "bg-rose-600 text-white",
-      reserved: "bg-amber-500 text-white",
       maintenance: "bg-slate-600 text-white",
     };
     const statusLabel: Record<string, string> = {
       available: "Available",
       occupied: "Occupied",
-      reserved: "Unavailable",
-      maintenance: "Maintenance",
+      maintenance: "Under Maintenance",
     };
     const availableRooms = getAvailableRooms(apartment);
     const images = [apartment.image, ...(apartment.images ?? [])].filter(Boolean);
@@ -913,7 +909,6 @@ export function TenantDashboard() {
         <select value={favoriteFilter} onChange={(event) => setFavoriteFilter(event.target.value as typeof favoriteFilter)} className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-[#DCC9B4] focus:ring-2 focus:ring-[#F3EFEA]">
           <option value="all">All Favorites ({favoriteApartments.length})</option>
           <option value="available">Available Only</option>
-          <option value="unavailable">Unavailable</option>
         </select>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <select value={favoriteSort} onChange={(event) => setFavoriteSort(event.target.value as typeof favoriteSort)} className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-[#DCC9B4] focus:ring-2 focus:ring-[#F3EFEA]">
@@ -999,7 +994,7 @@ export function TenantDashboard() {
       ) : (
         <EmptyState
           icon={Sparkles}
-          message="No suggestions yet. Browse apartments to improve recommendations."
+          message="No recommendations available yet. Update your preferences to improve your matches."
           actionLabel="Browse Apartments"
           action={() => navigate("/browse")}
         />
@@ -1034,7 +1029,7 @@ export function TenantDashboard() {
           ))}
         </div>
       ) : (
-        <EmptyState icon={TrendingUp} message="No popular apartments yet." />
+        <EmptyState icon={TrendingUp} message="No popular apartments available right now." />
       )}
     </div>
   );
@@ -1087,8 +1082,8 @@ export function TenantDashboard() {
               </div>
             </ReportStep>
 
-            <ReportStep icon={ImageIcon} step="3" title="Upload Image / Evidence" description="Attach images or documents that can help us understand the issue." note="Optional" tone="bg-[#f3efea] text-[#8b735b]">
-              <EvidenceUploader evidenceFiles={reportEvidenceFiles} onEvidenceChange={setReportEvidenceFiles} maxFiles={5} maxFileSize={10} required={false} />
+            <ReportStep icon={ImageIcon} step="3" title="Upload Image / Evidence" description="Attach at least one image or document for admin review." note="Required" tone="bg-[#f3efea] text-[#8b735b]">
+              <EvidenceUploader evidenceFiles={reportEvidenceFiles} onEvidenceChange={setReportEvidenceFiles} maxFiles={5} maxFileSize={10} required />
               <div className="mt-4 flex items-start gap-3 rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-4">
                 <Shield className="mt-0.5 h-5 w-5 shrink-0 text-[#8b735b]" />
                 <div>
@@ -1114,7 +1109,7 @@ export function TenantDashboard() {
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#8b735b] shadow-sm"><LockKeyhole className="h-4 w-4" /></span>
                 <span><strong className="font-black text-[#302820]">Your information is secure.</strong> We only use this information for this report.</span>
               </div>
-              <Button onClick={() => void handleReportSubmit()} disabled={isSubmittingReport || !reportForm.apartment || !reportForm.details.trim()} className="h-12 rounded-lg bg-[#8b735b] font-black text-white shadow-sm hover:bg-[#75614e] disabled:cursor-not-allowed disabled:opacity-50">
+              <Button onClick={() => void handleReportSubmit()} disabled={isSubmittingReport || !reportForm.apartment || !reportForm.details.trim() || reportEvidenceFiles.length === 0} className="h-12 rounded-lg bg-[#8b735b] font-black text-white shadow-sm hover:bg-[#75614e] disabled:cursor-not-allowed disabled:opacity-50">
                 <Send className="mr-2 h-4 w-4" />
                 {isSubmittingReport ? "Submitting..." : "Submit Report"}
               </Button>
@@ -1167,7 +1162,7 @@ export function TenantDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-black text-[#302820]">
               <BookOpen className="h-5 w-5 text-[#8b735b]" />
-              Renter Guide
+              Tenant Guide
             </CardTitle>
             <CardDescription>Learn how to find and compare apartments in AptFindr.</CardDescription>
           </CardHeader>

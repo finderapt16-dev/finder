@@ -51,5 +51,5 @@ export function getAdminModulePath(adminId: string, module: AdminModule): string
   if (module === "apartments" && remembered?.view === "apartment-inspection") {
     return `/admin/apartment/${encodeURIComponent(remembered.apartmentId)}`;
   }
-  return `/dashboard?section=${module}`;
+  return `/admin?section=${module}`;
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '../contexts/AuthContext';
+import { isTenantRole } from '../services/authService';
 import {
   getFavoriteApartmentIds,
   isApartmentFavorite,
@@ -62,8 +63,8 @@ export function useFavorites() {
         return;
       }
 
-      if (user.role === 'admin') {
-        toast.error('Favorites are not available for admin accounts.');
+      if (!isTenantRole(user.role)) {
+        toast.error('Favorites are only available for tenant accounts.');
         return;
       }
 

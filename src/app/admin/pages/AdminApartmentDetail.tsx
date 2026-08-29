@@ -38,6 +38,7 @@ import { formatAuditLogForDisplay } from "@/app/shared/utils/auditLogDisplay";
 import { fetchApartmentRatings, subscribeToApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
 import { supabase } from "@/lib/supabaseClient";
 import { clearAdminNavigationMemory, getAdminModulePath, rememberAdminModuleLocation, type AdminModule } from "@/app/admin/utils/adminNavigationMemory";
+import { getAdminAvailabilityLabel, getAdminListingLabel, getAdminRoomState } from "@/app/admin/utils/adminListingState";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -119,32 +120,27 @@ const getRecordNumber = (value: unknown, keys: string[], fallback = 0): number =
 const STATUS_BADGE: Record<string, string> = {
   available: "bg-green-600 text-white",
   occupied: "bg-red-600 text-white",
-  reserved: "bg-yellow-500 text-white",
   maintenance: "bg-slate-500 text-white",
 };
 
 const STATUS_LABEL: Record<string, string> = {
   available: "Available",
   occupied: "Occupied",
-  reserved: "Reserved",
   maintenance: "Under Maintenance",
 };
 
 const SHOW_SELECTED_REPORT_DETAILS = false;
 
-const getAdminPropertyStatusLabel = (status: string | undefined, isPublished: boolean | undefined): string => {
-  if (isPublished === false) return "Unpublished";
-  const normalizedStatus = status ?? "available";
-  if (normalizedStatus === "available") return "Published";
-  return STATUS_LABEL[normalizedStatus] ?? STATUS_LABEL.available;
-};
-
 const getLandlordVerificationStatus = (landlord: DashboardUserRow | null): string => {
   if (!landlord) return "Missing";
   const explicitStatus = String(landlord.landlord_status ?? landlord.verification_status ?? landlord.status ?? "").trim();
   if (landlord.is_verified === true || landlord.isVerified === true) return "Verified";
-  if (explicitStatus.length > 0) return explicitStatus.charAt(0).toUpperCase() + explicitStatus.slice(1).toLowerCase();
-  return "Pending";
+  if (explicitStatus.length > 0) {
+    const normalized = explicitStatus.toLowerCase();
+    if (["pending", "unverified", "under_review"].includes(normalized)) return "Pending Review";
+    return normalized.replace(/_/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+  }
+  return "Incomplete";
 };
 
 const canPublishForLandlord = (landlord: DashboardUserRow | null): boolean =>
@@ -153,8 +149,7 @@ const canPublishForLandlord = (landlord: DashboardUserRow | null): boolean =>
   );
 
 const getRoomStatus = (room: Record<string, unknown>): string => {
-  const raw = typeof room.status === "string" ? room.status : room.isOccupied ? "occupied" : "available";
-  return raw === "occupied" || raw === "reserved" || raw === "maintenance" ? raw : "available";
+  return getAdminRoomState(room);
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -671,7 +666,9 @@ export function AdminApartmentDetail() {
     if (!canNavigateImages) return;
     setCurrentImageIndex((index) => (index + 1) % imageCount);
   };
-  const listingStatusLabel = getAdminPropertyStatusLabel(apartment.status, apartment.isPublished);
+  const listingStatusLabel = getAdminListingLabel(apartment);
+  const listingIsPublished = listingStatusLabel === "Published";
+  const availabilityLabel = getAdminAvailabilityLabel({ ...apartment, rooms: roomsForDisplay });
   const activeReports = reports.filter((report) => !["resolved", "dismissed", "archived"].includes(String(report.status ?? "pending").toLowerCase()));
   const averageRating = ratings.length > 0 ? ratings.reduce((sum, rating) => sum + getRecordNumber(rating, ["rating"], 0), 0) / ratings.length : 0;
   const landlordVerificationStatus = getLandlordVerificationStatus(landlord);
@@ -747,9 +744,10 @@ export function AdminApartmentDetail() {
 
         <section className="mb-5 overflow-hidden rounded-xl border border-[#e7d8c9] bg-white shadow-sm" aria-labelledby="review-summary-title">
           <h2 id="review-summary-title" className="sr-only">Review Summary</h2>
-          <div className="grid divide-y divide-[#eee3d8] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
+          <div className="grid divide-y divide-[#eee3d8] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-6">
             {[
-              { label: "Listing Status", value: listingStatusLabel, helper: apartment.isPublished === false ? "Not visible to tenants" : "Visible to tenants", icon: apartment.isPublished === false ? EyeOff : CheckCircle2, tone: apartment.isPublished === false ? "text-amber-700" : "text-emerald-700" },
+              { label: "Listing Status", value: listingStatusLabel, helper: listingIsPublished ? "Published for tenant visibility checks" : "Not visible to tenants", icon: listingIsPublished ? CheckCircle2 : EyeOff, tone: listingIsPublished ? "text-emerald-700" : "text-amber-700" },
+              { label: "Room Availability", value: availabilityLabel, helper: `${roomsForDisplay.length} configured room${roomsForDisplay.length === 1 ? "" : "s"}`, icon: Home, tone: availableRoomCount > 0 ? "text-emerald-700" : "text-stone-500" },
               { label: "Landlord Verification", value: landlordVerificationStatus, helper: landlordCanPublish ? "Publication requirement met" : "Requires review", icon: ShieldCheck, tone: landlordCanPublish ? "text-emerald-700" : "text-amber-700" },
               { label: "Submitted On", value: formattedDatePosted, helper: formattedDatePostedTime || "Time not provided", icon: CalendarCheck, tone: "text-[#76502f]" },
               { label: "Active Reports", value: String(activeReports.length), helper: activeReports.length ? "Requires review" : "No active reports", icon: Flag, tone: activeReports.length ? "text-rose-700" : "text-stone-500" },
@@ -886,7 +884,7 @@ export function AdminApartmentDetail() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   {[
-                    { label: "Listing Status", value: listingStatusLabel, helper: apartment.isPublished === false ? "Pending admin approval" : "Active and visible to tenants", icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-600" },
+                    { label: "Listing Status", value: listingStatusLabel, helper: listingIsPublished ? "Published for tenant visibility checks" : "Not visible to tenants", icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-600" },
                     { label: "Submitted On", value: formattedDatePosted, helper: formattedDatePostedTime, icon: CalendarCheck, tone: "bg-blue-50 text-blue-600" },
                     { label: "Reports", value: `${reports.length} report(s)`, helper: reports.length > 0 ? "Requires review" : "No active reports", icon: Flag, tone: "bg-rose-50 text-rose-600" },
                     { label: "Tenant Rating", value: ratings.length ? `★ ${(ratings.reduce((sum, row) => sum + Number(row.rating), 0) / ratings.length).toFixed(1)}` : "No ratings yet", helper: ratings.length ? `Based on ${ratings.length} rating${ratings.length === 1 ? "" : "s"}` : "No tenant ratings", icon: Eye, tone: "bg-amber-50 text-amber-600" },
@@ -938,7 +936,7 @@ export function AdminApartmentDetail() {
                   <DetailRow label="Room Pricing" value="See individual room records" />
                   <DetailRow label="Available Rooms" value={availableRoomCount} />
                   <DetailRow label="Total Rooms" value={roomsForDisplay.length || apartment.bedrooms} />
-                  <DetailRow label="Property Status" value={getAdminPropertyStatusLabel(apartment.status, apartment.isPublished)} />
+                  <DetailRow label="Listing Status" value={listingStatusLabel} />
                   <DetailRow label="Date Posted" value={datePosted ? new Date(datePosted).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : "—"} />
                 </div>
 
@@ -1160,8 +1158,8 @@ export function AdminApartmentDetail() {
                   </div>
 
                   <div className="mb-5 grid gap-3 sm:grid-cols-3">
-                    <DetailRow label="Permit Number" value={getText(verificationData, ["businessPermit"], landlordProfile?.business_permit_number || "Not provided")} />
-                    <DetailRow label="Verification Status" value={verifiedLandlord ? "Verified" : "Pending review"} />
+                    <DetailRow label="Property Permit Number" value={getText(verificationData, ["businessPermit"], "Not provided for this property")} />
+                    <DetailRow label="Landlord Verification" value={landlordVerificationStatus} />
                     <DetailRow label="Documents Provided" value={`${verificationDocuments.length} of ${VERIFICATION_DOCUMENT_TYPES.length}`} />
                   </div>
 
@@ -1510,8 +1508,8 @@ export function AdminApartmentDetail() {
                 </div>
 
                 <div className="mb-4 grid grid-cols-3 gap-2">
-                  <DetailRow label="Record Number" value={getText(verificationData, ["businessPermit"], landlordProfile?.business_permit_number || "Not provided")} />
-                  <DetailRow label="Verification Status" value={verifiedLandlord ? "Verified" : "Pending"} />
+                  <DetailRow label="Property Permit Number" value={getText(verificationData, ["businessPermit"], "Not provided for this property")} />
+                  <DetailRow label="Landlord Verification" value={landlordVerificationStatus} />
                   <DetailRow label="Documents Provided" value={`${verificationDocuments.length} of ${VERIFICATION_DOCUMENT_TYPES.length}`} />
                 </div>
 
@@ -1573,7 +1571,7 @@ export function AdminApartmentDetail() {
 
                   <div>
                     <p className="text-xs text-slate-500 font-semibold mb-1">Status</p>
-                    <Badge className={`rounded-lg px-3 py-1 ${STATUS_BADGE[apartment.status ?? "available"]}`}>
+                    <Badge className="rounded-lg bg-[#F3EFEA] px-3 py-1 text-[#6F4E37]">
                       {listingStatusLabel}
                     </Badge>
                   </div>

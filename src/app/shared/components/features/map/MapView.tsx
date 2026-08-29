@@ -116,7 +116,7 @@ function getMarkerColor(apartment: MapApartmentMarker) {
 
   if (
     apartment.availabilityStatus === "unavailable" ||
-    ["archived", "hidden", "inactive", "rejected", "unpublished", "occupied", "reserved", "maintenance"].includes(status ?? "") ||
+    ["archived", "hidden", "inactive", "rejected", "unpublished", "occupied", "maintenance"].includes(status ?? "") ||
     Number(apartment.availableRooms ?? 0) <= 0
   ) {
     return markerColors.hidden;

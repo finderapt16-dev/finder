@@ -45,7 +45,7 @@ import { Label } from "@/app/shared/components/ui/label";
 import { Switch } from "@/app/shared/components/ui/switch";
 import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
-import { getTenantType, isTenantRole } from "@/app/shared/services/authService";
+import { isTenantRole } from "@/app/shared/services/authService";
 import { getTimeBasedGreeting } from "@/app/tenant/utils/tenantGreeting";
 import { fetchApartmentRatings, subscribeToApartmentRatings, summarizeApartmentRatings, type ApartmentRatingRow } from "@/app/shared/services/apartmentRatingsService";
 import type { Apartment } from "@/app/shared/data/apartments";
@@ -91,14 +91,12 @@ const hasMeaningfulBudgetPreference = (preferences: TenantPreferenceSettings) =>
 const STATUS_LABEL: Record<string, string> = {
   available: "Available",
   occupied: "Occupied",
-  reserved: "Unavailable",
-  maintenance: "Maintenance",
+  maintenance: "Under Maintenance",
 };
 
 const STATUS_CLASS: Record<string, string> = {
   available: "bg-emerald-600 text-white",
   occupied: "bg-rose-600 text-white",
-  reserved: "bg-amber-500 text-white",
   maintenance: "bg-slate-600 text-white",
 };
 
@@ -367,7 +365,6 @@ function TenantBrowse() {
           wifi: savedPreferences.wifi,
           ac: savedPreferences.ac,
           laundryArea: savedPreferences.laundryArea,
-          tenantType: getTenantType(user) ?? "other",
         };
 
         const apartmentViewCounts = new globalThis.Map<string, number>();
@@ -381,7 +378,7 @@ function TenantBrowse() {
           if (apartmentId) apartmentFavoriteCounts.set(apartmentId, (apartmentFavoriteCounts.get(apartmentId) ?? 0) + 1);
         });
         const ratingSummary = summarizeApartmentRatings(ratingRows);
-        return rankApartments(filtered, preferences, userFavorites, {
+        return rankApartments(filtered, preferences, {
           apartmentViewCounts,
           apartmentFavoriteCounts,
           apartmentRatingStats: ratingSummary.byApartment,
@@ -404,7 +401,7 @@ function TenantBrowse() {
       }
       return compareOptionalNumber(getAvailableApartmentPrice(a), getAvailableApartmentPrice(b), "asc");
     });
-  }, [allApartments, searchQuery, nearbyIntent, nearbySearchError, activeNearbySearch, sortBy, user?.role, user?.tenantType, landlordById, userFavorites, viewRows, favoriteRows, ratingRows, savedPreferences]);
+  }, [allApartments, searchQuery, nearbyIntent, nearbySearchError, activeNearbySearch, sortBy, user?.role, landlordById, userFavorites, viewRows, favoriteRows, ratingRows, savedPreferences]);
 
   const totalPages = Math.max(1, Math.ceil(filteredApartments.length / itemsPerPage));
   const safePage = Math.min(currentPage, totalPages);
@@ -594,7 +591,7 @@ function TenantBrowse() {
 
           <section className="border-b border-[#E8DED1] py-5">
             <Label htmlFor="preferred-area" className="text-base font-semibold text-[#302820]">Preferred location</Label>
-            <input id="preferred-area" value={savedPreferences.preferredArea} onChange={(event) => setSavedPreferences((current) => ({ ...current, preferredArea: event.target.value }))} placeholder="Barangay, street, school, or workplace" className="mt-2 h-12 w-full rounded-xl border border-[#E8DED1] px-4 text-base text-[#302820] outline-none focus:border-[#8B735B] focus:ring-2 focus:ring-[#8B735B]/10" />
+            <input id="preferred-area" value={savedPreferences.preferredArea} onChange={(event) => setSavedPreferences((current) => ({ ...current, preferredArea: event.target.value }))} placeholder="Barangay or street within La Paz" className="mt-2 h-12 w-full rounded-xl border border-[#E8DED1] px-4 text-base text-[#302820] outline-none focus:border-[#8B735B] focus:ring-2 focus:ring-[#8B735B]/10" />
           </section>
 
           <section className="border-b border-[#E8DED1] py-5">
@@ -847,7 +844,7 @@ function TenantBrowse() {
                 <div className="flex min-h-72 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
                   <LocateFixed className="mb-4 h-12 w-12 text-slate-300" />
                   <h2 className="text-2xl font-black text-slate-950">No apartments found</h2>
-                  <p className="mt-2 max-w-lg text-sm font-medium text-slate-500">Try adjusting your search, filters, or preferences to discover other available apartments.</p>
+                  <p className="mt-2 max-w-lg text-sm font-medium text-slate-500">{activeNearbySearch ? "No available apartments were found within 500 meters of this location." : "Try adjusting your search, filters, or preferences to discover other available apartments."}</p>
                   {hasActiveApartmentFilters && <Button onClick={resetFilters} className="mt-6 rounded-lg bg-[#8B735B] font-black text-white hover:bg-[#756A60]">Reset Search &amp; Filters</Button>}
                 </div>
               ) : viewMode === "grid" ? (
@@ -871,7 +868,8 @@ function TenantBrowse() {
               ) : (
                 <div className="relative h-[calc(100vh-350px)] min-h-[550px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
                   <div className="absolute left-4 top-4 z-[500] rounded-lg bg-white/95 px-4 py-3 text-xs font-bold text-slate-700 shadow-lg">
-                    {mappedApartmentCount.toLocaleString()} of {filteredApartments.length.toLocaleString()} filtered listings have map coordinates
+                    {mappedApartmentCount.toLocaleString()} {mappedApartmentCount === 1 ? "apartment" : "apartments"} shown on map
+                    {mappedApartmentCount < filteredApartments.length && <span className="mt-1 block font-medium text-slate-500">Some listings could not be placed on the map.</span>}
                   </div>
                   <MapView
                     lat={mapCenter.lat}

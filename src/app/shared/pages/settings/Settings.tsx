@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { Badge } from "@/app/shared/components/ui/badge";
 import { Button } from "@/app/shared/components/ui/button";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
-import { deleteUser as deleteUserAccount, getTenantType, isTenantRole } from "@/app/shared/services/authService";
+import { deleteUser as deleteUserAccount, isTenantRole } from "@/app/shared/services/authService";
 import { fetchUserPreferenceSections, fetchUserProfileDetails, saveUserPreferenceSection, updateUserProfile, uploadUserAvatar } from "@/app/shared/services/dashboardSupabaseService";
 
 type UserSettingsProfile = {
@@ -35,18 +35,8 @@ type UserSettingsProfile = {
   bio: string;
   avatar: string;
   address: string;
-  school?: string;
-  guardianName?: string;
-  guardianAddress?: string;
-  guardianContact?: string;
-  company?: string;
-  workAddress?: string;
-  permitNumber?: string;
   department?: string;
   adminLevel?: string;
-  otherOccupation?: string;
-  otherOrganization?: string;
-  otherWorkplace?: string;
 };
 
 type UserAlerts = {
@@ -125,18 +115,8 @@ function profileStateFromUser(user: ReturnType<typeof useAuth>["user"]): UserSet
     bio: user?.bio || "",
     avatar: user?.avatar || "",
     address: user?.address || "",
-    school: user?.school || "",
-    guardianName: user?.guardianName || "",
-    guardianAddress: user?.guardianAddress || "",
-    guardianContact: user?.guardianContact || "",
-    company: user?.company || "",
-    workAddress: "",
-    permitNumber: user?.permitNumber || "",
     department: user?.department || "",
     adminLevel: user?.adminLevel || "",
-    otherOccupation: user?.otherOccupation || "",
-    otherOrganization: user?.otherOrganization || "",
-    otherWorkplace: user?.otherWorkplace || "",
   };
 }
 
@@ -208,16 +188,6 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
             bio: String(details.user.bio ?? ""),
             avatar: String(details.user.avatar_url ?? ""),
             address: String(details.user.address ?? ""),
-            school: String(details.studentProfile?.school ?? ""),
-            guardianName: String(details.studentProfile?.guardian_name ?? ""),
-            guardianAddress: String(details.studentProfile?.guardian_address ?? ""),
-            guardianContact: String(details.studentProfile?.guardian_contact ?? ""),
-            company: String(details.employeeProfile?.company ?? ""),
-            workAddress: String(details.employeeProfile?.work_address ?? ""),
-            otherOccupation: String(details.user.other_occupation ?? ""),
-            otherOrganization: String(details.user.other_organization ?? ""),
-            otherWorkplace: String(details.user.other_workplace ?? ""),
-            permitNumber: String(details.landlordProfile?.permit_number ?? details.user.permit_number ?? ""),
             department: String(details.adminProfile?.department ?? details.user.department ?? ""),
             adminLevel: String(details.adminProfile?.admin_level ?? details.user.admin_level ?? ""),
           }));
@@ -246,30 +216,17 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
   }, [user?.id]);
 
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
-  const tenantType = getTenantType(user);
-  const roleLabel = tenantType === "student" ? "Student Tenant" : tenantType === "employee" ? "Employee Tenant" : tenantType === "other" ? "Tenant" : user?.role || "Tenant";
-  const roleProfileLabel = tenantType === "student"
-    ? "Student Profile Information"
-    : tenantType === "employee"
-      ? "Employment Information"
-      : tenantType === "other"
-        ? "Tenant Information"
-      : user?.role === "landlord"
-        ? "Landlord / Business Information"
-        : user?.role === "admin"
-          ? "Admin Profile Information"
-          : "Profile Information";
-  const roleProfileSubtitle = tenantType === "student"
-    ? "School, guardian, and contact details."
-    : tenantType === "employee"
-      ? "Your company and work details."
-      : tenantType === "other"
-        ? "Your occupation, affiliation, and main activity location."
-      : user?.role === "landlord"
-        ? "Business and permit details."
-        : user?.role === "admin"
-          ? "Administrative account details."
-          : "Role-specific details.";
+  const roleLabel = user?.role === "super_admin" ? "Super Admin" : user?.role === "admin" ? "Admin" : user?.role === "landlord" ? "Landlord" : "Tenant";
+  const roleProfileLabel = user?.role === "landlord"
+    ? "Landlord Account Information"
+    : user?.role === "admin" || user?.role === "super_admin"
+      ? "Admin Profile Information"
+      : "Tenant Account Information";
+  const roleProfileSubtitle = user?.role === "landlord"
+    ? "Account-level information. Property permits are managed separately for each listing."
+    : user?.role === "admin" || user?.role === "super_admin"
+      ? "Administrative account details."
+      : "Your tenant account details.";
 
   const updateProfile = (updater: (prev: UserSettingsProfile) => UserSettingsProfile) => {
     setProfile((p) => updater(p));
@@ -344,11 +301,6 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
       return;
     }
 
-    if (tenantType === "other" && !profile.otherOccupation?.trim()) {
-      toast.error("Occupation / Tenant Type is required.");
-      return;
-    }
-
     try {
       const name = `${profile.firstName.trim()} ${profile.middleInitial.trim() ? `${profile.middleInitial.trim()}. ` : ""}${profile.lastName.trim()}`.trim();
       await updateUser(user.id, {
@@ -357,43 +309,21 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
         mobileNumber: profile.mobile.trim(),
         middleInitial: profile.middleInitial.trim(),
         address: profile.address.trim(),
-        school: profile.school?.trim(),
-        guardianName: profile.guardianName?.trim(),
-        guardianAddress: profile.guardianAddress?.trim(),
-        guardianContact: profile.guardianContact?.trim(),
-        company: profile.company?.trim(),
-        workAddress: profile.workAddress?.trim(),
-        permitNumber: profile.permitNumber?.trim(),
         department: profile.department?.trim(),
         adminLevel: profile.adminLevel?.trim(),
-        tenantType,
-        otherOccupation: tenantType === "other" ? profile.otherOccupation?.trim() : undefined,
-        otherOrganization: tenantType === "other" ? profile.otherOrganization?.trim() : undefined,
-        otherWorkplace: tenantType === "other" ? profile.otherWorkplace?.trim() : undefined,
       });
       const updated = await updateUserProfile({
         id: user.id,
         email: profile.email.trim(),
         name,
         role: user.role,
-        tenant_type: tenantType,
         mobile: profile.mobile.trim(),
         avatar_url: profile.avatar,
         bio: profile.bio,
         middle_initial: profile.middleInitial.trim(),
         address: profile.address.trim(),
-        permit_number: user.role === "landlord" ? profile.permitNumber?.trim() : undefined,
-        school: profile.school?.trim(),
-        guardian_name: profile.guardianName?.trim(),
-        guardian_address: profile.guardianAddress?.trim(),
-        guardian_contact: profile.guardianContact?.trim(),
-        company: profile.company?.trim(),
-        work_address: profile.workAddress?.trim(),
         department: profile.department?.trim(),
         admin_level: profile.adminLevel?.trim(),
-        other_occupation: tenantType === "other" ? profile.otherOccupation?.trim() : undefined,
-        other_organization: tenantType === "other" ? profile.otherOrganization?.trim() : undefined,
-        other_workplace: tenantType === "other" ? profile.otherWorkplace?.trim() : undefined,
       });
       if (updated) {
         const refreshed = await fetchUserProfileDetails(user.id);
@@ -411,15 +341,6 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
             email: String(refreshed.user.email ?? ""),
             mobile: String(refreshed.user.mobile ?? refreshed.user.mobileNumber ?? ""),
             address: String(refreshed.user.address ?? ""),
-            school: String(refreshed.studentProfile?.school ?? ""),
-            guardianName: String(refreshed.studentProfile?.guardian_name ?? ""),
-            guardianAddress: String(refreshed.studentProfile?.guardian_address ?? ""),
-            guardianContact: String(refreshed.studentProfile?.guardian_contact ?? ""),
-            company: String(refreshed.employeeProfile?.company ?? ""),
-            workAddress: String(refreshed.employeeProfile?.work_address ?? ""),
-            otherOccupation: String(refreshed.user.other_occupation ?? ""),
-            otherOrganization: String(refreshed.user.other_organization ?? ""),
-            otherWorkplace: String(refreshed.user.other_workplace ?? ""),
           }));
         }
       }
@@ -576,52 +497,11 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
 
           {settingsMenu === "employment" && (
             <DisclosureCard icon={BriefcaseBusiness} title={roleProfileLabel} subtitle={roleProfileSubtitle} tone="bg-[#f3efea] text-[#8b735b]">
-              {tenantType === "student" ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="School">
-                    <input className={inputClass} value={profile.school || ""} onChange={(e) => updateProfile((p) => ({ ...p, school: e.target.value }))} placeholder="Not provided" />
-                  </Field>
-                  <Field label="Guardian Name">
-                    <input className={inputClass} value={profile.guardianName || ""} onChange={(e) => updateProfile((p) => ({ ...p, guardianName: e.target.value }))} placeholder="Not provided" />
-                  </Field>
-                  <Field label="Guardian Contact Number">
-                    <input className={inputClass} type="tel" value={profile.guardianContact || ""} onChange={(e) => updateProfile((p) => ({ ...p, guardianContact: e.target.value }))} placeholder="Not provided" />
-                  </Field>
-                  <Field label="Guardian Address">
-                    <input className={inputClass} value={profile.guardianAddress || ""} onChange={(e) => updateProfile((p) => ({ ...p, guardianAddress: e.target.value }))} placeholder="Not provided" />
-                  </Field>
-                  <Field label="Home Address">
-                    <input className={inputClass} value={profile.address} onChange={(e) => updateProfile((p) => ({ ...p, address: e.target.value }))} placeholder="Not provided" />
-                  </Field>
-                  <Field label="Mobile Number">
-                    <input className={inputClass} type="tel" value={profile.mobile} onChange={(e) => updateProfile((p) => ({ ...p, mobile: e.target.value }))} placeholder="Not provided" />
-                  </Field>
-                  <Field label="Email Address" hint="Managed securely through your authenticated account">
-                    <input className={inputClass} type="email" value={profile.email} placeholder="Not provided" readOnly disabled />
-                  </Field>
+              {user?.role === "landlord" ? (
+                <div className="rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-4 text-sm font-medium leading-6 text-[#756a60]">
+                  Manage each property&apos;s business permit, expiry, and verification documents from the landlord portal. Account identity verification remains separate.
                 </div>
-              ) : tenantType === "employee" ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Company / Organization">
-                    <input className={inputClass} value={profile.company || ""} onChange={(e) => updateProfile((p) => ({ ...p, company: e.target.value }))} placeholder="Not provided" />
-                  </Field>
-                  <Field label="Work Address">
-                    <input className={inputClass} value={profile.workAddress || ""} onChange={(e) => updateProfile((p) => ({ ...p, workAddress: e.target.value }))} placeholder="Not provided" />
-                  </Field>
-                </div>
-              ) : tenantType === "other" ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Occupation / Tenant Type"><input className={inputClass} value={profile.otherOccupation || ""} onChange={(e) => updateProfile((p) => ({ ...p, otherOccupation: e.target.value }))} placeholder="Not provided" /></Field>
-                  <Field label="Organization / Affiliation"><input className={inputClass} value={profile.otherOrganization || ""} onChange={(e) => updateProfile((p) => ({ ...p, otherOrganization: e.target.value }))} placeholder="Not provided" /></Field>
-                  <Field label="Workplace / Main Activity Location"><input className={inputClass} value={profile.otherWorkplace || ""} onChange={(e) => updateProfile((p) => ({ ...p, otherWorkplace: e.target.value }))} placeholder="Not provided" /></Field>
-                </div>
-              ) : user?.role === "landlord" ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Permit Number">
-                    <input className={inputClass} value={profile.permitNumber || ""} onChange={(e) => updateProfile((p) => ({ ...p, permitNumber: e.target.value }))} placeholder="Not provided" />
-                  </Field>
-                </div>
-              ) : user?.role === "admin" ? (
+              ) : user?.role === "admin" || user?.role === "super_admin" ? (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Department">
                     <input className={inputClass} value={profile.department || ""} onChange={(e) => updateProfile((p) => ({ ...p, department: e.target.value }))} placeholder="Not provided" />
@@ -630,7 +510,9 @@ export function Settings({ embedded = false }: { embedded?: boolean } = {}) {
                     <input className={inputClass} value={profile.adminLevel || ""} onChange={(e) => updateProfile((p) => ({ ...p, adminLevel: e.target.value }))} placeholder="Not provided" />
                   </Field>
                 </div>
-              ) : null}
+              ) : (
+                <div className="rounded-lg border border-[#e8ded1] bg-[#faf8f5] p-4 text-sm font-medium text-[#756a60]">Your tenant account does not require a separate tenant type.</div>
+              )}
             </DisclosureCard>
           )}
         </div>

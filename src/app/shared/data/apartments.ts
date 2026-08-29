@@ -1,4 +1,4 @@
-export type ApartmentStatus = 'available' | 'occupied' | 'reserved' | 'maintenance';
+export type ApartmentStatus = 'available' | 'occupied' | 'maintenance';
 
 export interface ApartmentRoom {
   id?: string;
@@ -244,9 +244,9 @@ const toString = (value: string | null | undefined, fallback = ''): string => {
 
 const toApartmentStatus = (value: string | null | undefined): ApartmentStatus => {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return normalized === 'occupied' || normalized === 'reserved' || normalized === 'maintenance'
-    ? normalized
-    : 'available';
+  // Preserve legacy data safely: old reservations are unavailable/occupied.
+  if (normalized === 'reserved') return 'occupied';
+  return normalized === 'occupied' || normalized === 'maintenance' ? normalized : 'available';
 };
 
 export const parseStringList = (value: string[] | string | null | undefined): string[] => {

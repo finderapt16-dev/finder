@@ -53,7 +53,7 @@ const ROOM_TYPES = ["Bedroom", "Studio", "Shared room", "Suite", "Loft", "Other"
 const ROOM_STATUS_OPTIONS: Array<{ value: ApartmentStatus; label: string; className: string }> = [
   { value: "available", label: "Available", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
   { value: "occupied", label: "Occupied", className: "border-rose-200 bg-rose-50 text-rose-700" },
-  { value: "maintenance", label: "Maintenance", className: "border-violet-200 bg-violet-50 text-violet-700" },
+  { value: "maintenance", label: "Under Maintenance", className: "border-violet-200 bg-violet-50 text-violet-700" },
 ];
 
 type RoomFormState = {
@@ -355,7 +355,7 @@ export function ManageRooms() {
     { label: "Total Rooms", helper: "All rooms in this property", value: roomCounts.total, icon: DoorOpen, iconClass: "bg-[#FAF8F5] text-[#8B735B]", border: "border-[#E8DED1]" },
     { label: "Available", helper: "Ready for tenants", value: roomCounts.available, icon: CheckCircle2, iconClass: "bg-[#FAF8F5] text-emerald-600", border: "border-[#E8DED1]" },
     { label: "Occupied", helper: "Currently rented", value: roomCounts.occupied, icon: BedDouble, iconClass: "bg-[#FAF8F5] text-[#756A60]", border: "border-[#E8DED1]" },
-    { label: "Maintenance", helper: "Temporarily unavailable", value: roomCounts.maintenance, icon: Wrench, iconClass: "bg-[#FAF8F5] text-amber-700", border: "border-[#E8DED1]" },
+    { label: "Under Maintenance", helper: "Temporarily unavailable", value: roomCounts.maintenance, icon: Wrench, iconClass: "bg-[#FAF8F5] text-amber-700", border: "border-[#E8DED1]" },
   ];
 
   return (
@@ -436,7 +436,7 @@ export function ManageRooms() {
                         <div className="min-w-0">
                           <div className="mb-5 flex items-start justify-between gap-3">
                             <div><h2 className="text-2xl font-bold">{room.name || "Room"}</h2><p className="mt-1 text-sm text-slate-500">{room.description || "No room description provided."}</p></div>
-                            <div className="relative flex items-center gap-2"><Badge className={`${statusOption.className} border px-3 py-1`}>{statusOption.label}</Badge><button aria-label={`Actions for ${room.name || "room"}`} disabled={processingRoomId === room.id} onClick={() => setOpenRoomMenuId((current) => current === room.id ? null : room.id ?? null)} className="grid h-9 w-9 place-items-center rounded-md hover:bg-slate-100 disabled:cursor-wait disabled:opacity-50"><MoreVertical className="h-5 w-5" /></button>{openRoomMenuId === room.id && <div className="absolute right-0 top-11 z-20 w-52 rounded-lg border bg-white p-1.5 shadow-xl">{status !== "maintenance" && <button disabled={processingRoomId !== null} onClick={() => void changeRoomStatus(room, "maintenance")} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-violet-700 hover:bg-violet-50 disabled:opacity-50"><Wrench className="h-4 w-4" />Mark as Maintenance</button>}<button disabled={processingRoomId !== null} onClick={() => { openEditForm(room); setOpenRoomMenuId(null); }} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"><Edit3 className="h-4 w-4" />Edit Room</button><button disabled={processingRoomId !== null} onClick={() => void removeRoom(room)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"><Trash2 className="h-4 w-4" />Delete Room</button></div>}</div>
+                            <div className="relative flex items-center gap-2"><Badge className={`${statusOption.className} border px-3 py-1`}>{statusOption.label}</Badge><button aria-label={`Actions for ${room.name || "room"}`} disabled={processingRoomId === room.id} onClick={() => setOpenRoomMenuId((current) => current === room.id ? null : room.id ?? null)} className="grid h-9 w-9 place-items-center rounded-md hover:bg-slate-100 disabled:cursor-wait disabled:opacity-50"><MoreVertical className="h-5 w-5" /></button>{openRoomMenuId === room.id && <div className="absolute right-0 top-11 z-20 w-52 rounded-lg border bg-white p-1.5 shadow-xl">{status !== "maintenance" && <button disabled={processingRoomId !== null} onClick={() => void changeRoomStatus(room, "maintenance")} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-violet-700 hover:bg-violet-50 disabled:opacity-50"><Wrench className="h-4 w-4" />Mark as Under Maintenance</button>}<button disabled={processingRoomId !== null} onClick={() => { openEditForm(room); setOpenRoomMenuId(null); }} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"><Edit3 className="h-4 w-4" />Edit Room</button><button disabled={processingRoomId !== null} onClick={() => void removeRoom(room)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"><Trash2 className="h-4 w-4" />Delete Room</button></div>}</div>
                           </div>
                           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                             <div className="rounded-lg bg-[#FAF8F5] p-3"><p className="text-xs font-semibold text-slate-500">Monthly Rent</p><p className="mt-1 font-bold">₱{(room.price ?? 0).toLocaleString("en-PH")}</p></div>
@@ -463,7 +463,7 @@ export function ManageRooms() {
             </motion.section>
           )}
 
-          <section className="mt-6 flex items-start gap-4 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-white text-[#8B735B]"><Wrench className="h-5 w-5" /></span><div><h2 className="font-bold text-[#302820]">Room Status Guide</h2><p className="mt-1 text-sm leading-6 text-[#756A60]">Keep room availability updated so tenants always see accurate room information. Maintenance rooms remain unavailable until you mark them available.</p></div></section>
+          <section className="mt-6 flex items-start gap-4 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] p-5"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-white text-[#8B735B]"><Wrench className="h-5 w-5" /></span><div><h2 className="font-bold text-[#302820]">Room Status Guide</h2><p className="mt-1 text-sm leading-6 text-[#756A60]">Keep room availability updated so tenants always see accurate room information. Under Maintenance rooms remain unavailable until you mark them available.</p></div></section>
         </div>
       </main>
     </div>

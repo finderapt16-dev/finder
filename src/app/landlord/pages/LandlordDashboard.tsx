@@ -110,7 +110,6 @@ const LANDLORD_DASHBOARD_SECTIONS = new Set(["overview", "properties", "activity
 const STATUS_OPTIONS: { value: ApartmentStatus; label: string; className: string }[] = [
   { value: "available", label: "Available", className: "bg-green-100 text-green-700 border-green-200" },
   { value: "occupied", label: "Occupied", className: "bg-red-100 text-red-700 border-red-200" },
-  { value: "reserved", label: "Reserved", className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
   { value: "maintenance", label: "Under Maintenance", className: "bg-slate-100 text-slate-600 border-slate-200" },
 ];
 
@@ -498,7 +497,7 @@ export function LandlordDashboard() {
       .map((favorite) => {
         const favoriteUser = favoriteUsers.find((entry) => entry.id === (favorite.user_id ?? favorite.userId));
         return favoriteUser?.name
-          ? `${favoriteUser.name} (${favoriteUser.role ?? "renter"})`
+          ? `${favoriteUser.name} (${favoriteUser.role ?? "tenant"})`
           : (favorite.user_id ?? favorite.userId) ? `User ${(favorite.user_id ?? favorite.userId)?.slice(0, 8)}` : "Account unavailable";
       });
     setModal({ open: true, type: "favorites", names: names.slice(0, count || names.length), aptTitle });
@@ -836,7 +835,7 @@ export function LandlordDashboard() {
   const landlordPermit = landlordAccount?.permit_number ?? landlordAccount?.permitNumber ?? user?.permitNumber ?? "";
   const getViewWeight = (view: DashboardApartmentViewRow) => Math.max(0, Number(view.view_count) || 0);
   const totalViews     = landlordViewRows.reduce((total, view) => total + getViewWeight(view), 0);
-  const totalInquiries = landlordFavoriteRows.length;
+  const totalFavorites = landlordFavoriteRows.length;
   const occupancyRate  = myApartments.length > 0
     ? Math.round((occupiedCount / (totalUnits || myApartments.length)) * 100)
     : 0;
@@ -1528,11 +1527,11 @@ export function LandlordDashboard() {
           <Field label="Email Address" hint="Used for account login and notifications">
             <SettingsInput type="email" value={profile.email} onChange={(e: any) => updateProfile(p => ({ ...p, email: e.target.value }))} placeholder="you@email.com" />
           </Field>
-          <Field label="Mobile Number" hint="Visible to renters if enabled in Business settings">
+          <Field label="Mobile Number" hint="Visible to tenants if enabled in Business settings">
             <SettingsInput type="tel" value={profile.mobile} onChange={(e: any) => updateProfile(p => ({ ...p, mobile: e.target.value }))} placeholder="09XXXXXXXXX" />
           </Field>
           <Field label="Bio / About You" hint="Shown on your landlord profile page (max 300 characters)">
-            <SettingsTextarea rows={3} value={profile.bio} onChange={(e: any) => updateProfile(p => ({ ...p, bio: e.target.value.slice(0, 300) }))} placeholder="Tell renters about yourself…" />
+            <SettingsTextarea rows={3} value={profile.bio} onChange={(e: any) => updateProfile(p => ({ ...p, bio: e.target.value.slice(0, 300) }))} placeholder="Tell tenants about yourself…" />
             <p className="text-[11px] text-slate-400 font-medium text-right">{profile.bio.length}/300</p>
           </Field>
         </div>
@@ -1547,17 +1546,17 @@ export function LandlordDashboard() {
     // ── Alerts Tab ─────────────────────────────────────────────────────────
     const renderAlertsTab = () => (
       <div className="space-y-5">
-        {/* Renter Activity */}
+        {/* Tenant Activity */}
         <div className="bg-white border-2 border-slate-100 rounded-2xl p-5">
-          <SectionTitle icon="🏠" title="Renter Activity" subtitle="In-app reminders when renters interact with your listings" />
-          <AlertRow label="Listing Added to Favorites" hint="A renter saves your apartment to their favorites list" pushVal={alerts.reviewPush} onPush={(v) => setA("reviewPush", v)} />
-          <AlertRow label="Listing Appears in Suggested or Popular" hint="Your unit is being surfaced to renters in their dashboard" pushVal={alerts.listingPush} onPush={(v) => setA("listingPush", v)} />
+          <SectionTitle icon="🏠" title="Tenant Activity" subtitle="In-app reminders when tenants interact with your listings" />
+          <AlertRow label="Listing Added to Favorites" hint="A tenant saves your apartment to their Favorites." pushVal={alerts.reviewPush} onPush={(v) => setA("reviewPush", v)} />
+          <AlertRow label="Listing Appears in Suggested or Popular" hint="Your unit is being surfaced to tenants in their dashboard" pushVal={alerts.listingPush} onPush={(v) => setA("listingPush", v)} />
         </div>
 
         {/* Admin & Compliance */}
         <div className="bg-white border-2 border-slate-100 rounded-2xl p-5">
           <SectionTitle icon="⚠️" title="Admin & Compliance" subtitle="Reports, violations, and notices from platform administrators" />
-          <AlertRow label="Report Filed Against Listing" hint="A renter submits a report about your unit" pushVal={alerts.reportPush} onPush={(v) => setA("reportPush", v)} />
+          <AlertRow label="Report Filed Against Listing" hint="A tenant submits a report about your unit" pushVal={alerts.reportPush} onPush={(v) => setA("reportPush", v)} />
           <AlertRow label="Violation / Notice Issued" hint="Admin issues a formal violation or notice" pushVal={alerts.violationPush} onPush={(v) => setA("violationPush", v)} />
           <AlertRow label="Permit Verification Reminder" hint="30-day reminder before your business permit expires" pushVal={alerts.permitPush} onPush={(v) => setA("permitPush", v)} />
         </div>
@@ -1969,7 +1968,7 @@ export function LandlordDashboard() {
       <header className="rounded-lg border border-[#E8DED1] bg-white px-5 py-7 shadow-sm sm:px-7">
         <div className="flex items-center gap-4">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border border-[#E8DED1] bg-[#FAF8F5] text-[#8B735B] shadow-sm"><HelpCircle className="h-6 w-6" /></span>
-          <div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#8B735B]">Help &amp; Support</p><h1 className="mt-1 text-2xl font-black text-[#302820] sm:text-3xl">Landlord Support Center</h1><p className="mt-1 text-sm font-medium text-[#756A60]">Get help managing listings, verification, and renter inquiries.</p></div>
+          <div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#8B735B]">Help &amp; Support</p><h1 className="mt-1 text-2xl font-black text-[#302820] sm:text-3xl">Landlord Support Center</h1><p className="mt-1 text-sm font-medium text-[#756A60]">Get help managing listings, verification, and tenant inquiries.</p></div>
         </div>
       </header>
 
@@ -2019,7 +2018,7 @@ export function LandlordDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-[#302820] font-black">
               <ShieldCheck className="h-5 w-5 text-[#8B735B]" />
-              Verification & Renter Safety
+              Verification & Tenant Safety
             </CardTitle>
             <CardDescription>Keep listings trustworthy and easy to review.</CardDescription>
           </CardHeader>
@@ -2077,7 +2076,7 @@ export function LandlordDashboard() {
                     <option value="Listing setup">Listing setup</option>
                     <option value="Verification">Verification</option>
                     <option value="Property visibility">Property visibility</option>
-                    <option value="Renter inquiry issue">Renter inquiry issue</option>
+                    <option value="Tenant inquiry issue">Tenant inquiry issue</option>
                     <option value="Account or login">Account or login</option>
                     <option value="Other">Other</option>
                   </select>
@@ -2187,7 +2186,7 @@ export function LandlordDashboard() {
         </motion.section>
 
         <motion.section variants={itemMotion} className="grid gap-3 sm:grid-cols-3">
-          {[{ label: "Properties", value: myApartments.length, detail: "Total properties", icon: Building2, action: () => setActiveSection("properties"), tone: "bg-[#8B735B] text-white", iconTone: "bg-white/20" }, { label: "Total Views", value: totalViews, detail: "Across all properties", icon: Eye, action: () => setActiveSection("activity"), tone: "border border-slate-200 bg-white text-slate-950", iconTone: "bg-[#FAF8F5] text-[#756A60]" }, { label: "Favorites", value: totalInquiries, detail: "Saved by renters", icon: Heart, action: () => setActiveSection("activity"), tone: "border border-slate-200 bg-white text-slate-950", iconTone: "bg-rose-50 text-rose-600" }].map(({ label, value, detail, icon: Icon, action, tone, iconTone }) => <motion.button key={label} whileHover={{ y: -3 }} onClick={action} className={`group flex min-h-32 items-center gap-4 rounded-lg p-5 text-left shadow-sm transition-shadow hover:shadow-lg ${tone}`}><span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${iconTone}`}><Icon className="h-6 w-6" /></span><span className="min-w-0 flex-1"><span className="block text-xs font-black uppercase">{label}</span><strong className="mt-1 block text-3xl">{value.toLocaleString()}</strong><span className={`block text-xs font-medium ${label === "Properties" ? "text-[#F3EFEA]" : "text-slate-500"}`}>{detail}</span></span><ChevronRight className={`h-4 w-4 transition group-hover:translate-x-0.5 ${label === "Properties" ? "text-white/70" : "text-slate-300"}`} /></motion.button>)}
+          {[{ label: "Properties", value: myApartments.length, detail: "Total properties", icon: Building2, action: () => setActiveSection("properties"), tone: "bg-[#8B735B] text-white", iconTone: "bg-white/20" }, { label: "Total Views", value: totalViews, detail: "Across all properties", icon: Eye, action: () => setActiveSection("activity"), tone: "border border-slate-200 bg-white text-slate-950", iconTone: "bg-[#FAF8F5] text-[#756A60]" }, { label: "Favorites", value: totalFavorites, detail: "Saved by tenants", icon: Heart, action: () => setActiveSection("activity"), tone: "border border-slate-200 bg-white text-slate-950", iconTone: "bg-rose-50 text-rose-600" }, { label: "Available Rooms", value: availableCount, detail: "Currently available", icon: Home, action: () => setActiveSection("properties"), tone: "border border-slate-200 bg-white text-slate-950", iconTone: "bg-emerald-50 text-emerald-600" }].map(({ label, value, detail, icon: Icon, action, tone, iconTone }) => <motion.button key={label} whileHover={{ y: -3 }} onClick={action} className={`group flex min-h-32 items-center gap-4 rounded-lg p-5 text-left shadow-sm transition-shadow hover:shadow-lg ${tone}`}><span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${iconTone}`}><Icon className="h-6 w-6" /></span><span className="min-w-0 flex-1"><span className="block text-xs font-black uppercase">{label}</span><strong className="mt-1 block text-3xl">{value.toLocaleString()}</strong><span className={`block text-xs font-medium ${label === "Properties" ? "text-[#F3EFEA]" : "text-slate-500"}`}>{detail}</span></span><ChevronRight className={`h-4 w-4 transition group-hover:translate-x-0.5 ${label === "Properties" ? "text-white/70" : "text-slate-300"}`} /></motion.button>)}
         </motion.section>
 
         <motion.section variants={itemMotion} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -2325,7 +2324,7 @@ export function LandlordDashboard() {
         {isLoadingApartments ? (
           <div className="flex min-h-96 items-center justify-center rounded-lg border border-slate-200 bg-white"><Clock className="h-7 w-7 animate-pulse text-[#8B735B]" /></div>
         ) : myApartments.length === 0 ? (
-          <div className="flex min-h-96 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm"><span className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><Building2 className="h-8 w-8" /></span><h2 className="text-xl font-black text-slate-900">No properties yet</h2><p className="mt-1 max-w-sm text-sm font-medium text-slate-500">Add your first property to begin managing rooms and making it visible to renters.</p><Link to="/add-apartment"><Button className="mt-5 rounded-lg bg-[#8B735B] font-bold text-white hover:bg-[#756A60]"><Plus className="mr-2 h-4 w-4" />Add Your First Property</Button></Link></div>
+          <div className="flex min-h-96 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm"><span className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><Building2 className="h-8 w-8" /></span><h2 className="text-xl font-black text-slate-900">No properties yet</h2><p className="mt-1 max-w-sm text-sm font-medium text-slate-500">You haven&apos;t added any properties yet.</p><Link to="/add-apartment"><Button className="mt-5 rounded-lg bg-[#8B735B] font-bold text-white hover:bg-[#756A60]"><Plus className="mr-2 h-4 w-4" />Add Your First Property</Button></Link></div>
         ) : paginatedApartments.length === 0 ? (
           <div className="flex min-h-80 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white p-8 text-center"><Search className="mb-3 h-8 w-8 text-slate-300" /><h2 className="font-black text-slate-800">No matching properties</h2><p className="mt-1 text-sm font-medium text-slate-500">Try selecting a different availability filter.</p><Button variant="outline" onClick={() => setPropertyFilter("all")} className="mt-4 rounded-md font-bold">Show All Units</Button></div>
         ) : (
@@ -2399,14 +2398,14 @@ export function LandlordDashboard() {
     ].filter((item) => item.timestamp).sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime());
     const summaryCards = [
       { label: "Views", value: rangedViews.reduce((total, view) => total + getViewWeight(view), 0), help: "Property views", icon: Eye },
-      { label: "Favorites", value: rangedFavorites.length, help: "Times renters saved your properties", icon: Heart },
+      { label: "Favorites", value: rangedFavorites.length, help: "Times tenants saved your properties", icon: Heart },
       { label: "Ratings", value: rangedRatings.length, help: "Ratings received", icon: Star },
     ];
 
     return (
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1500px] space-y-5 pb-8">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><TrendingUp className="h-6 w-6" /></span><div><p className="text-xs font-black uppercase tracking-wide text-[#8B735B]">Activity</p><h1 className="text-2xl font-black text-[#302820] sm:text-3xl">Property Activity</h1><p className="mt-1 text-sm font-medium text-[#756A60]">See how renters interact with your properties.</p></div></div>
+          <div className="flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><TrendingUp className="h-6 w-6" /></span><div><p className="text-xs font-black uppercase tracking-wide text-[#8B735B]">Activity</p><h1 className="text-2xl font-black text-[#302820] sm:text-3xl">Property Activity</h1><p className="mt-1 text-sm font-medium text-[#756A60]">See how tenants interact with your properties.</p></div></div>
           <label className="flex h-11 items-center gap-2 rounded-lg border border-[#EEE6DC] bg-white px-3 text-xs font-bold text-[#756A60] shadow-sm"><Calendar className="h-4 w-4 text-[#8B735B]" /><select value={activityRange} onChange={(event) => setActivityRange(event.target.value as typeof activityRange)} className="min-w-28 bg-transparent font-black text-[#302820] outline-none"><option value="today">Today</option><option value="7d">This Week</option><option value="30d">This Month</option><option value="all">All Time</option></select></label>
         </header>
 
@@ -2415,13 +2414,13 @@ export function LandlordDashboard() {
         </section>
 
         <section className="overflow-hidden rounded-xl border border-[#EEE6DC] bg-white shadow-sm">
-          <div className="border-b border-[#EEE6DC] p-5"><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><Clock className="h-4 w-4" /></span><div><h2 className="font-black text-[#302820]">Recent Activity</h2><p className="text-xs font-medium text-[#756A60]">The latest renter interactions during the selected period.</p></div></div></div>
+          <div className="border-b border-[#EEE6DC] p-5"><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><Clock className="h-4 w-4" /></span><div><h2 className="font-black text-[#302820]">Recent Activity</h2><p className="text-xs font-medium text-[#756A60]">The latest tenant interactions during the selected period.</p></div></div></div>
 
           <div className="p-4 sm:p-5">
             {isLoadingApartments || isLoadingActivityData ? (
               <div className="flex min-h-80 items-center justify-center"><Clock className="h-7 w-7 animate-pulse text-[#8B735B]" /></div>
             ) : recentActivity.length === 0 ? (
-              <div className="flex min-h-72 flex-col items-center justify-center rounded-lg border border-dashed border-[#DCC9B4] bg-[#FAF8F5] p-8 text-center"><PropertyActivityEmptyIllustration /><h3 className="font-black text-[#302820]">No activity yet</h3><p className="mt-1 max-w-md text-sm font-medium text-[#756A60]">Views, favorites, and ratings will appear here when renters interact with your properties.</p></div>
+              <div className="flex min-h-72 flex-col items-center justify-center rounded-lg border border-dashed border-[#DCC9B4] bg-[#FAF8F5] p-8 text-center"><PropertyActivityEmptyIllustration /><h3 className="font-black text-[#302820]">No activity yet</h3><p className="mt-1 max-w-md text-sm font-medium text-[#756A60]">Tenant views, favorites, and ratings will appear here.</p></div>
             ) : (
               <div className="divide-y divide-[#EEE6DC]">
                 {recentActivity.map(({ id, timestamp, title, property, icon: Icon }) => <article key={id} className="flex items-start gap-4 px-1 py-4 sm:px-2"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FAF8F5] text-[#8B735B]"><Icon className="h-4.5 w-4.5" /></span><div className="min-w-0 flex-1"><h3 className="text-sm font-black text-[#302820]">{title}</h3><p className="mt-0.5 truncate text-sm font-medium text-[#5F5A55]">{property}</p><time className="mt-1 block text-xs font-medium text-[#8A8179]">{new Date(timestamp).toLocaleString("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}</time></div></article>)}
@@ -2505,7 +2504,7 @@ export function LandlordDashboard() {
           <section className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]"><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B735B]" /><input value={notifSearch} onChange={(event) => setNotifSearch(event.target.value)} placeholder="Search notifications" className="h-12 w-full rounded-lg border border-[#EEE6DC] bg-white pl-10 pr-3 text-sm font-medium shadow-sm outline-none focus:border-[#C9B8A5] focus:ring-2 focus:ring-[#F3E9DE]" /></div><label className="flex h-12 items-center justify-between rounded-lg border border-[#EEE6DC] bg-white px-4 text-sm font-bold text-[#5F5A55] shadow-sm"><select aria-label="Sort notifications" value={notifSort} onChange={(event) => setNotifSort(event.target.value as typeof notifSort)} className="w-full bg-transparent font-bold text-[#302820] outline-none"><option value="newest">Newest</option><option value="oldest">Oldest</option></select></label></div>
             {isLoadingNotifications ? <div className="flex min-h-96 items-center justify-center rounded-lg border border-slate-200 bg-white"><Clock className="h-7 w-7 animate-pulse text-[#8B735B]" /></div> : <>
-            {visibleNotifications.length > 0 ? <div className="overflow-hidden rounded-xl border border-[#EEE6DC] bg-white shadow-sm">{visibleNotifications.map((notification, index) => { const read = isNotificationRead(notification); const category = getNotificationCategory(notification); const meta = getCategoryMeta(category); const Icon = meta.icon; const actionLabel = getActionLabel(notification, category); const notificationId = notification.id ?? `notification-${index}`; const createdAt = notification.created_at ?? notification.createdAt; return <article key={notificationId} className={`relative flex gap-3 border-b border-[#F3EDE6] p-4 last:border-b-0 sm:p-5 ${read ? "bg-white" : "bg-[#FDF8F2]"}`}>{!read && <span className="absolute left-2 top-7 h-2 w-2 rounded-full bg-[#9A5A2A]" />}<span className="ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#FAF3EB] text-[#8B4F24]"><Icon className="h-5 w-5" /></span><div className="min-w-0 flex-1"><h3 className="font-black text-[#302820]">{notification.title || notification.type || "Notification"}</h3><p className="mt-1 text-sm font-medium leading-6 text-[#5F5A55]">{notification.message || "No additional details were provided."}</p><div className="mt-2 flex flex-wrap items-center gap-3"><time className="text-xs font-medium text-[#8A8179]">{createdAt ? new Date(createdAt).toLocaleString("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "Time unavailable"}</time>{actionLabel && <button onClick={() => void handleNotificationClick(notification)} className="rounded-md border border-[#DCC9B4] px-3 py-1.5 text-xs font-black text-[#8B735B] transition-colors hover:bg-[#FAF8F5] hover:text-[#756A60] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9B8A5]">{actionLabel}</button>}</div></div>{notification.id && <div className="relative"><button title="Notification actions" onClick={() => setOpenNotifMenuId(openNotifMenuId === notification.id ? null : notification.id!)} className="flex h-9 w-9 items-center justify-center rounded-md text-[#8A8179] hover:bg-[#F3EFEA]"><MoreVertical className="h-4 w-4" /></button>{openNotifMenuId === notification.id && <div className="absolute right-0 top-10 z-20 w-44 rounded-lg border border-[#EEE6DC] bg-white p-1 shadow-xl"><button onClick={() => void handleNotificationClick(notification)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-bold text-[#5F5A55] hover:bg-[#FAF8F5]"><Eye className="h-4 w-4" />Open notification</button><button onClick={() => void toggleNotifReadStatus(notification.id!, read)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-bold text-[#5F5A55] hover:bg-[#FAF8F5]">{read ? <Mail className="h-4 w-4" /> : <MailOpen className="h-4 w-4" />}{read ? "Mark unread" : "Mark read"}</button><button disabled={deletingNotifId === notification.id} onClick={() => void deleteNotif(notification.id!)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-bold text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete</button></div>}</div>}</article>; })}</div> : notifications.length === 0 ? <div className="flex min-h-80 flex-col items-center justify-center rounded-xl border border-dashed border-[#DCC9B4] bg-white p-8 text-center"><PropertyNotificationEmptyIllustration /><h2 className="text-lg font-black text-[#302820]">No notifications yet</h2><p className="mt-1 text-sm font-medium text-[#756A60]">Important updates about your account and properties will appear here.</p></div> : <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-[#DCC9B4] bg-white p-8 text-center"><Search className="mb-3 h-8 w-8 text-[#C9B8A5]" /><h2 className="font-black text-[#302820]">{notifCategory === "reports" ? "No report notifications." : notifCategory === "verification" ? "No verification notifications." : "No matching notifications"}</h2>{notifCategory === "all" || notifCategory === "unread" ? <p className="mt-1 text-sm font-medium text-[#756A60]">Try changing your search or filter.</p> : null}</div>}
+            {visibleNotifications.length > 0 ? <div className="overflow-hidden rounded-xl border border-[#EEE6DC] bg-white shadow-sm">{visibleNotifications.map((notification, index) => { const read = isNotificationRead(notification); const category = getNotificationCategory(notification); const meta = getCategoryMeta(category); const Icon = meta.icon; const actionLabel = getActionLabel(notification, category); const notificationId = notification.id ?? `notification-${index}`; const createdAt = notification.created_at ?? notification.createdAt; return <article key={notificationId} className={`relative flex gap-3 border-b border-[#F3EDE6] p-4 last:border-b-0 sm:p-5 ${read ? "bg-white" : "bg-[#FDF8F2]"}`}>{!read && <span className="absolute left-2 top-7 h-2 w-2 rounded-full bg-[#9A5A2A]" />}<span className="ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#FAF3EB] text-[#8B4F24]"><Icon className="h-5 w-5" /></span><div className="min-w-0 flex-1"><h3 className="font-black text-[#302820]">{notification.title || notification.type || "Notification"}</h3><p className="mt-1 text-sm font-medium leading-6 text-[#5F5A55]">{notification.message || "No additional details were provided."}</p><div className="mt-2 flex flex-wrap items-center gap-3"><time className="text-xs font-medium text-[#8A8179]">{createdAt ? new Date(createdAt).toLocaleString("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "Time unavailable"}</time>{actionLabel && <button onClick={() => void handleNotificationClick(notification)} className="rounded-md border border-[#DCC9B4] px-3 py-1.5 text-xs font-black text-[#8B735B] transition-colors hover:bg-[#FAF8F5] hover:text-[#756A60] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9B8A5]">{actionLabel}</button>}</div></div>{notification.id && <div className="relative"><button title="Notification actions" onClick={() => setOpenNotifMenuId(openNotifMenuId === notification.id ? null : notification.id!)} className="flex h-9 w-9 items-center justify-center rounded-md text-[#8A8179] hover:bg-[#F3EFEA]"><MoreVertical className="h-4 w-4" /></button>{openNotifMenuId === notification.id && <div className="absolute right-0 top-10 z-20 w-44 rounded-lg border border-[#EEE6DC] bg-white p-1 shadow-xl"><button onClick={() => void handleNotificationClick(notification)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-bold text-[#5F5A55] hover:bg-[#FAF8F5]"><Eye className="h-4 w-4" />Open notification</button><button onClick={() => void toggleNotifReadStatus(notification.id!, read)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-bold text-[#5F5A55] hover:bg-[#FAF8F5]">{read ? <Mail className="h-4 w-4" /> : <MailOpen className="h-4 w-4" />}{read ? "Mark unread" : "Mark read"}</button><button disabled={deletingNotifId === notification.id} onClick={() => void deleteNotif(notification.id!)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-bold text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" />Delete</button></div>}</div>}</article>; })}</div> : notifications.length === 0 ? <div className="flex min-h-80 flex-col items-center justify-center rounded-xl border border-dashed border-[#DCC9B4] bg-white p-8 text-center"><PropertyNotificationEmptyIllustration /><h2 className="text-lg font-black text-[#302820]">You're all caught up.</h2><p className="mt-1 text-sm font-medium text-[#756A60]">Important updates about your account and properties will appear here.</p></div> : <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-[#DCC9B4] bg-white p-8 text-center"><Search className="mb-3 h-8 w-8 text-[#C9B8A5]" /><h2 className="font-black text-[#302820]">{notifCategory === "reports" ? "No report notifications." : notifCategory === "verification" ? "No verification notifications." : "No matching notifications"}</h2>{notifCategory === "all" || notifCategory === "unread" ? <p className="mt-1 text-sm font-medium text-[#756A60]">Try changing your search or filter.</p> : null}</div>}
             </>}
             <div className="mt-6 rounded-xl border border-[#EEE6DC] bg-white p-5 shadow-sm">
               <div className="mb-4"><h2 className="font-black text-[#302820]">Appeal History</h2><p className="mt-1 text-xs font-medium text-[#756A60]">View your submitted appeals and administrator decisions.</p></div>

@@ -166,8 +166,6 @@ export interface DashboardUserRow extends DashboardRow {
   department?: string | null;
   admin_level?: string | null;
   adminLevel?: string | null;
-  tenant_type?: string | null;
-  tenantType?: string | null;
   other_occupation?: string | null;
   other_organization?: string | null;
   other_workplace?: string | null;
@@ -236,8 +234,6 @@ export interface TenantPreferenceSettings {
   recommendationLocation: boolean;
   saveBudgetPreferences: boolean;
   emailNotifications: boolean;
-  inquiryAlerts: boolean;
-  bookingAlerts: boolean;
   updatedAt?: string;
 }
 
@@ -255,7 +251,6 @@ export interface DashboardProfilePayload {
   permit_number?: string | null;
   department?: string | null;
   admin_level?: string | null;
-  tenant_type?: string | null;
   other_occupation?: string | null;
   other_organization?: string | null;
   other_workplace?: string | null;
@@ -286,16 +281,6 @@ export interface DashboardProfilePayload {
 
 export interface DashboardUserProfileDetails {
   user: DashboardUserRow;
-  studentProfile?: {
-    school?: string | null;
-    guardian_name?: string | null;
-    guardian_address?: string | null;
-    guardian_contact?: string | null;
-  } | null;
-  employeeProfile?: {
-    company?: string | null;
-    work_address?: string | null;
-  } | null;
   landlordProfile?: DashboardRow | null;
   adminProfile?: DashboardRow | null;
 }
@@ -317,8 +302,6 @@ export const defaultTenantPreferences: TenantPreferenceSettings = {
   recommendationLocation: true,
   saveBudgetPreferences: false,
   emailNotifications: true,
-  inquiryAlerts: true,
-  bookingAlerts: true,
 };
 
 function safeJsonParse<T>(value: string | null, fallback: T): T {
@@ -570,8 +553,6 @@ function toUserRow(row: DashboardRow): DashboardUserRow {
     department: getStringValue(row.department),
     admin_level: getStringValue(row.admin_level),
     adminLevel: getStringValue(row.adminLevel),
-    tenant_type: getStringValue(row.tenant_type),
-    tenantType: getStringValue(row.tenantType ?? row.tenant_type),
     other_occupation: getStringValue(row.other_occupation),
     other_organization: getStringValue(row.other_organization),
     other_workplace: getStringValue(row.other_workplace),
@@ -953,8 +934,6 @@ function normalizeTenantPreferences(
     recommendationLocation: getOptionalBooleanValue(source.recommendationLocation, fallback.recommendationLocation),
     saveBudgetPreferences: getOptionalBooleanValue(source.saveBudgetPreferences, fallback.saveBudgetPreferences),
     emailNotifications: getOptionalBooleanValue(source.emailNotifications, fallback.emailNotifications),
-    inquiryAlerts: getOptionalBooleanValue(source.inquiryAlerts, fallback.inquiryAlerts),
-    bookingAlerts: getOptionalBooleanValue(source.bookingAlerts, fallback.bookingAlerts),
     updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : fallback.updatedAt,
   };
 }
@@ -1717,20 +1696,7 @@ export async function fetchUserProfileDetails(userId: string): Promise<Dashboard
 
   const user = toUserRow(userData as DashboardRow);
   const role = user.role;
-  const tenantType = String(user.tenant_type ?? (role === "student" || role === "employee" ? role : ""));
   const details: DashboardUserProfileDetails = { user };
-
-  if (tenantType === "student") {
-    const { data, error } = await supabase.from("student_profiles").select("*").eq("user_id", userId).maybeSingle();
-    if (error) throw new Error(error.message || "Unable to load student profile.");
-    details.studentProfile = data as DashboardUserProfileDetails["studentProfile"];
-  }
-
-  if (tenantType === "employee") {
-    const { data, error } = await supabase.from("employee_profiles").select("*").eq("user_id", userId).maybeSingle();
-    if (error) throw new Error(error.message || "Unable to load employee profile.");
-    details.employeeProfile = data as DashboardUserProfileDetails["employeeProfile"];
-  }
 
   if (role === "landlord") {
     const { data, error } = await supabase.from("landlord_profiles").select("*").eq("user_id", userId).maybeSingle();
@@ -1853,7 +1819,6 @@ export async function updateUserProfile(payload: DashboardProfilePayload): Promi
   assignIfProvided(updatePayload, "permit_number", payload.permit_number);
   assignIfProvided(updatePayload, "department", payload.department);
   assignIfProvided(updatePayload, "admin_level", payload.admin_level);
-  assignIfProvided(updatePayload, "tenant_type", payload.tenant_type);
   assignIfProvided(updatePayload, "other_occupation", payload.other_occupation);
   assignIfProvided(updatePayload, "other_organization", payload.other_organization);
   assignIfProvided(updatePayload, "other_workplace", payload.other_workplace);
@@ -1887,25 +1852,6 @@ export async function uploadUserAvatar(userId: string, file: File): Promise<stri
 }
 
 async function syncRoleProfile(userId: string, role: string | null, payload: DashboardProfilePayload): Promise<void> {
-  const tenantType = payload.tenant_type ?? (role === "student" || role === "employee" ? role : null);
-  if (tenantType === "student") {
-    const profilePayload: Record<string, unknown> = { user_id: userId };
-    assignIfProvided(profilePayload, "school", payload.school);
-    assignIfProvided(profilePayload, "guardian_name", payload.guardian_name);
-    assignIfProvided(profilePayload, "guardian_address", payload.guardian_address);
-    assignIfProvided(profilePayload, "guardian_contact", payload.guardian_contact);
-    const { error } = await supabase.from("student_profiles").upsert(profilePayload, { onConflict: "user_id" });
-    if (error) throw new Error(error.message || "Unable to update student profile.");
-  }
-
-  if (tenantType === "employee") {
-    const profilePayload: Record<string, unknown> = { user_id: userId };
-    assignIfProvided(profilePayload, "company", payload.company);
-    assignIfProvided(profilePayload, "work_address", payload.work_address);
-    const { error } = await supabase.from("employee_profiles").upsert(profilePayload, { onConflict: "user_id" });
-    if (error) throw new Error(error.message || "Unable to update employee profile.");
-  }
-
   if (role === "landlord") {
     const profilePayload: Record<string, unknown> = { user_id: userId };
     assignIfProvided(profilePayload, "permit_number", payload.permit_number);

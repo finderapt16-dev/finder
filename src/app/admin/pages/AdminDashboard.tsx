@@ -120,6 +120,7 @@ import { useCallback, useEffect, useMemo, useState, type ComponentType, type Rea
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { clearAdminNavigationMemory, getAdminModuleLocation, getAdminModulePath, rememberAdminModuleLocation, type AdminModule } from "@/app/admin/utils/adminNavigationMemory";
+import { getAdminAvailabilityLabel, getAdminListingLabel, getAdminListingState, getAdminRoomState, getLowestRoomRent } from "@/app/admin/utils/adminListingState";
 import { AdminManagement } from "@/app/super-admin/pages/AdminManagement";
 import { AuditLogs } from "@/app/super-admin/pages/AuditLogs";
 import { UserManagement } from "@/app/super-admin/pages/UserManagement";
@@ -229,8 +230,12 @@ const getLandlordVerificationStatus = (landlord: DashboardUserRow | null): strin
   if (!landlord) return "Missing";
   const explicitStatus = String(landlord.landlord_status ?? landlord.verification_status ?? landlord.status ?? "").trim();
   if (landlord.isVerified === true || landlord.is_verified === true) return "Verified";
-  if (explicitStatus.length > 0) return explicitStatus.charAt(0).toUpperCase() + explicitStatus.slice(1).toLowerCase();
-  return "Pending";
+  if (explicitStatus.length > 0) {
+    const normalized = explicitStatus.toLowerCase();
+    if (["pending", "unverified", "under_review"].includes(normalized)) return "Pending Review";
+    return normalized.replace(/_/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+  }
+  return "Incomplete";
 };
 
 const canPublishForLandlord = (landlord: DashboardUserRow | null): boolean =>
@@ -693,7 +698,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
   const [aptSearch, setAptSearch]   = useState("");
   const [selectedApt, setSelectedApt] = useState<ListingRecord | null>(null);
   const [aptFilter, setAptFilter] = useState<"all" | "reported">("all");
-  const [aptStatusFilter, setAptStatusFilter] = useState<"all" | "available" | "occupied" | "review">("all");
+  const [aptStatusFilter, setAptStatusFilter] = useState<"all" | "published" | "pending" | "rejected" | "unpublished" | "archived">("all");
   const [aptPropertyTypeFilter, setAptPropertyTypeFilter] = useState("all");
   const [aptSort, setAptSort] = useState<"newest" | "oldest" | "price-low" | "price-high" | "name">("newest");
   const [publishingApartmentId, setPublishingApartmentId] = useState<string | null>(null);
@@ -835,9 +840,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
       const landlordName = landlords.find((landlord) => landlord.id === apartment.landlordId)?.name ?? "";
       const matchesSearch = !query || [apartment.title, apartment.location, apartment.address, landlordName]
         .some((value) => String(value ?? "").toLowerCase().includes(query));
-      const status = apartment.isPublished === false
-        ? "review"
-        : apartment.status === "occupied" ? "occupied" : "available";
+      const status = getAdminListingState(apartment);
       const matchesStatus = aptStatusFilter === "all" || status === aptStatusFilter;
       const matchesType = aptPropertyTypeFilter === "all" || apartment.propertyType === aptPropertyTypeFilter;
       return matchesSearch && matchesStatus && matchesType;
@@ -849,8 +852,11 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
 
     return filtered.sort((left, right) => {
       if (aptSort === "name") return left.title.localeCompare(right.title);
-      if (aptSort === "price-low") return Number(left.price || 0) - Number(right.price || 0);
-      if (aptSort === "price-high") return Number(right.price || 0) - Number(left.price || 0);
+      if (aptSort === "price-low" || aptSort === "price-high") {
+        const leftRent = getLowestRoomRent(left) ?? Number.POSITIVE_INFINITY;
+        const rightRent = getLowestRoomRent(right) ?? Number.POSITIVE_INFINITY;
+        return aptSort === "price-low" ? leftRent - rightRent : rightRent - leftRent;
+      }
       const leftTime = new Date(left.createdAt ?? 0).getTime();
       const rightTime = new Date(right.createdAt ?? 0).getTime();
       return aptSort === "oldest" ? leftTime - rightTime : rightTime - leftTime;
@@ -1963,7 +1969,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                     <div>
                       <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Verification Status</p>
                       <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#E8DED1] bg-[#FAF8F5] px-2.5 text-[10px] font-black text-[#6F4E37]">
-                        {verified ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}{verified ? "Verified" : "Pending Review"}
+                        {verified ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}{getLandlordVerificationStatus(landlord)}
                       </span>
                       {landlordViolations.length > 0 && <p className="mt-2 text-[10px] font-bold text-[#756A60]">{landlordViolations.length} active {landlordViolations.length === 1 ? "violation" : "violations"}</p>}
                     </div>
@@ -1993,7 +1999,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
 
         <section className="flex gap-3 rounded-xl border border-[#E8DED1] bg-[#FAF8F5] p-4">
           <Shield className="mt-0.5 h-5 w-5 shrink-0 text-[#8B735B]" />
-          <div><p className="text-sm font-black text-slate-800">Verification requirements</p><p className="mt-0.5 text-xs font-medium text-slate-600">Only verified landlords can add and edit apartments. Use violations for serious offenses and notices for warnings.</p></div>
+          <div><p className="text-sm font-black text-slate-800">Verification requirements</p><p className="mt-0.5 text-xs font-medium text-slate-600">Landlords may prepare property information, but their listings cannot be approved and published until verification is completed. Use violations for serious offenses and notices for warnings.</p></div>
         </section>
       </motion.div>
     );
@@ -2001,8 +2007,8 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
 
   const renderApartments = () => {
     const reportedCount = allApartments.filter((a) => getApartmentReportCount(a.id) > 0).length;
-    const availableCount = allApartments.filter((apartment) => apartment.isPublished !== false && apartment.status === "available").length;
-    const reviewCount = allApartments.filter((apartment) => apartment.isPublished === false).length;
+    const availableCount = allApartments.filter((apartment) => getAdminListingState(apartment) === "published").length;
+    const reviewCount = allApartments.filter((apartment) => getAdminListingState(apartment) === "pending").length;
     const propertyTypes = Array.from(new Set(allApartments.map((apartment) => apartment.propertyType).filter((value): value is string => Boolean(value)))).sort();
     const currentDate = new Date().toLocaleDateString("en-PH", {
       weekday: "short", month: "short", day: "numeric", year: "numeric",
@@ -2037,7 +2043,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#756A60]" />
               <input value={aptSearch} onChange={(event) => setAptSearch(event.target.value)} placeholder="Search apartments by name, location, or landlord" className="h-10 w-full rounded-lg border border-[#E8DED1] bg-[#FAF8F5] pl-10 pr-3 text-sm font-medium text-[#302820] outline-none transition placeholder:text-[#756A60] focus:border-[#D8C5B1] focus:bg-white focus:ring-2 focus:ring-[#EEE6DC]" />
             </label>
-            <select value={aptStatusFilter} onChange={(event) => setAptStatusFilter(event.target.value as typeof aptStatusFilter)} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#D8C5B1]"><option value="all">Status: All</option><option value="available">Published</option><option value="occupied">Occupied</option><option value="review">Under Review</option></select>
+            <select value={aptStatusFilter} onChange={(event) => setAptStatusFilter(event.target.value as typeof aptStatusFilter)} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#D8C5B1]"><option value="all">Listing Status: All</option><option value="published">Published</option><option value="pending">Pending Review</option><option value="rejected">Rejected</option><option value="unpublished">Unpublished</option><option value="archived">Archived</option></select>
             <select value={aptPropertyTypeFilter} onChange={(event) => setAptPropertyTypeFilter(event.target.value)} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#D8C5B1]"><option value="all">Property Type: All</option>{propertyTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select>
             <select value={aptSort} onChange={(event) => setAptSort(event.target.value as typeof aptSort)} className="h-10 rounded-lg border border-[#E8DED1] bg-white px-3 text-xs font-bold text-[#302820] outline-none focus:border-[#D8C5B1]"><option value="newest">Sort by: Newest</option><option value="oldest">Sort by: Oldest</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="name">Sort by: Name</option></select>
           </section>
@@ -2049,13 +2055,9 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
               {filteredApts.map((apartment) => {
                 const landlord = getLandlordForApt(apartment);
                 const reportCount = getApartmentReportCount(apartment.id);
-                const isReview = apartment.isPublished === false;
-                const status = isReview
-                  ? "Under Review"
-                  : apartment.status === "occupied" ? "Occupied"
-                    : apartment.status === "reserved" ? "Reserved"
-                      : apartment.status === "maintenance" ? "Maintenance"
-                        : "Published";
+                const status = getAdminListingLabel(apartment);
+                const availability = getAdminAvailabilityLabel(apartment);
+                const lowestRoomRent = getLowestRoomRent(apartment);
                 const location = formatApartmentLocation(apartment);
                 const roomCount = apartment.rooms?.length || apartment.bedrooms || 0;
                 return (
@@ -2069,11 +2071,13 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                       <p className="mt-2 truncate text-xs text-[#756A60]">Submitted by <span className="font-bold text-[#302820]">{landlord?.name || "Not available"}</span></p>
                       <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-[#756A60]">
                         <span className="flex items-center gap-1.5"><BedDouble className="h-3.5 w-3.5 text-[#8B735B]" />{roomCount || 0} {roomCount === 1 ? "Room/Unit" : "Rooms/Units"}</span>
+                        <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-[#8B735B]" />{availability}</span>
+                        {lowestRoomRent !== null && <span className="font-bold text-[#6F4E37]">Starting at ₱{lowestRoomRent.toLocaleString()}/month</span>}
                         <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-[#8B735B]" />Added {formatOptionalDate(apartment.createdAt, { month: "short", day: "numeric", year: "numeric" })}</span>
                       </div>
                     </div>
                     <div className="flex items-center px-4 py-3">
-                      <div><span className="inline-flex items-center gap-1.5 rounded-md border border-[#E8DED1] bg-[#FAF8F5] px-3 py-2 text-xs font-bold text-[#6F4E37]"><ShieldCheck className="h-3.5 w-3.5" />{status}</span>{reportCount > 0 && <p className="mt-2 flex items-center gap-1 text-[10px] font-bold text-rose-600"><Flag className="h-3 w-3" />{reportCount} {reportCount === 1 ? "report" : "reports"}</p>}</div>
+                      <div><p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-[#756A60]">Listing Status</p><span className="inline-flex items-center gap-1.5 rounded-md border border-[#E8DED1] bg-[#FAF8F5] px-3 py-2 text-xs font-bold text-[#6F4E37]"><ShieldCheck className="h-3.5 w-3.5" />{status}</span>{reportCount > 0 && <p className="mt-2 flex items-center gap-1 text-[10px] font-bold text-rose-600"><Flag className="h-3 w-3" />{reportCount} {reportCount === 1 ? "report" : "reports"}</p>}</div>
                     </div>
                     <div className="flex items-center p-4">
                       <Button variant="outline" size="sm" onClick={(event) => { event.stopPropagation(); navigate(`${apartmentDetailBasePath}/${apartment.id}`, { state: { returnTo: `${portalBasePath}?section=apartments`, backLabel: "Back to Apartments" } }); }} className="h-10 w-full rounded-md border-[#D8C5B1] text-xs font-black text-[#6F4E37] hover:bg-[#FAF8F5]"><Eye className="mr-1.5 h-3.5 w-3.5" />Inspect</Button>
@@ -2319,14 +2323,15 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                     <div className="space-y-2">
                       {(selectedApt.rooms ?? []).map((room, i) => {
                         const roomData = room as Record<string, unknown>;
+                        const roomState = getAdminRoomState(roomData);
                         return (
                         <div key={String(roomData.id ?? i)} className="p-3 bg-amber-50 rounded-xl border border-amber-100 space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-black text-amber-800">{String(roomData.type ?? "Room")}</span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              roomData.isOccupied ? "bg-red-100 text-red-700 border border-red-200" : "bg-green-100 text-green-700 border border-green-200"
+                              roomState === "occupied" ? "bg-red-100 text-red-700 border border-red-200" : roomState === "maintenance" ? "bg-slate-100 text-slate-700 border border-slate-200" : "bg-green-100 text-green-700 border border-green-200"
                             }`}>
-                              {roomData.isOccupied ? "Occupied" : "Available"}
+                              {roomState === "occupied" ? "Occupied" : roomState === "maintenance" ? "Under Maintenance" : "Available"}
                             </span>
                           </div>
                           <div className="grid grid-cols-3 gap-2">
@@ -2945,7 +2950,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
 
         <section className={sectionClass}><h2 className={headingClass}>1. Appeal Submitted By</h2><div className="mt-5 flex items-start gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FAF8F5] font-black text-[#6F4E37]">{landlord?.name?.[0]?.toUpperCase() ?? "L"}</span><div className="min-w-0"><p className="font-black text-[#302820]">{landlord?.name || "Landlord unavailable"}</p>{landlord?.email && <p className="mt-3 flex items-center gap-2 text-sm text-[#756A60]"><Mail className="h-4 w-4 text-[#8B735B]" />{landlord.email}</p>}{landlord?.mobile && <p className="mt-2 flex items-center gap-2 text-sm text-[#756A60]"><Phone className="h-4 w-4 text-[#8B735B]" />{landlord.mobile}</p>}</div></div></section>
 
-        <section className={sectionClass}><h2 className={headingClass}>2. Related Case</h2><div className="mt-5 grid gap-5 md:grid-cols-2"><div><p className="text-xs font-medium text-[#756A60]">Appeal Type</p><p className="mt-2 text-sm font-black text-[#302820]">{appealType}</p><p className="mt-5 text-xs font-medium text-[#756A60]">Apartment</p><p className="mt-2 text-sm font-black text-[#302820]">{context.apartment?.title || String(context.source?.apartment_title ?? "Apartment unavailable")}</p>{context.apartment && <p className="mt-1 text-xs text-[#756A60]">{formatApartmentLocation(context.apartment) || "Location not provided"}</p>}</div><div><p className="text-xs font-medium text-[#756A60]">{selectedAppeal.report_id ? "Related Report" : selectedAppeal.violation_id ? "Related Violation" : "Related Record"}</p><p className="mt-2 text-sm font-black text-[#302820]">{selectedAppeal.report_id ? relatedReportTitle : selectedAppeal.violation_id ? context.violation?.mode === "notice" ? "Administrative notice" : "Administrative violation" : String(context.source?.related_label ?? "Unavailable")}</p>{(selectedAppeal.report_id || selectedAppeal.violation_id) && <p className="mt-1 break-all text-[10px] text-[#756A60]">Record ID: {selectedAppeal.report_id || selectedAppeal.violation_id}</p>}</div></div><div className="mt-5 flex flex-wrap gap-3">{context.report && <Button variant="outline" onClick={() => { setSelectedReport(context.report!); setActiveSection("reports"); }} className="border-[#D8C5B1] font-bold text-[#6F4E37]"><Eye className="mr-2 h-4 w-4" />View Report</Button>}{context.apartmentId && <Button variant="outline" onClick={() => navigate(`/admin/apartment/${context.apartmentId}`, { state: { returnTo: "/dashboard?section=appeals", backLabel: "Back to Appeals" } })} className="border-[#D8C5B1] font-bold text-[#6F4E37]"><Building2 className="mr-2 h-4 w-4" />View Apartment</Button>}</div></section>
+        <section className={sectionClass}><h2 className={headingClass}>2. Related Case</h2><div className="mt-5 grid gap-5 md:grid-cols-2"><div><p className="text-xs font-medium text-[#756A60]">Appeal Type</p><p className="mt-2 text-sm font-black text-[#302820]">{appealType}</p><p className="mt-5 text-xs font-medium text-[#756A60]">Apartment</p><p className="mt-2 text-sm font-black text-[#302820]">{context.apartment?.title || String(context.source?.apartment_title ?? "Apartment unavailable")}</p>{context.apartment && <p className="mt-1 text-xs text-[#756A60]">{formatApartmentLocation(context.apartment) || "Location not provided"}</p>}</div><div><p className="text-xs font-medium text-[#756A60]">{selectedAppeal.report_id ? "Related Report" : selectedAppeal.violation_id ? "Related Violation" : "Related Record"}</p><p className="mt-2 text-sm font-black text-[#302820]">{selectedAppeal.report_id ? relatedReportTitle : selectedAppeal.violation_id ? context.violation?.mode === "notice" ? "Administrative notice" : "Administrative violation" : String(context.source?.related_label ?? "Unavailable")}</p>{(selectedAppeal.report_id || selectedAppeal.violation_id) && <p className="mt-1 break-all text-[10px] text-[#756A60]">Record ID: {selectedAppeal.report_id || selectedAppeal.violation_id}</p>}</div></div><div className="mt-5 flex flex-wrap gap-3">{context.report && <Button variant="outline" onClick={() => { setSelectedReport(context.report!); setActiveSection("reports"); }} className="border-[#D8C5B1] font-bold text-[#6F4E37]"><Eye className="mr-2 h-4 w-4" />View Report</Button>}{context.apartmentId && <Button variant="outline" onClick={() => navigate(`${apartmentDetailBasePath}/${context.apartmentId}`, { state: { returnTo: `${portalBasePath}?section=appeals`, backLabel: "Back to Appeals" } })} className="border-[#D8C5B1] font-bold text-[#6F4E37]"><Building2 className="mr-2 h-4 w-4" />View Apartment</Button>}</div></section>
 
         <section className={sectionClass}><h2 className={headingClass}>3. Appeal Reason</h2><div className="mt-5"><p className="text-xs font-medium text-[#756A60]">Reason</p><p className="mt-2 whitespace-pre-wrap text-sm text-[#302820]">{selectedAppeal.reason || "—"}</p>{selectedAppeal.description && <div className="mt-5 border-t border-[#E8DED1] pt-5"><p className="text-[10px] font-black uppercase tracking-wide text-[#756A60]">Landlord&apos;s Explanation</p><p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[#302820]">{selectedAppeal.description}</p></div>}</div></section>
 
@@ -3020,7 +3025,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                   const context = getAppealContext(selectedAppeal);
                   const contact = getAppealMetadata(selectedAppeal, "contact");
                   return <div className="grid gap-3 rounded-lg border border-blue-100 bg-blue-50/50 p-4 sm:grid-cols-2">
-                    <div><p className="text-[10px] font-black uppercase text-blue-500">Apartment</p><p className="mt-1 text-sm font-bold text-slate-800">{context.apartment?.title || String(context.source?.apartment_title ?? "Unavailable")}</p>{context.apartmentId && <Button size="sm" variant="outline" onClick={() => navigate(`/admin/apartment/${context.apartmentId}`, { state: { returnTo: "/dashboard?section=appeals", backLabel: "Back to Appeals" } })} className="mt-2 h-8 border-blue-200 text-[10px] font-black text-blue-700"><Eye className="mr-1 h-3 w-3" />Open Apartment</Button>}</div>
+                    <div><p className="text-[10px] font-black uppercase text-blue-500">Apartment</p><p className="mt-1 text-sm font-bold text-slate-800">{context.apartment?.title || String(context.source?.apartment_title ?? "Unavailable")}</p>{context.apartmentId && <Button size="sm" variant="outline" onClick={() => navigate(`${apartmentDetailBasePath}/${context.apartmentId}`, { state: { returnTo: `${portalBasePath}?section=appeals`, backLabel: "Back to Appeals" } })} className="mt-2 h-8 border-blue-200 text-[10px] font-black text-blue-700"><Eye className="mr-1 h-3 w-3" />Open Apartment</Button>}</div>
                     <div><p className="text-[10px] font-black uppercase text-blue-500">Related record</p><p className="mt-1 break-all text-xs font-bold text-slate-800">{selectedAppeal.violation_id ? `${context.violation?.mode === "notice" ? "Notice" : "Violation"}: ${selectedAppeal.violation_id}` : selectedAppeal.report_id ? `Report: ${selectedAppeal.report_id}` : String(context.source?.related_label ?? "Admin message")}</p>{context.report && <Button size="sm" variant="outline" onClick={() => { setSelectedReport(context.report!); setActiveSection("reports"); }} className="mt-2 h-8 border-blue-200 text-[10px] font-black text-blue-700"><Flag className="mr-1 h-3 w-3" />Open Report</Button>}</div>
                     <div><p className="text-[10px] font-black uppercase text-blue-500">Contact information</p><p className="mt-1 break-all text-xs font-bold text-slate-800">{String(contact?.value ?? landlordMap.get(selectedAppeal.landlord_id ?? "")?.email ?? "Not provided")}</p></div>
                   <div><p className="text-[10px] font-black uppercase text-blue-500">Submitted</p><p className="mt-1 text-xs font-bold text-slate-800">{formatOptionalDate(selectedAppeal.submitted_at ?? selectedAppeal.created_at, { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p></div>
@@ -3455,7 +3460,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                 <h1 className="truncate text-2xl font-black text-slate-950 md:text-3xl">{selectedLandlord.name}</h1>
                 <Badge className="border border-[#E8DED1] bg-[#FAF8F5] text-xs font-bold text-[#6F4E37]">
                   {verified ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : <Clock className="mr-1 h-3.5 w-3.5" />}
-                  {verified ? "Verified" : "Pending Review"}
+                  {getLandlordVerificationStatus(selectedLandlord)}
                 </Badge>
               </div>
               <p className="mt-1 truncate text-sm font-medium text-slate-600">{selectedLandlord.email}</p>
@@ -3480,7 +3485,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
         <section className="border-b border-[#E8DED1] pb-5">
           <h2 className="mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#8B735B]"><Shield className="h-4 w-4" />Verification Details</h2>
           <div className="grid gap-5 rounded-xl border border-[#E8DED1] bg-white p-5 sm:grid-cols-3">
-            <div><p className="text-xs font-semibold text-slate-500">Verification Status</p><Badge className="mt-3 border border-[#E8DED1] bg-[#FAF8F5] text-xs font-bold text-[#6F4E37]">{verified ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : <Clock className="mr-1 h-3.5 w-3.5" />}{verified ? "Verified" : "Pending Review"}</Badge></div>
+            <div><p className="text-xs font-semibold text-slate-500">Verification Status</p><Badge className="mt-3 border border-[#E8DED1] bg-[#FAF8F5] text-xs font-bold text-[#6F4E37]">{verified ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : <Clock className="mr-1 h-3.5 w-3.5" />}{getLandlordVerificationStatus(selectedLandlord)}</Badge></div>
             <div className="border-[#E8DED1] sm:border-l sm:pl-5"><p className="text-xs font-semibold text-slate-500">Document Type</p><p className="mt-2 text-base font-black text-slate-900">Business Permit</p><p className="mt-1 text-sm font-medium text-slate-600">Reference: {selectedLandlordDetails.profile?.business_permit_number || selectedLandlordDetails.profile?.permit_number || selectedLandlord.permit_number || selectedLandlord.permitNumber || "Not provided"}</p><p className="mt-1 text-xs font-medium text-slate-500">Submitted: {formatOptionalDate(selectedLandlordDetails.profile?.created_at || selectedLandlord.created_at as string | undefined, { month: "short", day: "numeric", year: "numeric" })}</p><Badge className="mt-2 border border-[#E8DED1] bg-[#FAF8F5] text-[10px] font-bold text-[#6F4E37]">{selectedLandlordDetails.profile?.verification_document_url ? "Submitted for review" : "File not submitted"}</Badge>{selectedLandlordDetails.profile?.verification_document_url ? <a href={selectedLandlordDetails.profile.verification_document_url} target="_blank" rel="noreferrer" className="mt-3 flex h-9 w-fit items-center rounded-lg border border-[#D8C5B1] bg-white px-3 text-xs font-bold text-[#6F4E37] transition hover:bg-[#FAF8F5]"><FileText className="mr-1.5 h-3.5 w-3.5" />View Document</a> : <p className="mt-3 text-xs font-medium text-amber-700">No permit file was uploaded.</p>}</div>
             <div className="border-[#E8DED1] sm:border-l sm:pl-5"><p className="text-xs font-semibold text-slate-500">Document Type</p><p className="mt-2 text-base font-black text-slate-900">Valid ID</p><p className="mt-1 text-sm font-medium text-slate-600">Reference: {selectedLandlordDetails.profile?.id_number || "Not provided"}</p><p className="mt-1 text-xs font-medium text-slate-500">Submitted: {formatOptionalDate(selectedLandlordDetails.profile?.created_at || selectedLandlord.created_at as string | undefined, { month: "short", day: "numeric", year: "numeric" })}</p><Badge className="mt-2 border border-[#E8DED1] bg-[#FAF8F5] text-[10px] font-bold text-[#6F4E37]">{selectedLandlordDetails.profile?.id_document_url ? "Submitted for review" : "File not submitted"}</Badge>{selectedLandlordDetails.profile?.id_document_url ? <a href={selectedLandlordDetails.profile.id_document_url} target="_blank" rel="noreferrer" className="mt-3 flex h-9 w-fit items-center rounded-lg border border-[#D8C5B1] bg-white px-3 text-xs font-bold text-[#6F4E37] transition hover:bg-[#FAF8F5]"><FileText className="mr-1.5 h-3.5 w-3.5" />View Document</a> : <p className="mt-3 text-xs font-medium text-amber-700">No ID file was uploaded.</p>}</div>
           </div>
@@ -3516,7 +3521,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
 
         <header className="flex min-w-0 items-center gap-4 border-b border-[#E8DED1] pb-5">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#8B735B] text-xl font-black text-white">{subject?.name?.[0]?.toUpperCase() ?? violationModal.landlordName?.[0]?.toUpperCase() ?? "L"}</div>
-          <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h1 className="truncate text-2xl font-black text-slate-950 md:text-3xl">{subject?.name || violationModal.landlordName || "Landlord"}</h1>{subject && <Badge className="border border-[#E8DED1] bg-[#FAF8F5] text-xs font-bold text-[#6F4E37]">{subject.isVerified || subject.is_verified ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : <Clock className="mr-1 h-3.5 w-3.5" />}{subject.isVerified || subject.is_verified ? "Verified" : "Pending Review"}</Badge>}</div><p className="mt-1 truncate text-sm font-medium text-slate-600">{subject?.email || "Email unavailable"}</p></div>
+          <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h1 className="truncate text-2xl font-black text-slate-950 md:text-3xl">{subject?.name || violationModal.landlordName || "Landlord"}</h1>{subject && <Badge className="border border-[#E8DED1] bg-[#FAF8F5] text-xs font-bold text-[#6F4E37]">{subject.isVerified || subject.is_verified ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : <Clock className="mr-1 h-3.5 w-3.5" />}{getLandlordVerificationStatus(subject)}</Badge>}</div><p className="mt-1 truncate text-sm font-medium text-slate-600">{subject?.email || "Email unavailable"}</p></div>
         </header>
 
         <section className="rounded-xl border border-[#E8DED1] bg-white p-4 sm:p-5">
@@ -3534,7 +3539,7 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
 
             {isViolation && <div className="space-y-2"><label htmlFor="violation-expiration" className="text-xs font-black uppercase tracking-wide text-[#6F4E37]">Days Until Expiration</label><input id="violation-expiration" type="number" min="1" max="365" value={vExpirationDays} step="1" onChange={(e) => setVExpirationDays(Number(e.target.value))} disabled={isIssuingViolation} placeholder="Days" className="h-11 w-full rounded-lg border border-[#E8DED1] bg-white px-4 text-sm font-bold text-slate-900 outline-none transition focus:border-[#8B735B] focus:ring-2 focus:ring-[#EEE6DC] disabled:opacity-60"/><p className="text-xs font-medium text-slate-500">Number of days before this violation expires.<br />Enter a whole number from 1 to 365.</p></div>}
 
-            <div className="flex gap-3 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] p-4"><AlertTriangle className="h-5 w-5 shrink-0 text-[#8B735B]" /><p className="text-sm font-semibold leading-5 text-[#756A60]">{isViolation ? "This action will be recorded in the landlord's administrative record." : "This notice will be sent to the landlord as a formal warning on record."}</p></div>
+            <div className="flex gap-3 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] p-4"><AlertTriangle className="h-5 w-5 shrink-0 text-[#8B735B]" /><p className="text-sm font-semibold leading-5 text-[#756A60]">{violationModal.reportId ? `This ${isViolation ? "violation" : "notice"} will be recorded and will mark the linked report as resolved.` : isViolation ? "This action will be recorded in the landlord's administrative record." : "This notice will be sent to the landlord as a formal warning on record."}</p></div>
           </div>
 
           <div className="mt-5 grid gap-3 border-t border-[#E8DED1] pt-5 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]"><Button onClick={() => void issueViolation()} disabled={isIssuingViolation} className="h-11 rounded-lg bg-[#8B735B] font-black text-white hover:bg-[#765F4A] disabled:cursor-not-allowed disabled:opacity-60">{isIssuingViolation ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Saving...</> : isViolation ? <><ShieldAlert className="mr-2 h-4 w-4" />Issue Violation</> : <><BellRing className="mr-2 h-4 w-4" />Send Notice</>}</Button><Button type="button" variant="outline" onClick={closeAction} disabled={isIssuingViolation} className="h-11 rounded-lg border-[#E8DED1] bg-white font-black text-slate-700 hover:bg-[#FAF8F5] disabled:opacity-60">Cancel</Button></div>
