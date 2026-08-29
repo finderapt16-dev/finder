@@ -1,14 +1,13 @@
-const VERSION = "v5";
+const VERSION = "v6";
 const SHELL_CACHE = `aptfindr-shell-${VERSION}`;
 const RUNTIME_CACHE = `aptfindr-runtime-${VERSION}`;
 const APP_SHELL = [
   "/",
   "/index.html",
   "/offline.html",
-  "/manifest.webmanifest",
-  "/icon.svg",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
+  "/manifest.webmanifest?v=6",
+  "/icon.svg?v=6",
+  "/aptfindr-logo-exact.svg?v=6",
 ];
 
 async function cacheAppShell() {

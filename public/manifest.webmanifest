@@ -14,7 +14,7 @@
   "categories": ["lifestyle", "productivity"],
   "icons": [
     {
-      "src": "/aptfindr-logo-exact.svg",
+      "src": "/aptfindr-logo-exact.svg?v=6",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
