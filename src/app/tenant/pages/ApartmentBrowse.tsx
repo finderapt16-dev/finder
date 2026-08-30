@@ -71,7 +71,7 @@ import {
   DEFAULT_LA_PAZ_MAP_CENTER,
   hasValidApartmentCoordinates,
 } from "@/app/shared/utils/mapCoordinates";
-import { rankApartments, type TenantPreferences } from "@/app/shared/utils/rankingEngine";
+import { hasMeaningfulPreferences, rankApartments, type TenantPreferences } from "@/app/shared/utils/rankingEngine";
 import { geocodeLocationWithinLaPaz, GeocodingError, type GeocodedLocation } from "@/app/shared/services/geocodingService";
 import { findNearbyApartments, formatDistance, parseNearbySearchIntent } from "@/app/shared/utils/geospatialSearch";
 import { toast } from "sonner";
@@ -205,7 +205,7 @@ function TenantBrowse() {
   const [favoriteRows, setFavoriteRows] = useState<DashboardFavoriteRow[]>([]);
   const [ratingRows, setRatingRows] = useState<ApartmentRatingRow[]>([]);
   const [ratingsLoading, setRatingsLoading] = useState(true);
-  const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [preferencesOpen, setPreferencesOpen] = useState(searchParams.get("preferences") === "open");
   const [savedPreferences, setSavedPreferences] = useState(defaultTenantPreferences);
   const [activeNearbySearch, setActiveNearbySearch] = useState<{ target: string; location: GeocodedLocation } | null>(null);
   const [nearbySearchLoading, setNearbySearchLoading] = useState(false);
@@ -356,8 +356,8 @@ function TenantBrowse() {
 
       if (isTenant) {
         const preferences: TenantPreferences = {
-          maxBudget: savedPreferences.maxBudget || undefined,
-          preferredArea: savedPreferences.preferredArea || undefined,
+          maxBudget: savedPreferences.saveBudgetPreferences ? savedPreferences.maxBudget || undefined : undefined,
+          preferredArea: savedPreferences.recommendationLocation ? savedPreferences.preferredArea || undefined : undefined,
           minBedrooms: savedPreferences.minBedrooms,
           petFriendly: savedPreferences.petFriendly,
           parking: savedPreferences.parking,
@@ -365,7 +365,13 @@ function TenantBrowse() {
           wifi: savedPreferences.wifi,
           ac: savedPreferences.ac,
           laundryArea: savedPreferences.laundryArea,
+          recommendationLocation: savedPreferences.recommendationLocation,
+          saveBudgetPreferences: savedPreferences.saveBudgetPreferences,
         };
+
+        if (!hasMeaningfulPreferences(preferences)) {
+          return [...filtered].sort((a, b) => getApartmentPublishedTime(b) - getApartmentPublishedTime(a));
+        }
 
         const apartmentViewCounts = new globalThis.Map<string, number>();
         viewRows.forEach((row) => {
@@ -517,7 +523,7 @@ function TenantBrowse() {
         sortBy,
         saveBudgetPreferences: activeBudgetFilter,
       });
-      setSavedPreferences((current) => ({ ...current, maxBudget: priceRange[1], minBedrooms: bedrooms, petFriendly, parking, furnished }));
+      setSavedPreferences((current) => ({ ...current, maxBudget: priceRange[1], minBedrooms: bedrooms, petFriendly, parking, furnished, saveBudgetPreferences: activeBudgetFilter }));
       toast.success("Preferences saved for recommendations.");
       setPreferencesOpen(false);
     } catch (error) {

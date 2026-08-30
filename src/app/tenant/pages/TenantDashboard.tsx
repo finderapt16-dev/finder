@@ -32,7 +32,7 @@ import { uploadReportEvidence } from "@/app/shared/services/reportEvidenceServic
 import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
 import { getImageUrl } from "@/app/shared/utils/images";
 import { getAvailableRoomCount, isTenantVisibleApartment } from "@/app/shared/utils/listingVisibility";
-import { rankApartments, type TenantPreferences } from "@/app/shared/utils/rankingEngine";
+import { hasMeaningfulPreferences, rankApartments, type TenantPreferences } from "@/app/shared/utils/rankingEngine";
 import {
   AlertTriangle,
   Bell,
@@ -184,15 +184,8 @@ export function TenantDashboard() {
   });
 
   // ── Settings state ───────────────────────────────────────────────────────
-  const [preferredArea, setPreferredArea]     = useState("");
-  const [maxBudget, setMaxBudget]             = useState("0");
-  const [prefPetFriendly, setPrefPetFriendly] = useState(false);
-  const [prefParking, setPrefParking]         = useState(false);
-  const [prefFurnished, setPrefFurnished]     = useState(false);
-  const [prefWifi, setPrefWifi] = useState(false);
-  const [prefAc, setPrefAc] = useState(false);
-  const [prefLaundry, setPrefLaundry] = useState(false);
-  const [recommendationLocation, setRecommendationLocation] = useState(true);
+  const [tenantPreferences, setTenantPreferences] = useState<TenantPreferenceSettings>(defaultTenantPreferences);
+  const [preferencesLoading, setPreferencesLoading] = useState(true);
   const [dashboardFavoriteRows, setDashboardFavoriteRows] = useState<DashboardFavoriteRow[]>([]);
   const [dashboardViewRows, setDashboardViewRows] = useState<DashboardApartmentViewRow[]>([]);
   const [dashboardRatingRows, setDashboardRatingRows] = useState<ApartmentRatingRow[]>([]);
@@ -206,13 +199,7 @@ export function TenantDashboard() {
   } = useApartmentsContext();
 
   const applyTenantPreferences = (preferences: TenantPreferenceSettings) => {
-    setPreferredArea(preferences.preferredArea);
-    setMaxBudget(String(preferences.maxBudget || 0));
-    setPrefPetFriendly(preferences.petFriendly);
-    setPrefParking(preferences.parking);
-    setPrefFurnished(preferences.furnished);
-    setPrefWifi(preferences.wifi); setPrefAc(preferences.ac); setPrefLaundry(preferences.laundryArea);
-    setRecommendationLocation(preferences.recommendationLocation);
+    setTenantPreferences(preferences);
   };
 
   useEffect(() => {
@@ -252,18 +239,23 @@ export function TenantDashboard() {
   useEffect(() => {
     applyTenantPreferences(defaultTenantPreferences);
 
-    if (!user?.id || !isTenantRole(user.role)) return;
+    if (!user?.id || !isTenantRole(user.role)) {
+      setPreferencesLoading(false);
+      return;
+    }
 
     let mounted = true;
     const tenantId = user.id;
 
     void fetchTenantPreferences(tenantId)
       .then((preferences) => {
-        if (!mounted || !preferences) return;
-        applyTenantPreferences(preferences);
+        if (!mounted) return;
+        applyTenantPreferences(preferences ?? defaultTenantPreferences);
+        setPreferencesLoading(false);
       })
       .catch(() => {
         if (!mounted) return;
+        setPreferencesLoading(false);
         toast.error("Unable to load tenant preferences.");
       });
 
@@ -288,21 +280,27 @@ export function TenantDashboard() {
   }, [publishedApartments]);
 
   const tenantRankingPreferences = useMemo<TenantPreferences>(() => {
-    const parsedBudget = Number(maxBudget);
+    const parsedBudget = Number(tenantPreferences.maxBudget);
 
     return {
-      maxBudget: Number.isFinite(parsedBudget) && parsedBudget > 0 ? parsedBudget : undefined,
-      preferredArea: recommendationLocation && preferredArea.trim() ? preferredArea.trim() : undefined,
-      petFriendly: prefPetFriendly,
-      parking: prefParking,
-      furnished: prefFurnished,
-      wifi: prefWifi, ac: prefAc, laundryArea: prefLaundry,
+      maxBudget: tenantPreferences.saveBudgetPreferences && Number.isFinite(parsedBudget) && parsedBudget > 0 ? parsedBudget : undefined,
+      preferredArea: tenantPreferences.recommendationLocation && tenantPreferences.preferredArea.trim() ? tenantPreferences.preferredArea.trim() : undefined,
+      minBedrooms: tenantPreferences.minBedrooms,
+      petFriendly: tenantPreferences.petFriendly,
+      parking: tenantPreferences.parking,
+      furnished: tenantPreferences.furnished,
+      wifi: tenantPreferences.wifi,
+      ac: tenantPreferences.ac,
+      laundryArea: tenantPreferences.laundryArea,
+      recommendationLocation: tenantPreferences.recommendationLocation,
+      saveBudgetPreferences: tenantPreferences.saveBudgetPreferences,
     };
-  }, [maxBudget, preferredArea, recommendationLocation, prefPetFriendly, prefParking, prefFurnished, prefWifi, prefAc, prefLaundry]);
+  }, [tenantPreferences]);
+  const hasPersonalizationPreferences = hasMeaningfulPreferences(tenantRankingPreferences);
 
   // Personalized recommendations based on saved tenant preferences
   const suggestedApartments = useMemo(() => {
-    if (isTenantRole(user?.role)) {
+    if (isTenantRole(user?.role) && hasPersonalizationPreferences) {
       const apartmentViewCounts = new Map<string, number>();
       dashboardViewRows.forEach((row) => {
         const apartmentId = row.apartment_id ?? row.apartmentId ?? "";
@@ -321,8 +319,8 @@ export function TenantDashboard() {
         platformAverageRating: ratingSummary.platformAverage,
       }).slice(0, 6);
     }
-    return publishedApartments.slice(0, 6);
-  }, [dashboardFavoriteRows, dashboardRatingRows, dashboardViewRows, favoriteIds, publishedApartments, tenantRankingPreferences, user?.role]);
+    return [];
+  }, [dashboardFavoriteRows, dashboardRatingRows, dashboardViewRows, hasPersonalizationPreferences, publishedApartments, tenantRankingPreferences, user?.role]);
 
 
   // Popular apartments (most viewed, most favorited, highest engagement)
@@ -846,7 +844,7 @@ export function TenantDashboard() {
       )}
 
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <FeatureCard title="Suggested for You" description="Apartment recommendations based on your preferences and available listings." count={suggestedApartments.length} icon={Sparkles} section="suggested" accent="orange" />
+        <FeatureCard title={hasPersonalizationPreferences ? "Suggested for You" : "Find Apartments for You"} description={hasPersonalizationPreferences ? "Apartment suggestions based on your preferences." : "Set your preferences to receive personalized apartment suggestions."} count={suggestedApartments.length} icon={Sparkles} section="suggested" accent="orange" />
         <FeatureCard title="Popular Apartments" description="Apartments receiving more interest from AptFindr users through views and favorites." count={popularApartments.length} icon={TrendingUp} section="popular" accent="indigo" />
       </section>
 
@@ -972,17 +970,21 @@ export function TenantDashboard() {
         <div className="relative z-10 max-w-[58%] max-md:max-w-full">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e8ded1] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b735b] shadow-sm">
             <Sparkles className="h-4 w-4" />
-            Personalized Discovery
+            {hasPersonalizationPreferences ? "Personalized Discovery" : "Apartment Discovery"}
           </div>
-          <h2 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">Suggested for You</h2>
-          <p className="mt-3 text-base font-medium text-[#756a60]">Apartments that may match what you're looking for.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">{hasPersonalizationPreferences ? "Suggested for You" : "Find Apartments for You"}</h2>
+          <p className="mt-3 text-base font-medium text-[#756a60]">{hasPersonalizationPreferences ? "Apartment suggestions based on your preferences." : "Set your preferences to receive personalized apartment suggestions."}</p>
         </div>
         <div className="pointer-events-none absolute inset-y-0 right-3 hidden w-[43%] items-end text-[#b9a58f] md:flex"><SuggestedLineArt /></div>
       </section>
       <div className="flex justify-end">
         <Button onClick={() => navigate("/browse")} variant="outline" className="h-11 rounded-lg border-[#e8ded1] bg-white px-5 font-bold text-[#8b735b] hover:bg-[#faf8f5]">Browse All</Button>
       </div>
-      {suggestedApartments.length > 0 ? (
+      {preferencesLoading ? (
+        <div className="flex min-h-72 items-center justify-center rounded-lg border border-slate-200 bg-white"><Loader2 className="h-7 w-7 animate-spin text-[#8b735b]" /></div>
+      ) : !hasPersonalizationPreferences ? (
+        <EmptyState icon={Sparkles} message="Set your preferences to receive personalized apartment suggestions." actionLabel="Set Preferences" action={() => navigate("/browse?preferences=open")} />
+      ) : suggestedApartments.length > 0 ? (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {suggestedApartments.map((apartment) => (
             <div key={apartment.id} className="suggested-card relative">
@@ -994,9 +996,9 @@ export function TenantDashboard() {
       ) : (
         <EmptyState
           icon={Sparkles}
-          message="No recommendations available yet. Update your preferences to improve your matches."
-          actionLabel="Browse Apartments"
-          action={() => navigate("/browse")}
+          message="No apartments currently match your preferences."
+          actionLabel="Adjust Preferences"
+          action={() => navigate("/browse?preferences=open")}
         />
       )}
     </div>

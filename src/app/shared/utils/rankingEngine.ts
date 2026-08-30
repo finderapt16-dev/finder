@@ -45,6 +45,32 @@ export interface TenantPreferences {
   laundryArea?: boolean;
   kitchenAccess?: boolean;
   minBedrooms?: string;
+  recommendationLocation?: boolean;
+  saveBudgetPreferences?: boolean;
+}
+
+/** Whether the tenant has selected at least one real personalization signal. */
+export function hasMeaningfulPreferences(preferences?: TenantPreferences | null): boolean {
+  if (!preferences) return false;
+
+  const hasBudget = preferences.saveBudgetPreferences !== false
+    && Number.isFinite(Number(preferences.maxBudget))
+    && Number(preferences.maxBudget) > 0;
+  const hasLocation = preferences.recommendationLocation !== false
+    && Boolean(preferences.preferredArea?.trim());
+  const hasBedroomPreference = Boolean(preferences.minBedrooms && preferences.minBedrooms !== "any");
+  const hasAmenityPreference = Boolean(
+    preferences.petFriendly
+    || preferences.parking
+    || preferences.furnished
+    || preferences.wifi
+    || preferences.ac
+    || preferences.studyArea
+    || preferences.laundryArea
+    || preferences.kitchenAccess,
+  );
+
+  return hasBudget || hasLocation || hasBedroomPreference || hasAmenityPreference;
 }
 
 export interface RankingContext {
@@ -84,39 +110,27 @@ export function calculateRatingScore(
 // ============================================================================
 
 /**
- * Calculate location match score based on preferred area and La Paz bonus
+ * Calculate location match score from the tenant's preferred area. La Paz is
+ * an eligibility boundary, not a personalized preference signal.
  */
 function calculateLocationScore(
   apartment: Apartment,
   preferences?: TenantPreferences
 ): number {
-  let score = 0;
-
-  // Base: La Paz areas get highest score (primary market)
-  const isPrimaryArea = (location: string): boolean => {
-    const laPazAliases = ['la paz', 'lapaz', 'lapaz city'];
-    return laPazAliases.some(alias => location.toLowerCase().includes(alias));
-  };
-
-  const locationText = [apartment.address, apartment.city, apartment.state].filter(Boolean).join(' ');
-  if (isPrimaryArea(locationText)) {
-    score += 70; // La Paz apartments score high
-  } else {
-    score += 0; // Discovery is scoped to La Paz; no secondary-district bonus.
-  }
-
-  // Preferred area match
-  if (preferences?.preferredArea) {
-    const query = preferences.preferredArea.toLowerCase();
+  const preferredArea = preferences?.recommendationLocation === false
+    ? ""
+    : preferences?.preferredArea?.trim();
+  if (preferredArea) {
+    const query = preferredArea.toLowerCase();
     if (apartment.city.toLowerCase().includes(query) || 
         apartment.address.toLowerCase().includes(query)) {
-      score += 30; // Exact match bonus
+      return 100;
     } else if (apartment.description.toLowerCase().includes(query)) {
-      score += 15; // Mentioned in description
+      return 50;
     }
+    return 0;
   }
-
-  return Math.min(score, 100); // Cap at 100
+  return 50; // Neutral when location was not selected.
 }
 
 // ============================================================================
@@ -130,7 +144,7 @@ function calculateBudgetScore(
   apartment: Apartment,
   preferences?: TenantPreferences
 ): number {
-  if (!preferences?.maxBudget) {
+  if (preferences?.saveBudgetPreferences === false || !preferences?.maxBudget) {
     return 50; // Neutral if no preference
   }
 
