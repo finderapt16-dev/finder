@@ -1221,6 +1221,24 @@ export const fetchApartmentWithImages = async (id: string): Promise<Apartment | 
   return apartmentRowToApartment(data as ApartmentRow);
 };
 
+export type ApartmentDetailAccessState = 'accessible' | 'unavailable' | 'not_found';
+
+export const fetchApartmentDetailAccessState = async (id: string): Promise<ApartmentDetailAccessState> => {
+  const { data, error } = await supabase.rpc('get_apartment_detail_access_state', {
+    p_apartment_id: id,
+  });
+
+  if (error) {
+    throw new Error(unwrapErrorMessage(error, 'Unable to confirm apartment availability.'));
+  }
+
+  if (data === 'accessible' || data === 'unavailable' || data === 'not_found') {
+    return data;
+  }
+
+  throw new Error('Unable to confirm apartment availability.');
+};
+
 export const fetchApartmentInspectionDetails = async (id: string): Promise<ApartmentInspectionDetails | null> => {
   const { data, error } = await supabase
     .from('apartments')

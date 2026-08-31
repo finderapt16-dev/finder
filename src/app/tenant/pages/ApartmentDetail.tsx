@@ -25,7 +25,7 @@ import { useApartmentsContext } from "@/app/shared/contexts/ApartmentsContext";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
 import { isTenantRole } from "@/app/shared/services/authService";
 import type { Apartment, ApartmentRoom } from "@/app/shared/data/apartments";
-import { fetchApartmentWithImages, getLandlordVerification, persistApartmentImages, recordApartmentView, updateApartment } from "@/app/shared/data/apartments";
+import { fetchApartmentDetailAccessState, fetchApartmentWithImages, getLandlordVerification, persistApartmentImages, recordApartmentView, updateApartment, type ApartmentDetailAccessState } from "@/app/shared/data/apartments";
 import type { UploadedImage } from "@/app/shared/components/common/MultiImageUploader";
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import { createReport, fetchPublicLandlordById, type DashboardUserRow } from "@/app/shared/services/dashboardSupabaseService";
@@ -67,6 +67,7 @@ export function ApartmentDetail() {
   const [landlord, setLandlord] = useState<DashboardUserRow | null>(null);
   const [verified, setVerified] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [accessState, setAccessState] = useState<ApartmentDetailAccessState | "error" | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
   const [mobileNav, setMobileNav] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -94,10 +95,17 @@ export function ApartmentDetail() {
     const load = async () => {
       if (!id) return setLoading(false);
       setLoading(true);
+      setAccessState(null);
       try {
         const listing = await fetchApartmentWithImages(id);
         if (!active) return;
         setApartment(listing);
+        if (!listing) {
+          const state = await fetchApartmentDetailAccessState(id);
+          if (active) setAccessState(state);
+          return;
+        }
+        setAccessState("accessible");
         let landlordVerified = false;
         if (listing?.landlordId) {
           const [owner, isVerified] = await Promise.all([fetchPublicLandlordById(listing.landlordId), getLandlordVerification(listing.landlordId)]);
@@ -119,7 +127,7 @@ export function ApartmentDetail() {
         }
       } catch (error) {
         console.error("Failed to load apartment:", error);
-        if (active) setApartment(null);
+        if (active) { setApartment(null); setAccessState("error"); }
       } finally { if (active) setLoading(false); }
     };
     void load();
@@ -191,7 +199,9 @@ export function ApartmentDetail() {
   };
 
   if (loading) return <div className="min-h-screen bg-slate-50 grid place-items-center text-sm font-semibold text-slate-500">Loading apartment details...</div>;
-  if (!apartment) return <div className="min-h-screen bg-slate-50 grid place-items-center p-6 text-center"><div><Building2 className="mx-auto mb-3 h-10 w-10 text-slate-300" /><h1 className="text-2xl font-bold">Apartment not found</h1><Button className="mt-5" onClick={() => navigate("/browse")}>Back to Browse</Button></div></div>;
+  if (!apartment && accessState === "not_found") return <div className="min-h-screen bg-slate-50 grid place-items-center p-6 text-center"><div><Building2 className="mx-auto mb-3 h-10 w-10 text-slate-300" /><h1 className="text-2xl font-bold">Apartment not found</h1><Button className="mt-5" onClick={() => navigate("/browse")}>Back to Browse</Button></div></div>;
+  if (!apartment && accessState === "unavailable") return <div className="min-h-screen bg-slate-50 grid place-items-center p-6 text-center"><div><AlertTriangle className="mx-auto mb-3 h-10 w-10 text-[#8B735B]" /><h1 className="text-2xl font-bold">Listing not available</h1><p className="mt-2 max-w-md text-sm font-medium text-slate-500">This apartment is not currently available to Tenant users.</p><Button className="mt-5" onClick={handleBack}>Go Back</Button></div></div>;
+  if (!apartment) return <div className="min-h-screen bg-slate-50 grid place-items-center p-6 text-center"><div><AlertTriangle className="mx-auto mb-3 h-10 w-10 text-[#8B735B]" /><h1 className="text-2xl font-bold">Unable to load apartment</h1><p className="mt-2 max-w-md text-sm font-medium text-slate-500">Please check your connection and try again.</p><Button className="mt-5" onClick={() => navigate("/browse")}>Back to Browse</Button></div></div>;
   if (!ownListing && user?.role !== "admin" && !isTenantVisibleApartment({ ...apartment, landlordVerified: verified })) return <div className="min-h-screen bg-slate-50 grid place-items-center p-6 text-center"><div><AlertTriangle className="mx-auto mb-3 h-10 w-10 text-[#8B735B]" /><h1 className="text-2xl font-bold">Listing not available</h1><p className="mt-2 max-w-md text-sm font-medium text-slate-500">This apartment becomes visible after the property is approved, published, active, and its landlord is verified.</p><Button className="mt-5" onClick={handleBack}>Go Back</Button></div></div>;
 
   const locationText = formatApartmentLocation(apartment);
