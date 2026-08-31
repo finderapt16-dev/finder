@@ -6,7 +6,6 @@ import { fetchAdminAnalyticsData, type AdminAnalyticsData } from "@/app/shared/s
 import { supabase } from "@/lib/supabaseClient";
 
 type PeriodDays = 7 | 30 | 90;
-type PeriodSelection = PeriodDays | "custom";
 type Bucket = { key: string; label: string; start: number; end: number };
 const MANILA = "Asia/Manila";
 const BROWN = "#8B735B";
@@ -18,14 +17,11 @@ function dateKey(value: Date | string | number) {
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 const utc = (key: string) => Date.parse(`${key}T00:00:00.000Z`);
-function bucketsFor(period: PeriodDays, customStart?: string, customEnd?: string): Bucket[] {
+function bucketsFor(period: PeriodDays): Bucket[] {
   const today = utc(dateKey(new Date()));
-  const requestedStart = customStart ? utc(customStart) : Number.NaN;
-  const requestedEnd = customEnd ? utc(customEnd) : Number.NaN;
-  const custom = Number.isFinite(requestedStart) && Number.isFinite(requestedEnd) && requestedStart <= requestedEnd;
-  const start = custom ? requestedStart : today - (period - 1) * 86_400_000;
-  const end = custom ? Math.min(requestedEnd, today) : today;
-  const days = Math.max(1, Math.round((end - start) / 86_400_000) + 1);
+  const start = today - (period - 1) * 86_400_000;
+  const end = today;
+  const days = period;
   const size = days <= 7 ? 1 : days <= 30 ? 3 : 7;
   const result: Bucket[] = [];
   for (let offset = 0; offset < days; offset += size) {
@@ -49,15 +45,14 @@ function Metric({ label, value, color="#302820", icon }: { label:string; value:n
 function Row({ label, value, total, color, compact=false }: { label:string; value:number; total:number; color:string; compact?:boolean }) { return <div><div className={`flex justify-between font-semibold text-[#5F5A55] ${compact?"text-[9px]":"text-[10px]"}`}><span>{label}</span><strong>{value} ({percent(value,total)}%)</strong></div><div className={`${compact?"mt-0.5 h-1.5":"mt-1 h-2"} overflow-hidden rounded bg-[#F3EFEA]`}><span className="block h-full rounded" style={{width:`${percent(value,total)}%`,backgroundColor:color}}/></div></div>; }
 
 export function AdminAnalyticsOverview() {
-  const [data,setData]=useState<AdminAnalyticsData|null>(null),[period,setPeriod]=useState<PeriodSelection>(30);
-  const [customStart,setCustomStart]=useState(dateKey(Date.now()-29*86_400_000)),[customEnd,setCustomEnd]=useState(dateKey(new Date()));
+  const [data,setData]=useState<AdminAnalyticsData|null>(null),[period,setPeriod]=useState<PeriodDays>(30);
   const [loading,setLoading]=useState(true),[error,setError]=useState<string|null>(null);
   const active=useRef(false),queued=useRef(false),mounted=useRef(true),reduced=useReducedMotion();
   const load=useCallback(async()=>{if(active.current){queued.current=true;return;}active.current=true;setLoading(true);setError(null);try{const next=await fetchAdminAnalyticsData();if(mounted.current)setData(next);}catch(cause){if(mounted.current)setError(cause instanceof Error?cause.message:"Analytics could not be refreshed.");}finally{active.current=false;if(mounted.current)setLoading(false);if(queued.current&&mounted.current){queued.current=false;void load();}}},[]);
   useEffect(()=>{mounted.current=true;void load();return()=>{mounted.current=false;}},[load]);
   useEffect(()=>{let timer:ReturnType<typeof setTimeout>|null=null;const refresh=()=>{if(timer)clearTimeout(timer);timer=setTimeout(()=>void load(),180)};const channel=supabase.channel("admin-analytics-sync").on("postgres_changes",{event:"*",schema:"public",table:"apartments"},refresh).on("postgres_changes",{event:"*",schema:"public",table:"apartment_rooms"},refresh).on("postgres_changes",{event:"*",schema:"public",table:"apartment_views"},refresh).on("postgres_changes",{event:"*",schema:"public",table:"favorites"},refresh).on("postgres_changes",{event:"*",schema:"public",table:"apartment_ratings"},refresh).on("postgres_changes",{event:"UPDATE",schema:"public",table:"app_users"},refresh).subscribe();return()=>{if(timer)clearTimeout(timer);void supabase.removeChannel(channel);}},[load]);
   const a=useMemo(()=>{
-    const buckets=period==="custom"?bucketsFor(30,customStart,customEnd):bucketsFor(period);
+    const buckets=bucketsFor(period);
     const apartments=(data?.apartments??[]).filter(item=>!item.deleted_at&&!item.is_archived),ids=new Set(apartments.map(item=>item.id));
     const submitted=buckets.map(bucket=>apartments.filter(item=>inBucket(item.created_at,bucket)).length),published=buckets.map(bucket=>apartments.filter(item=>inBucket(item.published_at,bucket)).length);
     const views=(data?.views??[]).filter(item=>ids.has(item.apartment_id)&&buckets.some(bucket=>inBucket(item.viewed_at,bucket))),favorites=(data?.favorites??[]).filter(item=>ids.has(item.apartment_id)&&buckets.some(bucket=>inBucket(item.created_at,bucket)));
@@ -67,11 +62,10 @@ export function AdminAnalyticsOverview() {
     const landlords=data?.users??[],category=(item:(typeof landlords)[number])=>{if(item.is_verified)return 0;const values=[item.status,item.verification_status,item.landlord_status].map(v=>String(v??"").toLowerCase());if(values.includes("rejected"))return 2;if(values.some(v=>["pending","unverified","under_review"].includes(v)))return 1;return 3;},verification=[0,1,2,3].map(index=>landlords.filter(item=>category(item)===index).length);
     const ratings=(data?.ratings??[]).filter(item=>ids.has(item.apartment_id)&&Number(item.rating)>=1&&Number(item.rating)<=5);
     return {buckets,apartments,submitted,published,views:viewTrend.reduce((x,y)=>x+y,0),favorites:favorites.length,viewTrend,favoriteTrend,available:available.length,rents,listing,landlords,verification,ratings};
-  },[customEnd,customStart,data,period]);
+  },[data,period]);
   const average=a.ratings.length?a.ratings.reduce((sum,item)=>sum+Number(item.rating),0)/a.ratings.length:0,distribution=[5,4,3,2,1].map(star=>a.ratings.filter(item=>Number(item.rating)===star).length);
   return <motion.section initial={reduced?false:{opacity:0,y:8}} animate={{opacity:1,y:0}} className="rounded-xl border border-[#E8DED1] bg-[#FCFAF7] p-4 sm:p-5">
-    <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:justify-between"><div><div className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-[#8B735B]"/><h2 className="text-sm font-black uppercase tracking-wide text-[#302820]">Descriptive Analytics</h2></div><p className="mt-1 text-xs text-[#756A60]">Descriptive insights based on recorded AptFindr platform activity.</p></div><div className="flex flex-wrap gap-1 self-start rounded-lg border border-[#E8DED1] bg-white p-1">{[7,30,90].map(days=><button key={days} onClick={()=>setPeriod(days as PeriodDays)} className={`h-8 rounded-md px-3 text-xs font-bold ${period===days?"bg-[#8B735B] text-white":"text-[#756A60] hover:bg-[#FAF8F5]"}`}>{days} Days</button>)}<button onClick={()=>setPeriod("custom")} className={`h-8 rounded-md px-3 text-xs font-bold ${period==="custom"?"bg-[#8B735B] text-white":"text-[#756A60] hover:bg-[#FAF8F5]"}`}>Custom</button><Button variant="ghost" size="sm" disabled={loading} onClick={()=>void load()} className="h-8 px-2"><RefreshCw className={`h-3.5 w-3.5 ${loading?"animate-spin":""}`}/></Button></div></div>
-    {period==="custom"&&<div className="mb-4 flex flex-wrap justify-end gap-2"><input aria-label="Analytics start date" type="date" value={customStart} max={customEnd} onChange={e=>setCustomStart(e.target.value)} className="h-9 rounded-md border border-[#E8DED1] px-3 text-xs font-bold"/><input aria-label="Analytics end date" type="date" value={customEnd} min={customStart} max={dateKey(new Date())} onChange={e=>setCustomEnd(e.target.value)} className="h-9 rounded-md border border-[#E8DED1] px-3 text-xs font-bold"/></div>}
+    <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:justify-between"><div><div className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-[#8B735B]"/><h2 className="text-sm font-black uppercase tracking-wide text-[#302820]">Descriptive Analytics</h2></div><p className="mt-1 text-xs text-[#756A60]">Descriptive insights based on recorded AptFindr platform activity.</p></div><div className="flex flex-wrap gap-1 self-start rounded-lg border border-[#E8DED1] bg-white p-1">{[7,30,90].map(days=><button key={days} onClick={()=>setPeriod(days as PeriodDays)} className={`h-8 rounded-md px-3 text-xs font-bold ${period===days?"bg-[#8B735B] text-white":"text-[#756A60] hover:bg-[#FAF8F5]"}`}>{days} Days</button>)}<Button variant="ghost" size="sm" disabled={loading} onClick={()=>void load()} className="h-8 px-2"><RefreshCw className={`h-3.5 w-3.5 ${loading?"animate-spin":""}`}/></Button></div></div>
     {loading&&!data?<div className="flex min-h-64 items-center justify-center text-xs text-[#756A60]"><RefreshCw className="mr-2 h-4 w-4 animate-spin"/>Loading analytics...</div>:!data&&error?<div className="rounded-lg border border-red-200 bg-red-50 p-5 text-center text-xs font-semibold text-red-700">{error}</div>:<>{error&&<p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error} Existing analytics remain visible.</p>}<div className="grid gap-3 xl:grid-cols-12">
       <Panel title="Listing Activity" subtitle="Selected period" className="xl:col-span-5"><div className="mt-4 grid grid-cols-2 gap-3"><Metric label="Submitted Listings" value={a.submitted.reduce((x,y)=>x+y,0)} color={BROWN}/><Metric label="Published Listings" value={a.published.reduce((x,y)=>x+y,0)} color={GREEN}/></div><Legend first="Submitted" second="Published"/><Trend buckets={a.buckets} first={a.submitted} second={a.published} label="Listing activity trend"/></Panel>
       <Panel title="Availability & Price Range" subtitle="Current database state" className="xl:col-span-3"><div className="mt-4 rounded-lg bg-[#FAF8F5] p-3"><Home className="h-4 w-4 text-[#8B735B]"/><strong className="mt-2 block text-2xl text-[#302820]">{a.available}</strong><span className="text-[10px] font-bold text-[#756A60]">Available Rooms</span></div><div className="mt-3 grid grid-cols-2 gap-3 border-t border-[#E8DED1] pt-3 text-xs"><Small label="Lowest Rent" value={a.rents.length?peso(Math.min(...a.rents)):"—"}/><Small label="Highest Rent" value={a.rents.length?peso(Math.max(...a.rents)):"—"}/></div></Panel>
