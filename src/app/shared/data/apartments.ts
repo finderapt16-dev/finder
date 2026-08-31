@@ -307,7 +307,11 @@ export const apartmentRowToApartment = (row: ApartmentRow): Apartment => {
     sqft: toNumber(room.sqft),
     maxOccupants: toNumber(room.max_occupants, 1),
     status: toApartmentStatus(room.status ?? (room.is_occupied ? 'occupied' : 'available')),
-    isOccupied: toApartmentStatus(room.status ?? (room.is_occupied ? 'occupied' : 'available')) === 'occupied',
+    // Keep the persisted occupancy flag independent from the room status. Tenant
+    // visibility requires both `status = available` and `is_occupied = false`;
+    // deriving one from the other can make an inconsistent/transitioning room
+    // appear available on the client even though the database correctly hides it.
+    isOccupied: room.is_occupied === true,
     hasPrivateBath: toBoolean(room.has_private_bath),
     bathroomType: toString(room.bathroom_type),
     sharedBathLocation: toString(room.shared_bath_location),

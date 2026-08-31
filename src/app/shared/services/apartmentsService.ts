@@ -524,11 +524,38 @@ export const updateApartmentPublication = async (id: string, isPublished: boolea
   if (error) {
     throw new Error(unwrapErrorMessage(error, 'Unable to update this property publication. Please check landlord verification, inspection status, and database permissions.'));
   }
-  const { data: after } = await supabase
+  const { data: after, error: reloadError } = await supabase
     .from('apartments')
     .select('is_published, approval_status, is_archived, deleted_at, status, published_at, published_by')
     .eq('id', id)
     .maybeSingle();
+
+  if (reloadError) {
+    throw new Error(unwrapErrorMessage(reloadError, 'Unable to confirm this property publication.'));
+  }
+
+  if (!isRecord(after)) {
+    throw new Error('Unable to confirm this property publication. Please refresh and try again.');
+  }
+
+  const publicationMatches = after.is_published === isPublished;
+  const validPublishedState = !isPublished || (
+    after.approval_status === 'approved'
+    && after.status === 'available'
+    && after.is_archived === false
+    && after.deleted_at === null
+    && typeof after.published_at === 'string'
+    && typeof after.published_by === 'string'
+  );
+  const validUnpublishedState = isPublished || (
+    after.published_at === null
+    && after.published_by === null
+  );
+
+  if (!publicationMatches || !validPublishedState || !validUnpublishedState) {
+    throw new Error('The requested property did not reach the expected publication state. Please refresh and try again.');
+  }
+
   await writeApartmentAudit(
     id,
     actorUserId,

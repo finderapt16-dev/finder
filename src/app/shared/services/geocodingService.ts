@@ -1,10 +1,54 @@
 export interface GeocodedLocation { lat: number; lng: number; label: string }
 export type GeocodingErrorReason = "not-found" | "outside-scope" | "network";
 export class GeocodingError extends Error {
-  constructor(message: string, public reason: GeocodingErrorReason) { super(message); this.name = "GeocodingError"; }
+  reason: GeocodingErrorReason;
+  constructor(message: string, reason: GeocodingErrorReason) { super(message); this.name = "GeocodingError"; this.reason = reason; }
 }
 
 const BOUNDS = { south: 10.68, north: 10.75, west: 122.535, east: 122.595 };
+const OUTSIDE_SCOPE_MESSAGE = "This location is outside AptFindr's supported area. Search within La Paz, Iloilo City.";
+
+type LaPazLandmark = GeocodedLocation & { canonicalName: string; aliases: string[] };
+
+// These coordinates are reference points for well-known local places only.
+// Apartment coordinates and results continue to come exclusively from Supabase.
+const LA_PAZ_LANDMARKS: LaPazLandmark[] = [
+  { canonicalName: "Gaisano La Paz", aliases: ["gaisano", "gaisano lapaz", "gaisano la paz", "gaisano city lapaz", "gaisano city la paz"], lat: 10.70703, lng: 122.56659, label: "Gaisano La Paz, Luna Street, La Paz, Iloilo City" },
+  { canonicalName: "La Paz Plaza", aliases: ["lapaz plaza", "la paz plaza", "plaza lapaz", "plaza la paz"], lat: 10.711825, lng: 122.570903, label: "La Paz Plaza, La Paz, Iloilo City" },
+  { canonicalName: "La Paz Public Market", aliases: ["lapaz public market", "la paz public market", "lapaz market", "la paz market"], lat: 10.70882, lng: 122.568154, label: "La Paz Public Market, La Paz, Iloilo City" },
+  { canonicalName: "ISAT U", aliases: ["isat", "isat u", "isat-u", "iloilo science and technology university"], lat: 10.7153, lng: 122.5659, label: "ISAT U Main Campus, La Paz, Iloilo City" },
+  { canonicalName: "Iloilo Mission Hospital", aliases: ["iloilo mission hospital", "mission hospital", "cpu imh", "cpu-imh"], lat: 10.71423, lng: 122.56019, label: "Iloilo Mission Hospital, Iloilo City" },
+  { canonicalName: "West Visayas State University", aliases: ["west visayas state university", "wvsu", "west visayas", "west visayas university"], lat: 10.7161, lng: 122.5614, label: "West Visayas State University, La Paz, Iloilo City" },
+  { canonicalName: "St. Clement's Church", aliases: ["st clements church", "st clement's church", "saint clements church", "saint clement's church", "st clements", "st clement"], lat: 10.709997, lng: 122.565041, label: "St. Clement's Church, La Paz, Iloilo City" },
+];
+
+const OUTSIDE_SCOPE_ALIASES = ["jaro plaza", "sm city", "sm city iloilo", "festive walk", "molo plaza", "oton", "pavia"];
+
+const normalizePlaceName = (value: string): string => value
+  .toLowerCase()
+  .normalize("NFKD")
+  .replace(/[’']/g, "")
+  .replace(/la[\s-]*paz/g, "lapaz")
+  .replace(/[^a-z0-9]+/g, " ")
+  .trim()
+  .replace(/\s+/g, " ");
+
+const findLandmark = (target: string): LaPazLandmark | undefined => {
+  const normalized = normalizePlaceName(target);
+  return LA_PAZ_LANDMARKS.find((landmark) =>
+    [landmark.canonicalName, ...landmark.aliases].some((alias) => normalizePlaceName(alias) === normalized),
+  );
+};
+
+export function getLaPazLandmarkSuggestions(value: string, limit = 6): string[] {
+  const normalized = normalizePlaceName(value.replace(/^(?:apartments?\s+)?(?:near(?:est)?(?:\s+to)?\s+)?/i, "").replace(/\s+near$/i, ""));
+  if (normalized.length < 2) return [];
+  return LA_PAZ_LANDMARKS
+    .filter((landmark) => [landmark.canonicalName, ...landmark.aliases]
+      .some((alias) => normalizePlaceName(alias).includes(normalized)))
+    .slice(0, limit)
+    .map((landmark) => landmark.canonicalName);
+}
 const cache = new Map<string, GeocodedLocation>();
 const reverseCache = new Map<string, GeocodedLocation>();
 const inside = ({ lat, lng }: GeocodedLocation) => lat >= BOUNDS.south && lat <= BOUNDS.north && lng >= BOUNDS.west && lng <= BOUNDS.east;
@@ -21,11 +65,21 @@ export async function geocodeLocationWithinLaPaz(target: string, signal?: AbortS
   const key = target.trim().toLowerCase();
   const cached = cache.get(key); if (cached) return cached;
   try {
+    const normalizedTarget = normalizePlaceName(target);
+    if (OUTSIDE_SCOPE_ALIASES.some((alias) => normalizedTarget === normalizePlaceName(alias))) {
+      throw new GeocodingError(OUTSIDE_SCOPE_MESSAGE, "outside-scope");
+    }
+    const landmark = findLandmark(target);
+    if (landmark) {
+      const result = { lat: landmark.lat, lng: landmark.lng, label: landmark.label };
+      cache.set(key, result);
+      return result;
+    }
     const scopedQuery = /la paz/i.test(target) ? target : `${target}, La Paz, Iloilo City`;
-    const match = (await lookup(scopedQuery, true, signal)).find(inside);
+    const match = (await lookup(scopedQuery, true, signal)).find((candidate) => inside(candidate) && /\b(?:la paz|lapaz)\b/i.test(candidate.label));
     if (match) { if (cache.size >= 100) cache.delete(cache.keys().next().value as string); cache.set(key, match); return match; }
     const broad = (await lookup(`${target}, Philippines`, false, signal))[0];
-    if (broad && !inside(broad)) throw new GeocodingError("That location is outside the supported La Paz search area.", "outside-scope");
+    if (broad && (!inside(broad) || !/\b(?:la paz|lapaz)\b/i.test(broad.label))) throw new GeocodingError(OUTSIDE_SCOPE_MESSAGE, "outside-scope");
     throw new GeocodingError("We couldn't find that location. Try a more specific landmark or street.", "not-found");
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;

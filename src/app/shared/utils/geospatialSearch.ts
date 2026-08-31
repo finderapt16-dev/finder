@@ -23,6 +23,7 @@ export type ApartmentWithDistance<T> = T & {
  * in Nearby Search results.
  */
 export const MAX_NEARBY_DISTANCE_METERS = 500;
+const DISTANCE_COMPARISON_EPSILON_METERS = 0.000001;
 
 /**
  * Detect nearby-search queries.
@@ -52,12 +53,15 @@ export function parseNearbySearchIntent(
     /^(?:nearest(?:\s+to)?|nearby|closest(?:\s+to)?|close\s+to)\s+(.+)$/i,
 
     /^near\s+(.+)$/i,
+
+    // Natural trailing form: "gaisano near".
+    /^(.+?)\s+near$/i,
   ];
 
   for (const pattern of patterns) {
     const match = query.match(pattern);
 
-    const target = match?.[1]?.trim();
+    const target = match?.[1]?.trim().replace(/[.,!?]+$/g, "");
 
     if (
       target &&
@@ -255,7 +259,7 @@ export function findNearbyApartments<
     .filter(
       (apartment) =>
         apartment.distanceMeters <=
-        maxDistanceMeters
+        maxDistanceMeters + DISTANCE_COMPARISON_EPSILON_METERS
     )
 
     // Nearest first
