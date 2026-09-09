@@ -19,7 +19,7 @@ import { motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { LandlordSidebar } from "@/app/landlord/components/LandlordSidebar";
+import { LandlordSidebar } from "@/app/landlord/components/navigation/LandlordSidebar";
 import { ImageWithFallback } from "@/app/shared/components/common/ImageWithFallback";
 
 import { VerifiedBadge } from "@/app/shared/components/common/VerifiedBadge";

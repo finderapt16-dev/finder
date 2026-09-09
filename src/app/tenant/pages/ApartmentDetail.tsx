@@ -15,7 +15,7 @@ import { toast } from "sonner";
 
 import { EditApartmentDialog } from "@/app/shared/components/common/EditApartmentDialog";
 import { EvidenceUploader, type EvidenceFile } from "@/app/shared/components/common/EvidenceUploader";
-import { LandlordSidebar } from "@/app/landlord/components/LandlordSidebar";
+import { LandlordSidebar } from "@/app/landlord/components/navigation/LandlordSidebar";
 import { RoomImageGallery } from "@/app/shared/components/common/RoomImageGallery";
 import { VerifiedBadge } from "@/app/shared/components/common/VerifiedBadge";
 import { MapView } from "@/app/shared/components/features/map/MapView";

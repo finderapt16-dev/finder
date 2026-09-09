@@ -18,7 +18,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { LandlordSidebar } from "@/app/landlord/components/LandlordSidebar";
+import { LandlordSidebar } from "@/app/landlord/components/navigation/LandlordSidebar";
 import { motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
