@@ -31,7 +31,7 @@ import {
   TrendingUp,
   TriangleAlert
 } from "lucide-react";
-import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
+import { ImageWithFallback } from "@/app/shared/components/common/ImageWithFallback";
 import { useEffect, useMemo, useRef, useState, type ComponentType, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 

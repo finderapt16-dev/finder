@@ -12,7 +12,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { VerifiedBadge } from "./VerifiedBadge";
 import { ApartmentRatingSummary } from "./ApartmentRatingSummary";
-import { ImageWithFallback } from "../figma/ImageWithFallback";
+import { ImageWithFallback } from "./ImageWithFallback";
 
 interface ApartmentCardProps {
   apartment: Apartment;

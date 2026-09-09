@@ -1,5 +1,5 @@
 import { AppLogo } from "@/app/shared/components/common/AppLogo";
-import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
+import { ImageWithFallback } from "@/app/shared/components/common/ImageWithFallback";
 import { Alert, AlertDescription } from "@/app/shared/components/ui/alert";
 import { Button } from "@/app/shared/components/ui/button";
 import { supabase } from "@/lib/supabaseClient";
@@ -96,7 +96,6 @@ export function ForgotPassword() {
   return (
     <div className="auth-palette min-h-screen flex flex-col lg:flex-row bg-slate-50">
 
-      {/* ── LEFT PANEL ────────────────────────────────────────── */}
       <div className="auth-visual-panel hidden lg:flex flex-col w-[38%] xl:w-[40%] flex-shrink-0 relative overflow-hidden min-h-screen border-r border-[#EEE7DE]">
         <div className="absolute inset-0">
           <ImageWithFallback
@@ -108,7 +107,6 @@ export function ForgotPassword() {
         </div>
 
         <div className="relative z-10 flex flex-col h-full p-8 xl:p-10">
-          {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group mb-auto">
             <AppLogo className="h-10 w-10 rounded-xl group-hover:scale-105 transition-transform" iconClassName="h-5 w-5" />
             <div>
@@ -117,7 +115,6 @@ export function ForgotPassword() {
             </div>
           </Link>
 
-          {/* Hero copy */}
           <div className="mt-16 mb-10">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -140,7 +137,6 @@ export function ForgotPassword() {
             </motion.div>
           </div>
 
-          {/* Security highlights */}
           <motion.div
             className="auth-benefits space-y-3 mb-auto"
             initial={{ opacity: 0 }}
@@ -161,14 +157,11 @@ export function ForgotPassword() {
             ))}
           </motion.div>
 
-          {/* Stats */}
         </div>
       </div>
 
-      {/* ── RIGHT PANEL ───────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-y-auto">
 
-        {/* Mobile top bar */}
         <div className="lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3.5 bg-white/90 backdrop-blur border-b border-slate-100 shadow-sm">
           <Link to="/" className="flex items-center gap-2.5">
             <AppLogo className="h-8 w-8 rounded-lg" iconClassName="h-4 w-4" />
@@ -182,7 +175,6 @@ export function ForgotPassword() {
         <div className="flex-1 flex items-center justify-center px-4 py-8 lg:py-12 lg:px-10 xl:px-16">
           <div className="auth-form-shell w-full max-w-[470px]">
 
-            {/* Page heading */}
             <div className="mb-8">
               <h1 className="text-2xl lg:text-3xl font-black text-slate-900 leading-tight">
                 {sent ? "Check your email" : "Reset your password"}
@@ -195,7 +187,6 @@ export function ForgotPassword() {
               </p>
             </div>
 
-            {/* Error */}
             <AnimatePresence>
               {error && (
                 <motion.div
@@ -214,7 +205,6 @@ export function ForgotPassword() {
 
             <AnimatePresence mode="wait">
 
-              {/* ── INITIAL STATE ─────────────────────────────── */}
               {!sent && (
                 <motion.div
                   key="form"
@@ -225,7 +215,6 @@ export function ForgotPassword() {
                 >
                   <form onSubmit={handleEmailSubmit} className="space-y-4">
 
-                    {/* Form card */}
                     <div className="rounded-2xl border-2 border-slate-200 bg-white overflow-hidden">
                       <div className="px-5 py-5 space-y-4">
                         <FloatInput
@@ -242,7 +231,6 @@ export function ForgotPassword() {
                         </p>
                       </div>
 
-                      {/* Security notice strip */}
                       <div className="flex items-start gap-3 px-5 py-3.5 bg-amber-50/60 border-t border-amber-100">
                         <ShieldCheck className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
                         <p className="text-xs text-amber-700 font-medium leading-relaxed">
@@ -251,7 +239,6 @@ export function ForgotPassword() {
                       </div>
                     </div>
 
-                    {/* Submit */}
                     <Button
                       type="submit"
                       disabled={loading}
@@ -273,8 +260,6 @@ export function ForgotPassword() {
                       )}
                     </Button>
 
-                    {/* Trust badges */}
-                    {/* Back to Sign In */}
                     <Link
                       to="/login"
                       className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-500 hover:text-amber-700 transition-colors"
@@ -286,7 +271,6 @@ export function ForgotPassword() {
                 </motion.div>
               )}
 
-              {/* ── SUCCESS STATE ──────────────────────────────── */}
               {sent && (
                 <motion.div
                   key="success"
@@ -296,10 +280,8 @@ export function ForgotPassword() {
                   transition={{ duration: 0.25 }}
                   className="space-y-4"
                 >
-                  {/* Success card */}
                   <div className="rounded-2xl border-2 border-emerald-200 bg-white overflow-hidden">
 
-                    {/* Icon + message */}
                     <div className="px-5 py-6 flex flex-col items-center text-center gap-3">
                       <motion.div
                         initial={{ scale: 0 }}
@@ -318,7 +300,6 @@ export function ForgotPassword() {
                       </div>
                     </div>
 
-                    {/* Steps */}
                     <div className="px-5 pb-5 space-y-2">
                       {[
                         { step: "1", text: "Open your email inbox" },
@@ -334,7 +315,6 @@ export function ForgotPassword() {
                       ))}
                     </div>
 
-                    {/* Spam notice */}
                     <div className="flex items-start gap-3 px-5 py-3.5 bg-amber-50/60 border-t border-amber-100">
                       <Mail className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-amber-700 font-medium leading-relaxed">
@@ -343,7 +323,6 @@ export function ForgotPassword() {
                     </div>
                   </div>
 
-                  {/* Back to Sign In CTA */}
                   <Button
                     type="button"
                     onClick={() => navigate("/login")}
@@ -354,7 +333,6 @@ export function ForgotPassword() {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
 
-                  {/* Trust badges */}
                   <div className="flex items-center justify-center gap-4 pt-1">
                     {["Account Email", "Reset Link", "New Password"].map((b) => (
                       <div key={b} className="flex items-center gap-1 text-xs text-slate-400 font-medium">
@@ -364,14 +342,12 @@ export function ForgotPassword() {
                     ))}
                   </div>
 
-                  {/* Divider */}
                   <div className="flex items-center gap-3 py-1">
                     <div className="flex-1 h-px bg-slate-200" />
                     <span className="text-xs text-slate-400 font-medium">or</span>
                     <div className="flex-1 h-px bg-slate-200" />
                   </div>
 
-                  {/* Resend / home row */}
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"

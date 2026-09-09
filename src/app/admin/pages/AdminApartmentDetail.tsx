@@ -1,5 +1,5 @@
 import { MapView } from "@/app/shared/components/features/map/MapView";
-import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
+import { ImageWithFallback } from "@/app/shared/components/common/ImageWithFallback";
 import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
 import { Badge } from "@/app/shared/components/ui/badge";
 import { Button } from "@/app/shared/components/ui/button";
@@ -711,7 +711,6 @@ export function AdminApartmentDetail() {
       <main className="min-w-0 flex-1 overflow-y-auto pb-8">
       <div className="mx-auto max-w-[1500px] px-4 py-5 sm:px-6 lg:px-8">
         <button onClick={() => setSidebarOpen(true)} className="app-sidebar-trigger mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-white/50 bg-[#8B735B] text-white shadow-md hover:bg-[#756A60] lg:hidden" aria-label="Open navigation"><Menu className="h-5 w-5" /></button>
-        {/* Header */}
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <Button variant="ghost" onClick={handleBack} className="mb-3 w-fit rounded-lg px-2 font-bold text-slate-700 hover:bg-orange-50 hover:text-orange-600">
@@ -773,9 +772,7 @@ export function AdminApartmentDetail() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
-          {/* Main Content */}
           <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-            {/* Image Gallery */}
             <Card id="admin-images" className="order-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm scroll-mt-6">
               <div className="relative aspect-[16/9] overflow-hidden bg-slate-100">
                 {selectedImage ? (
@@ -908,7 +905,6 @@ export function AdminApartmentDetail() {
             {relatedAppeals.length > 0 && <Card className="order-10 border border-blue-200 lg:col-span-2"><CardContent className="pt-5"><div className="mb-3 flex items-center justify-between"><div><h2 className="font-black text-slate-900">Related Appeals</h2><p className="text-xs font-medium text-slate-500">Landlord appeals connected to this apartment or its reports.</p></div><Badge className="bg-blue-100 text-blue-700">{relatedAppeals.length}</Badge></div><div className="divide-y divide-slate-100">{relatedAppeals.map((appeal) => <div key={appeal.id} className="flex items-center gap-3 py-3"><FileText className="h-4 w-4 shrink-0 text-blue-600" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-slate-800">{appeal.reason || "Appeal"}</p><p className="line-clamp-2 text-xs font-medium text-slate-500">{appeal.description || "No explanation provided."}</p></div><Badge className="shrink-0 bg-slate-100 text-slate-700">{String(appeal.status || "pending").replace(/_/g, " ")}</Badge></div>)}</div><Button variant="outline" onClick={() => navigate(`${portalBasePath}?section=appeals`)} className="mt-3 w-full border-blue-200 font-bold text-blue-700">Open Appeal Management</Button></CardContent></Card>}
 
 
-            {/* Apartment Info */}
             <Card id="admin-property-details" className="order-2 rounded-xl border border-slate-200 bg-white shadow-sm scroll-mt-6">
               <CardContent className="p-5 sm:p-6">
                 <div className="mb-5 flex items-start gap-4">
@@ -974,7 +970,6 @@ export function AdminApartmentDetail() {
               </CardContent>
             </Card>
 
-            {/* Amenities & Utilities */}
             <div className="order-5 grid grid-cols-1 gap-6">
               {apartment.amenities.length > 0 && (
                 <Card className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -1032,7 +1027,6 @@ export function AdminApartmentDetail() {
               )}
             </div>
 
-            {/* Room Details */}
             {roomsForDisplay.length > 0 && (
               <Card id="admin-rooms" className="order-4 rounded-xl border border-slate-200 bg-white shadow-sm scroll-mt-6">
                 <CardContent className="p-5">
@@ -1117,7 +1111,6 @@ export function AdminApartmentDetail() {
               </Card>
             )}
 
-            {/* Location Details */}
             <Card id="admin-location" className="order-6 rounded-xl border border-slate-200 bg-white shadow-sm scroll-mt-6 lg:col-span-2">
               <CardContent className="p-5">
                 <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
@@ -1144,7 +1137,6 @@ export function AdminApartmentDetail() {
               </CardContent>
             </Card>
 
-            {/* Verification Documents */}
             <Card id="admin-verification" className="order-7 rounded-xl border border-emerald-200 bg-emerald-50/40 shadow-sm scroll-mt-6 lg:col-span-2 xl:hidden">
                 <CardContent className="p-5">
                   <div className="flex items-center gap-3 mb-6">
@@ -1189,7 +1181,6 @@ export function AdminApartmentDetail() {
                 </CardContent>
               </Card>
 
-            {/* Reports Section */}
             {reports.length > 0 && (
               <Card className="order-9 border-2 border-red-200 bg-gradient-to-br from-red-50 to-slate-50 lg:col-span-2">
                 <CardContent className="pt-6">
@@ -1256,9 +1247,7 @@ export function AdminApartmentDetail() {
             )}
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6 xl:sticky xl:top-6 xl:self-start">
-            {/* Landlord Info */}
             {landlord && (
               <Card className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <CardContent className="p-5">
@@ -1383,7 +1372,6 @@ export function AdminApartmentDetail() {
               </Card>
             )}
 
-            {/* Admin Actions */}
             <Card className="rounded-xl border border-orange-200 bg-orange-50/40 shadow-sm">
               <CardContent className="p-5">
                 <h2 className="mb-5 flex items-center gap-3 text-lg font-black text-slate-950">
@@ -1549,7 +1537,6 @@ export function AdminApartmentDetail() {
               </CardContent>
             </Card>
 
-            {/* Listing Info */}
             <Card className="rounded-xl border border-slate-200 bg-white shadow-sm">
               <CardContent className="p-5">
                 <h2 className="mb-5 flex items-center gap-3 text-lg font-black text-slate-950">
@@ -1658,7 +1645,6 @@ export function AdminApartmentDetail() {
           </div>
         )}
 
-        {/* Selected Report Details */}
         {SHOW_SELECTED_REPORT_DETAILS && selectedReport && (
           <Card className="mt-6 border-2 border-red-200">
             <CardContent className="pt-6">

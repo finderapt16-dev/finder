@@ -7,7 +7,7 @@ import type { Apartment } from "@/app/shared/data/apartments";
 import { getImageUrl } from "@/app/shared/utils/images";
 import { isTenantVisibleApartment } from "@/app/shared/utils/listingVisibility";
 import { VerifiedBadge } from "@/app/shared/components/common/VerifiedBadge";
-import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
+import { ImageWithFallback } from "@/app/shared/components/common/ImageWithFallback";
 import { Button } from "@/app/shared/components/ui/button";
 
 const PREVIEW_LIMIT = 4;

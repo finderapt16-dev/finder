@@ -63,7 +63,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-// ── Room type ─────────────────────────────────────────────────────────────────
 type PropertyDraft = {
   version: 2;
   savedAt: string;
@@ -92,7 +91,6 @@ function isPropertyDraft(value: unknown): value is PropertyDraft {
   return draft.version === 2 && typeof draft.savedAt === "string" && Number.isFinite(draft.currentStep);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 
 const VALID_ID_TYPES = [
   "Passport",
@@ -169,7 +167,6 @@ export function AddApartment() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { refreshApartments } = useApartmentsContext();
 
-  // ── Wizard State ───────────────────────────────────────────────────────
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -181,7 +178,6 @@ export function AddApartment() {
     { number: 3, title: "Amenities & Features", description: "Amenities, utilities, and additional features" },
     { number: 4, title: "Property Verification", description: "Permit details and verification documents" },
   ];
-  // ─────────────────────────────────────────────────────────────────────
 
   const [formData, setFormData] = useState<Partial<Apartment>>({ ...INITIAL_FORM_DATA });
   const [locationLookupRequest, setLocationLookupRequest] = useState(0);
@@ -189,13 +185,9 @@ export function AddApartment() {
   const [locationResolving, setLocationResolving] = useState(false);
   const lastAutoGeocodedAddressRef = useRef("");
 
-  // ── Rooms state ───────────────────────────────────────────────────────
 
-  // ─────────────────────────────────────────────────────────────────────
 
-  // ── Multiple Images State ──────────────────────────────────────────────
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
-  // ─────────────────────────────────────────────────────────────────────
 
   const [amenitiesInput, setAmenitiesInput] = useState("");
   const [utilitiesInput, setUtilitiesInput] = useState("");
@@ -492,7 +484,6 @@ export function AddApartment() {
     return { isValid: Object.keys(errors).length === 0, errors, firstStep };
   };
 
-  // ── Step validation ────────────────────────────────────────────────────
   const validateStep = (step: number): boolean => {
     const { errors } = validateAllFields();
     const belongsToStep = (field: string) => {
@@ -729,7 +720,6 @@ export function AddApartment() {
     }
   };
 
-  // ── Derived room stats ────────────────────────────────────────────────────
   if (user?.role !== "landlord") {
     return <Navigate to="/dashboard" replace />;
   }
@@ -856,7 +846,6 @@ export function AddApartment() {
 
           <CardContent className="pt-10">
             <form onSubmit={handleSubmit} noValidate className="space-y-8">
-              {/* ──────── STEP 1: Property Information ──────── */}
               {currentStep === 1 && (
                 <>
                   <div className="space-y-6">
@@ -950,7 +939,6 @@ export function AddApartment() {
                 </>
               )}
 
-              {/* ──────── STEP 3: Location ──────── */}
               {currentStep === 2 && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">
@@ -1024,7 +1012,6 @@ export function AddApartment() {
                 </div>
               )}
 
-              {/* ──────── STEP 4: Amenities & Features ──────── */}
               {currentStep === 3 && (
                 <>
                   <div className="space-y-6">
@@ -1142,7 +1129,6 @@ export function AddApartment() {
                 </>
               )}
 
-              {/* ──────── STEP 2: Verification ──────── */}
               {currentStep === 4 && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-2 border-b border-[#F3EFEA] pb-3">

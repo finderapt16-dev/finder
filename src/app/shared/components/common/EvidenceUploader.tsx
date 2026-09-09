@@ -235,7 +235,6 @@ export function EvidenceUploader({
 
   return (
     <div className="space-y-4">
-      {/* Evidence Requirement Message */}
       {required && <div className="flex items-start gap-3 rounded-lg border border-[#F3EFEA] bg-[#FAF8F5] p-3">
         <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[#756A60]" />
         <div>
@@ -246,7 +245,6 @@ export function EvidenceUploader({
         </div>
       </div>}
 
-      {/* Upload Zone */}
       {remainingSlots > 0 && (
         <div
           onDragEnter={handleDragEnter}
@@ -284,10 +282,8 @@ export function EvidenceUploader({
         </div>
       )}
 
-      {/* Image Preview Gallery */}
       {imageFiles.length > 0 && (
         <div className="space-y-3">
-          {/* Large Preview */}
           {previewImageId && currentPreviewUrl && (
             <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-slate-200 bg-slate-900">
               <img
@@ -321,7 +317,6 @@ export function EvidenceUploader({
             </div>
           )}
 
-          {/* Thumbnail Grid */}
           <div className="grid grid-cols-4 gap-2">
             {imageFiles.map((file) => (
               <div
@@ -344,7 +339,6 @@ export function EvidenceUploader({
         </div>
       )}
 
-      {/* Files List */}
       {evidenceFiles.length > 0 && (
         <div className="space-y-2">
           <div className="text-sm font-black text-slate-900">
@@ -403,7 +397,6 @@ export function EvidenceUploader({
         </div>
       )}
 
-      {/* Validation Message */}
       {required && evidenceFiles.length === 0 && (
         <div className="text-sm font-medium text-red-600">
           ⚠ At least one file is required to submit this report

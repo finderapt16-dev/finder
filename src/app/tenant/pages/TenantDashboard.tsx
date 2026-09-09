@@ -164,7 +164,6 @@ export function TenantDashboard() {
   const [favoriteView, setFavoriteView] = useState<"grid" | "list">("grid");
   const [removingFavoriteId, setRemovingFavoriteId] = useState<string | null>(null);
 
-  // ── Report form state ────────────────────────────────────────────────────
   const [reportSubmitted, setReportSubmitted] = useState(false);
   const [reportForm, setReportForm] = useState({
     apartment: "",
@@ -174,7 +173,6 @@ export function TenantDashboard() {
   const [reportEvidenceFiles, setReportEvidenceFiles] = useState<EvidenceFile[]>([]);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
-  // ── Help & support state ────────────────────────────────────────────────
   const [supportSubmitted, setSupportSubmitted] = useState(false);
   const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
   const [supportForm, setSupportForm] = useState({
@@ -183,7 +181,6 @@ export function TenantDashboard() {
     contact: user?.email || "",
   });
 
-  // ── Settings state ───────────────────────────────────────────────────────
   const [tenantPreferences, setTenantPreferences] = useState<TenantPreferenceSettings>(defaultTenantPreferences);
   const [preferencesLoading, setPreferencesLoading] = useState(true);
   const [dashboardFavoriteRows, setDashboardFavoriteRows] = useState<DashboardFavoriteRow[]>([]);
@@ -368,7 +365,7 @@ export function TenantDashboard() {
   }, [favoriteApartments, favoriteFilter, favoriteSort]);
   const displayName = user?.name?.trim();
   const tenantGreeting = getTimeBasedGreeting(user?.name);
-  const dashboardSubtitle = "Discover a verified home that fits your everyday needs.";
+  const dashboardSubtitle = "Find verified apartments that fit your needs.";
 
   const handleLogout = () => { logout?.(); navigate("/"); };
 
@@ -487,7 +484,6 @@ export function TenantDashboard() {
     }
   };
 
-  // ── Sidebar ──────────────────────────────────────────────────────────────
   const SidebarContent = () => (
     <div className="app-sidebar flex flex-col h-full overflow-y-auto">
       <div className="app-sidebar-brand px-5 pt-6 pb-5">
@@ -574,7 +570,6 @@ export function TenantDashboard() {
     </div>
   );
 
-  // ── Section: Overview ────────────────────────────────────────────────────
   const SummaryCard = ({
     title,
     value,
@@ -864,7 +859,6 @@ export function TenantDashboard() {
     </div>
   );
 
-  // ── Section: Favorites ───────────────────────────────────────────────────
   const renderFavorites = () => (
     <div className="mx-auto max-w-7xl space-y-6">
       <section className="relative overflow-hidden rounded-lg border border-[#F3EFEA] bg-white px-6 py-8 shadow-[0_22px_60px_rgba(15,23,42,0.08)] md:px-9">
@@ -963,14 +957,13 @@ export function TenantDashboard() {
     </div>
   );
 
-  // ── Section: Suggested ───────────────────────────────────────────────────
   const renderSuggested = () => (
     <div className="suggested-page mx-auto max-w-7xl space-y-5">
       <section className="suggested-hero relative flex min-h-[180px] items-center overflow-hidden rounded-xl border border-[#e8ded1] bg-gradient-to-r from-[#faf8f5] to-[#fffdfb] p-6 md:px-8">
         <div className="relative z-10 max-w-[58%] max-md:max-w-full">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e8ded1] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b735b] shadow-sm">
             <Sparkles className="h-4 w-4" />
-            {hasPersonalizationPreferences ? "Personalized Discovery" : "Apartment Discovery"}
+            {hasPersonalizationPreferences ? "Based on Your Preferences" : "Apartment Listings"}
           </div>
           <h2 className="text-3xl font-bold tracking-tight text-[#302820] md:text-[34px]">{hasPersonalizationPreferences ? "Suggested for You" : "Find Apartments for You"}</h2>
           <p className="mt-3 text-base font-medium text-[#756a60]">{hasPersonalizationPreferences ? "Apartment suggestions based on your preferences." : "Set your preferences to receive personalized apartment suggestions."}</p>
@@ -1004,7 +997,6 @@ export function TenantDashboard() {
     </div>
   );
 
-  // ── Section: Popular ─────────────────────────────────────────────────────
   const renderPopular = () => (
     <div className="popular-page mx-auto max-w-7xl space-y-5">
       <section className="popular-hero relative flex min-h-[175px] items-center overflow-hidden rounded-xl border border-[#e8ded1] bg-gradient-to-r from-[#faf8f5] to-[#fffdfb] p-6 md:px-8">
@@ -1036,9 +1028,7 @@ export function TenantDashboard() {
     </div>
   );
 
-  // ── Section: Recent ──────────────────────────────────────────────────────
-  // ── Section: Settings ────────────────────────────────────────────────────
-  const renderReportPremium = () => (
+  const renderReport = () => (
     <div className="report-page mx-auto max-w-6xl space-y-6">
       <header className="report-hero relative flex min-h-[170px] items-center overflow-hidden rounded-2xl border border-[#e8ded1] bg-gradient-to-r from-[#faf8f5] to-[#fffdfb] p-6 md:px-8">
         <div className="relative z-10 max-w-[58%] max-md:max-w-full">
@@ -1124,7 +1114,6 @@ export function TenantDashboard() {
 
   const renderSettings = () => <AccountSettings embedded />;
 
-  // ── Section: Help ────────────────────────────────────────────────────────
   const renderHelp = () => (
     <div className="help-page mx-auto max-w-6xl space-y-6">
       <header className="help-hero relative flex min-h-[170px] items-center overflow-hidden rounded-2xl border border-[#e8ded1] bg-gradient-to-r from-[#faf8f5] to-[#fffdfb] p-6 md:px-8">
@@ -1294,7 +1283,7 @@ export function TenantDashboard() {
     suggested: renderSuggested,
     popular:   renderPopular,
     notifications: () => <TenantNotifications state={tenantNotifications} />,
-    report:    renderReportPremium,
+    report:    renderReport,
     settings:  renderSettings,
     help:      renderHelp,
   };

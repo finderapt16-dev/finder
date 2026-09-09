@@ -59,7 +59,6 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
   });
   const [verification, setVerification] = useState(() => getPropertyVerification(apartment));
 
-  // ── Image Management State ─────────────────────────────────────────────
   const [existingImages, setExistingImages] = useState<UploadedImage[]>(
     (apartment.images || []).map((url, idx) => ({
       id: `existing-${idx}`,
@@ -92,7 +91,6 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
     })));
     setNewImages([]);
   }, [apartment, open]);
-  // ───────────────────────────────────────────────────────────────────────
 
   const handleExistingImageDelete = (id: string) => {
     setExistingImages((prev) => prev.filter((img) => img.id !== id));
@@ -198,14 +196,12 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Images Section */}
           <div className="space-y-3 border-b pb-4">
             <div className="flex items-center gap-2">
               <Images className="h-5 w-5 text-[#756A60]" />
               <Label className="text-[#5F5145] font-bold">Property Images</Label>
             </div>
 
-            {/* Existing Images */}
             {existingImages.length > 0 && (
               <div>
                 <h4 className="text-xs font-semibold text-slate-700 mb-2">Current Images</h4>
@@ -259,7 +255,6 @@ export function EditApartmentDialog({ apartment, open, onOpenChange, onSave }: E
               </div>
             )}
 
-            {/* New Images Upload */}
             <div>
               <h4 className="text-xs font-semibold text-slate-700 mb-2">Add More Images</h4>
               <MultiImageUploader

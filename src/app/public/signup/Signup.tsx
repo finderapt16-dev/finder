@@ -1,5 +1,5 @@
 import { AppLogo } from "@/app/shared/components/common/AppLogo";
-import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
+import { ImageWithFallback } from "@/app/shared/components/common/ImageWithFallback";
 import { Alert, AlertDescription } from "@/app/shared/components/ui/alert";
 import { Button } from "@/app/shared/components/ui/button";
 import { useAuth, type UserRole } from "@/app/shared/contexts/AuthContext";
@@ -239,9 +239,7 @@ export function Signup() {
   return (
     <div className="auth-palette min-h-screen flex flex-col lg:flex-row bg-slate-50">
 
-      {/* ── LEFT PANEL ────────────────────────────────────────── */}
       <div className="auth-visual-panel hidden lg:flex flex-col w-[38%] xl:w-[40%] flex-shrink-0 relative overflow-hidden min-h-screen border-r border-[#EEE7DE]">
-        {/* Full-height apartment photo */}
         <div className="absolute inset-0">
           <ImageWithFallback
             src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=960"
@@ -251,9 +249,7 @@ export function Signup() {
           <div className="auth-background-overlay absolute inset-0" />
         </div>
 
-        {/* Content */}
         <div className="relative z-10 flex flex-col h-full p-8 xl:p-10">
-          {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group mb-auto">
             <AppLogo className="h-10 w-10 rounded-xl group-hover:scale-105 transition-transform" iconClassName="h-5 w-5" />
             <div>
@@ -262,7 +258,6 @@ export function Signup() {
             </div>
           </Link>
 
-          {/* Hero copy */}
           <div className="mt-16 mb-10">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -285,7 +280,6 @@ export function Signup() {
             </motion.div>
           </div>
 
-          {/* Benefits list */}
           <motion.div
             className="auth-benefits space-y-3 mb-auto"
             initial={{ opacity: 0 }}
@@ -306,14 +300,11 @@ export function Signup() {
             ))}
           </motion.div>
 
-          {/* Stats frosted bar */}
         </div>
       </div>
 
-      {/* ── RIGHT PANEL: Form ─────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-y-auto">
 
-        {/* Mobile top bar */}
         <div className="lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3.5 bg-white/90 backdrop-blur border-b border-slate-100 shadow-sm">
           <Link to="/" className="flex items-center gap-2.5">
             <AppLogo className="h-8 w-8 rounded-lg" iconClassName="h-4 w-4" />
@@ -327,7 +318,6 @@ export function Signup() {
         <div className="flex-1 flex items-start justify-center px-4 py-8 lg:py-12 lg:px-10 xl:px-16">
           <div className="w-full max-w-[470px]">
 
-            {/* Page heading */}
             <div className="mb-8">
               <h1 className="text-2xl lg:text-3xl font-black text-slate-900 leading-tight">Create your account</h1>
               <p className="text-slate-500 text-sm mt-1.5">
@@ -336,7 +326,6 @@ export function Signup() {
               </p>
             </div>
 
-            {/* Error */}
             <AnimatePresence>
               {error && (
                 <motion.div
@@ -356,7 +345,6 @@ export function Signup() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
 
-              {/* ── Role cards ─────────────────────────────────── */}
               <div className="space-y-2">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Choose your account type</p>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -401,7 +389,6 @@ export function Signup() {
                 </div>
               </div>
 
-              {/* ── Accordion: Personal Info ─────────────────────── */}
               <AccordionSection
                 title="Personal Information"
                 icon={<User className="h-4 w-4" />}
@@ -423,7 +410,6 @@ export function Signup() {
                 </div>
               </AccordionSection>
 
-              {/* ── Accordion: Contact Info ──────────────────────── */}
               <AccordionSection
                 title="Contact Information"
                 icon={<Phone className="h-4 w-4" />}
@@ -440,7 +426,6 @@ export function Signup() {
                 </div>
               </AccordionSection>
 
-              {/* ── Accordion: Role-specific ─────────────────────── */}
               {formData.role === "landlord" && <AccordionSection
                 title="Landlord Verification"
                 icon={<ClipboardList className="h-4 w-4" />}
@@ -491,7 +476,6 @@ export function Signup() {
                 )}
               </AccordionSection>}
 
-              {/* ── Accordion: Account Security ──────────────────── */}
               <AccordionSection
                 title="Account Security"
                 icon={<Lock className="h-4 w-4" />}
@@ -507,7 +491,6 @@ export function Signup() {
                   <FloatInput id="email" label="Recovery Email" type="email" value={formData.email} onChange={(v) => set("email", v)} required placeholder="you@example.com" icon={<Mail className="h-4 w-4" />} />
                   <p className="px-1 text-xs font-medium text-slate-500">Used for account verification, password recovery, and important account notices.</p>
                 </div>
-                {/* Password field */}
                 <div>
                   <FloatInput
                     id="password"
@@ -523,7 +506,6 @@ export function Signup() {
                       </button>
                     }
                   />
-                  {/* Strength meter */}
                   {formData.password && (
                     <div className="mt-2 space-y-1.5">
                       <div className="flex gap-1">
@@ -566,7 +548,6 @@ export function Signup() {
                   </p>
                 )}
 
-                {/* Requirements checklist */}
                 <div className="grid grid-cols-2 gap-1.5 mt-1">
                   {[
                     { label: "At least 6 characters", met: formData.password.length >= 6 },
@@ -584,7 +565,6 @@ export function Signup() {
                 </div>
               </AccordionSection>
 
-              {/* ── Progress summary bar ─────────────────────────── */}
               {(donePersonal || doneContact || doneRole || doneSecurity) && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
@@ -604,7 +584,6 @@ export function Signup() {
                 </motion.div>
               )}
 
-              {/* ── Submit ──────────────────────────────────────────── */}
               {formData.role === "tenant" && (
                 <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700">
                   <input type="checkbox" checked={tenantTermsAccepted} onChange={(event) => setTenantTermsAccepted(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-amber-500" />
@@ -640,7 +619,6 @@ export function Signup() {
                 )}
               </Button>
 
-              {/* Trust badges below submit */}
               <Link to="/" className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-500 hover:text-amber-700 transition-colors">
                 <Home className="h-4 w-4" />
                 Back to Home

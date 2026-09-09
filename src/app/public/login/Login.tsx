@@ -1,5 +1,5 @@
 import { AppLogo } from "@/app/shared/components/common/AppLogo";
-import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
+import { ImageWithFallback } from "@/app/shared/components/common/ImageWithFallback";
 import { Alert, AlertDescription } from "@/app/shared/components/ui/alert";
 import { Button } from "@/app/shared/components/ui/button";
 import { useAuth } from "@/app/shared/contexts/AuthContext";
@@ -131,7 +131,6 @@ export function Login() {
   return (
     <div className="auth-palette min-h-screen flex flex-col lg:flex-row bg-slate-50">
 
-      {/* ── LEFT PANEL ────────────────────────────────────────── */}
       <div className="auth-visual-panel hidden lg:flex flex-col w-[38%] xl:w-[40%] flex-shrink-0 relative overflow-hidden min-h-screen border-r border-[#EEE7DE]">
         <div className="absolute inset-0">
           <ImageWithFallback
@@ -143,7 +142,6 @@ export function Login() {
         </div>
 
         <div className="relative z-10 flex flex-col h-full p-8 xl:p-10">
-          {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group mb-auto">
             <AppLogo className="h-10 w-10 rounded-xl group-hover:scale-105 transition-transform" iconClassName="h-5 w-5" />
             <div>
@@ -152,7 +150,6 @@ export function Login() {
             </div>
           </Link>
 
-          {/* Hero copy */}
           <div className="mt-16 mb-10">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -175,7 +172,6 @@ export function Login() {
             </motion.div>
           </div>
 
-          {/* Benefits list */}
           <motion.div
             className="auth-benefits space-y-3 mb-auto"
             initial={{ opacity: 0 }}
@@ -196,14 +192,11 @@ export function Login() {
             ))}
           </motion.div>
 
-          {/* Stats */}
         </div>
       </div>
 
-      {/* ── RIGHT PANEL ───────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-y-auto">
 
-        {/* Mobile top bar */}
         <div className="lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3.5 bg-white/90 backdrop-blur border-b border-slate-100 shadow-sm">
           <Link to="/" className="flex items-center gap-2.5">
             <AppLogo className="h-8 w-8 rounded-lg" iconClassName="h-4 w-4" />
@@ -217,12 +210,10 @@ export function Login() {
         <div className="flex-1 flex items-center justify-center px-4 py-8 lg:py-12 lg:px-10 xl:px-16">
           <div className="auth-form-shell w-full max-w-[470px]">
 
-            {/* Page heading */}
             <div className="mb-8">
               <h1 className="text-2xl lg:text-3xl font-black text-slate-900 leading-tight">Sign in to AptFindr</h1>
             </div>
 
-            {/* Alerts */}
             <AnimatePresence>
               {successMessage && (
                 <motion.div
@@ -258,7 +249,6 @@ export function Login() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
 
-              {/* Form card — same rounded-2xl border-2 treatment as Signup accordion sections */}
               <div>
                 <div className="space-y-5">
                   <FloatInput
@@ -302,7 +292,6 @@ export function Login() {
                 </div>
               </div>
 
-              {/* Submit — exact same style as Signup */}
               <Button
                 type="submit"
                 disabled={loading}
@@ -326,8 +315,6 @@ export function Login() {
 
               <p className="text-center text-sm font-medium text-slate-500">Don't have an account? <Link to={signupPath} className="font-bold text-amber-600 hover:text-amber-700">Create account</Link></p>
 
-              {/* Trust badges — same as Signup */}
-              {/* Back to Home */}
               <Link
                 to="/"
                 className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-500 hover:text-amber-700 transition-colors"

@@ -1497,7 +1497,6 @@ export function LandlordDashboard() {
     // ── Profile Tab ────────────────────────────────────────────────────────
     const renderProfileTab = () => (
       <div className="grid gap-5">
-        {/* Avatar */}
         <div className="flex flex-col gap-5 rounded-lg border border-[#E8DED1] bg-[#FAF8F5] p-6 shadow-sm sm:flex-row sm:items-center">
           <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#8B735B] text-3xl font-black text-white shadow-lg">
             {profile.avatar ? <img src={profile.avatar} alt={`${profile.firstName || "Landlord"} profile`} className="h-full w-full object-cover" /> : (profile.firstName[0] || "L").toUpperCase()}
@@ -1513,7 +1512,6 @@ export function LandlordDashboard() {
           </div>
         </div>
 
-        {/* Personal Info */}
         <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <SectionTitle icon="👤" title="Personal Information" subtitle="Your public-facing landlord profile" />
           <div className="grid grid-cols-2 gap-4">
@@ -1546,14 +1544,12 @@ export function LandlordDashboard() {
     // ── Alerts Tab ─────────────────────────────────────────────────────────
     const renderAlertsTab = () => (
       <div className="space-y-5">
-        {/* Tenant Activity */}
         <div className="bg-white border-2 border-slate-100 rounded-2xl p-5">
           <SectionTitle icon="🏠" title="Tenant Activity" subtitle="In-app reminders when tenants interact with your listings" />
           <AlertRow label="Listing Added to Favorites" hint="A tenant saves your apartment to their Favorites." pushVal={alerts.reviewPush} onPush={(v) => setA("reviewPush", v)} />
           <AlertRow label="Listing Appears in Suggested or Popular" hint="Your unit is being surfaced to tenants in their dashboard" pushVal={alerts.listingPush} onPush={(v) => setA("listingPush", v)} />
         </div>
 
-        {/* Admin & Compliance */}
         <div className="bg-white border-2 border-slate-100 rounded-2xl p-5">
           <SectionTitle icon="⚠️" title="Admin & Compliance" subtitle="Reports, violations, and notices from platform administrators" />
           <AlertRow label="Report Filed Against Listing" hint="A tenant submits a report about your unit" pushVal={alerts.reportPush} onPush={(v) => setA("reportPush", v)} />
@@ -1561,13 +1557,11 @@ export function LandlordDashboard() {
           <AlertRow label="Permit Verification Reminder" hint="30-day reminder before your business permit expires" pushVal={alerts.permitPush} onPush={(v) => setA("permitPush", v)} />
         </div>
 
-        {/* System & Platform */}
         <div className="bg-white border-2 border-slate-100 rounded-2xl p-5">
           <SectionTitle icon="🛠️" title="System & Platform" subtitle="Account changes and platform announcements" />
           <AlertRow label="Platform Announcements" hint="New features, policy updates, maintenance" pushVal={alerts.systemPush} onPush={(v) => setA("systemPush", v)} />
         </div>
 
-        {/* Digest & Quiet Hours */}
         <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 space-y-4">
           <SectionTitle icon="🕐" title="Delivery Preferences" subtitle="Digest schedule and quiet hours" />
           <Field label="Activity Digest" hint="Receive a summary instead of individual notifications">
@@ -1668,7 +1662,6 @@ export function LandlordDashboard() {
 
     const renderSecurityTab = () => (
       <div className="space-y-5">
-        {/* Password */}
         <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 space-y-4">
           <SectionTitle
             icon="🔑"
@@ -1735,7 +1728,6 @@ export function LandlordDashboard() {
           </button>
         </div>
 
-        {/* Two-Factor Authentication */}
         <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 space-y-4">
           <SectionTitle icon="🛡️" title="Two-Factor Authentication" subtitle="Extra layer of protection for your account" />
           
@@ -1824,7 +1816,6 @@ export function LandlordDashboard() {
           )}
         </div>
 
-        {/* Login & Sessions */}
         <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 space-y-4">
           <SectionTitle icon="💻" title="Login & Sessions" subtitle="Manage active sessions and login security" />
           <div className="space-y-3">
@@ -1851,7 +1842,6 @@ export function LandlordDashboard() {
             </Field>
           </div>
 
-          {/* Active Devices */}
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Active Sessions</p>
             <div className="space-y-2">
@@ -1884,7 +1874,6 @@ export function LandlordDashboard() {
           </div>
         </div>
 
-        {/* Account Recovery */}
         <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 space-y-4">
           <SectionTitle icon="📧" title="Account Recovery" subtitle="Backup contacts if you lose access to your account" />
           <Field label="Recovery Email" hint="Must be different from your primary email">
@@ -1895,7 +1884,6 @@ export function LandlordDashboard() {
           </Field>
         </div>
 
-        {/* Privacy & Data */}
         <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 space-y-4">
           <SectionTitle icon="🔐" title="Privacy & Data" subtitle="Control how your data is used on the platform" />
           {[
@@ -1917,7 +1905,6 @@ export function LandlordDashboard() {
           Save Security Settings
         </Button>
 
-        {/* Danger Zone */}
         <div className="bg-red-50 border-2 border-red-100 rounded-2xl p-5 space-y-4">
           <SectionTitle icon="⚠️" title="Danger Zone" subtitle="Irreversible account actions" />
           <p className="text-xs text-slate-600 font-medium">Once you delete your account, there is no going back. Please be certain.</p>
@@ -2531,17 +2518,14 @@ export function LandlordDashboard() {
     <div className="app-shell landlord-shell fixed inset-0 z-50 overflow-hidden bg-[#FCFAF7]">
       <div className="app-shell-frame flex h-full">
 
-        {/* Desktop Sidebar */}
         <aside className="app-shell-sidebar hidden h-full w-60 shrink-0 flex-col border-r border-[#E8DED1] bg-white lg:flex">
           <LandlordSidebar user={user} verified={landlordVerified} activeSection={activeSection === "properties" ? "overview" : activeSection as "overview" | "activity" | "notifications" | "settings" | "help"} unreadNotifications={unreadNotificationCount} onSectionChange={setActiveSection} onClose={() => setSidebarOpen(false)} onLogout={handleLogout} />
         </aside>
 
-        {/* Mobile overlay */}
         {sidebarOpen && (
           <div className="app-sidebar-overlay fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
         )}
 
-        {/* Mobile drawer */}
         <aside className={`app-sidebar-drawer fixed left-0 top-0 z-50 h-full w-64 border-r border-[#E8DED1] bg-white shadow-2xl transition-transform duration-300 ease-in-out lg:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -2553,7 +2537,6 @@ export function LandlordDashboard() {
           <LandlordSidebar user={user} verified={landlordVerified} activeSection={activeSection === "properties" ? "overview" : activeSection as "overview" | "activity" | "notifications" | "settings" | "help"} unreadNotifications={unreadNotificationCount} onSectionChange={setActiveSection} onClose={() => setSidebarOpen(false)} onLogout={handleLogout} />
         </aside>
 
-        {/* Mobile menu toggle */}
         <button
           onClick={() => setSidebarOpen(true)}
           aria-label="Open navigation"
@@ -2562,7 +2545,6 @@ export function LandlordDashboard() {
           <Menu className="h-5 w-5" />
         </button>
 
-        {/* Main content */}
         <div className="app-shell-main flex-1 min-w-0 h-full overflow-y-auto">
           <main className="app-shell-content app-shell-content-mobile-nav px-4 py-5 pt-16 md:px-6 lg:px-8 lg:pt-6">
             {(sectionMap[activeSection] ?? renderOverview)()}
@@ -2570,7 +2552,6 @@ export function LandlordDashboard() {
         </div>
       </div>
 
-      {/* People modal */}
       <PeopleModal
         open={modal.open}
         onClose={closeModal}
@@ -2594,7 +2575,6 @@ export function LandlordDashboard() {
         />
       )}
 
-      {/* Landlord notification details */}
       {selectedNotificationDetail && (() => {
         const { notification, violation, appeal } = selectedNotificationDetail;
         const payload = notification.payload ?? {};
@@ -2634,13 +2614,11 @@ export function LandlordDashboard() {
         );
       })()}
 
-      {/* Appeal modal */}
       {appealModal.open && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 overflow-y-auto" onClick={closeAppealModal}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
           <div className="relative z-10 w-full max-w-lg bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-[#F3EFEA] overflow-hidden my-8"
             onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#F3EFEA] bg-[#FAF8F5]/40">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl flex items-center justify-center shadow bg-gradient-to-br from-[#8B735B] to-[#756A60]">
@@ -2655,7 +2633,6 @@ export function LandlordDashboard() {
                 <X className="h-4 w-4 text-slate-500" />
               </button>
             </div>
-            {/* Body */}
             <div className="px-6 py-5 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg bg-slate-50 p-3"><p className="text-[10px] font-black uppercase text-slate-400">Related apartment</p><p className="mt-1 text-sm font-bold text-slate-800">{appealModal.apartmentTitle}</p></div>
@@ -2686,7 +2663,6 @@ export function LandlordDashboard() {
                 </p>
               </div>
             </div>
-            {/* Footer */}
             <div className="px-6 py-4 border-t border-[#FAF8F5] flex gap-3">
               <Button disabled={isSubmittingAppeal} onClick={async () => {
                 if (!appealMessage.trim()) {

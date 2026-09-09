@@ -124,10 +124,8 @@ export function EvidenceViewer({
         </h3>
       </div>
 
-      {/* Image Preview */}
       {imageEvidence.length > 0 && currentPreviewEvidence && (
         <div className="space-y-3">
-          {/* Large Preview */}
           <div className="relative aspect-[4/3] overflow-hidden rounded-xl border-2 border-[#F3EFEA] bg-slate-100">
             <img
               src={currentPreviewEvidence.fileUrl}
@@ -135,7 +133,6 @@ export function EvidenceViewer({
               className="h-full w-full object-contain"
             />
 
-            {/* Navigation Controls */}
             {imageEvidence.length > 1 && (
               <>
                 <Button
@@ -160,7 +157,6 @@ export function EvidenceViewer({
               </>
             )}
 
-            {/* Download Button */}
             <Button
               size="icon"
               variant="ghost"
@@ -172,7 +168,6 @@ export function EvidenceViewer({
             </Button>
           </div>
 
-          {/* Thumbnail Gallery */}
           {imageEvidence.length > 1 && (
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
               {imageEvidence.map((img) => (
@@ -197,7 +192,6 @@ export function EvidenceViewer({
         </div>
       )}
 
-      {/* Files List */}
       <div className="space-y-2">
         <div className="text-sm font-semibold text-slate-900">
           All Evidence ({evidence.length})

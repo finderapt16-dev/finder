@@ -1,7 +1,7 @@
 import { EvidenceViewer, type EvidenceItem } from "@/app/shared/components/common/EvidenceViewer";
 import { AdminAnalyticsOverview } from "@/app/admin/components/AdminAnalyticsOverview";
 import { LogoutConfirmation } from "@/app/shared/components/common/LogoutConfirmation";
-import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
+import { ImageWithFallback } from "@/app/shared/components/common/ImageWithFallback";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -2099,7 +2099,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
           </div>
         </div>
 
-        {/* Filter Tabs */}
         <div className="hidden gap-3 bg-white/50 backdrop-blur-md p-1.5 rounded-2xl border border-amber-100 shadow-sm w-fit">
           <Button
             variant={aptFilter === "all" ? "default" : "ghost"}
@@ -2129,7 +2128,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
           </Button>
         </div>
 
-        {/* Search */}
         <div className="relative hidden">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
           <input
@@ -2140,7 +2138,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
           />
         </div>
 
-      {/* Grid */}
       <div className="hidden grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {filteredApts.map((apt) => {
           const landlord = getLandlordForApt(apt);
@@ -2151,7 +2148,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
             <div key={apt.id}
               className="bg-white/90 backdrop-blur-xl border-2 border-amber-100/60 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all group cursor-pointer"
               onClick={() => setSelectedApt(apt)}>
-              {/* Image */}
               <div className="relative h-44 bg-gradient-to-br from-amber-100 to-orange-100 overflow-hidden">
                 {apt.images?.[0]
                   ? <img src={apt.images[0]} alt={apt.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -2181,7 +2177,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                   </div>
                 )}
               </div>
-              {/* Info */}
               <div className="p-4">
                 <h3 className="font-black text-slate-900 truncate mb-1">{apt.title}</h3>
                 <p className="text-xs text-slate-500 font-medium flex items-center gap-1 mb-3">
@@ -2227,7 +2222,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
         </div>
       )}
 
-      {/* Apartment detail modal */}
       {selectedApt && (() => {
         const landlord = getLandlordForApt(selectedApt);
         const landlordVerificationStatus = getLandlordVerificationStatus(landlord);
@@ -2241,7 +2235,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
             <div className="relative z-10 w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-amber-100 overflow-hidden max-h-[90vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}>
-              {/* Header image */}
               <div className="relative h-52 bg-gradient-to-br from-amber-100 to-orange-100 shrink-0">
                 {selectedApt.images?.[0]
                   ? <ImageWithFallback src={selectedApt.images[0]} alt={selectedApt.title} className="w-full h-full object-cover" />
@@ -2256,7 +2249,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                   </span>
                 </div>
               </div>
-              {/* Body */}
               <div className="overflow-y-auto p-6 space-y-5">
                 <div>
                   <h3 className="text-2xl font-black text-slate-900">{selectedApt.title}</h3>
@@ -2283,7 +2275,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                     <p className="text-sm text-slate-600 font-medium leading-relaxed">{selectedApt.description}</p>
                   </div>
                 )}
-                {/* Amenities */}
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Amenities</p>
                   <div className="flex flex-wrap gap-2">
@@ -2301,7 +2292,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                     ))}
                   </div>
                 </div>
-                {/* Features */}
                 {Array.isArray(selectedApt.features) && selectedApt.features.length > 0 && (
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Features</p>
@@ -2314,7 +2304,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                     </div>
                   </div>
                 )}
-                {/* Rooms */}
                 {(selectedApt.rooms?.length ?? 0) > 0 && (
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
@@ -2369,7 +2358,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                     </div>
                   </div>
                 )}
-                {/* Landlord */}
                 {landlord && (
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Landlord</p>
@@ -2406,7 +2394,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                     )}
                   </div>
                 )}
-                {/* Reports from tenants */}
                 {aptReports.length > 0 && (
                   <div>
                     <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -2446,7 +2433,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                     </div>
                   </div>
                 )}
-                {/* Past violations for this apartment */}
                 {aptViolations.length > 0 && (
                   <div>
                     <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2">Violations on this Listing</p>
@@ -2465,7 +2451,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                   </div>
                 )}
               </div>
-                {/* Footer actions */}
                 {landlord && (
                   <div className="px-6 py-4 border-t border-amber-50 flex gap-3 shrink-0 flex-wrap">
                   {selectedApt.isPublished === false && (
@@ -2752,7 +2737,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
           </div>
         )}
 
-        {/* Dismiss Report Modal with Reason */}
         {dismissReportModal && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={() => setDismissReportModal(null)}>
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
@@ -2792,7 +2776,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
           </div>
         )}
 
-        {/* User Profile Modal */}
         {viewingUserProfile && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={() => setViewingUserProfile(null)}>
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
@@ -3002,7 +2985,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
 
             <Card className="rounded-lg border border-slate-200 bg-white shadow-sm">
               <CardContent className="pt-6 space-y-4">
-                {/* Landlord Info */}
                 {selectedAppeal.landlord_id && (
                   <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
                     <h3 className="font-bold text-sm text-slate-900 mb-2">Landlord Information</h3>
@@ -3032,7 +3014,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                   </div>;
                 })()}
 
-                {/* Appeal Details */}
                 <div className="space-y-3">
                   <h3 className="font-bold text-sm text-slate-900">Appeal Details</h3>
 
@@ -3113,7 +3094,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                   </div>
                 </div>
 
-                {/* Admin Action Section */}
                 <div className="border-t border-slate-200 pt-4 space-y-3">
                   <h3 className="font-bold text-sm text-slate-900">Admin Response</h3>
 
@@ -3595,7 +3575,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
         </div>
       </div>
 
-      {/* Verify dialog */}
       <AlertDialog open={!!verifyAction} onOpenChange={() => setVerifyAction(null)}>
         <AlertDialogContent className="rounded-2xl border-amber-100">
           <AlertDialogHeader>
@@ -3617,7 +3596,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Support request details */}
       <AlertDialog open={selectedSupportRequest !== null} onOpenChange={(open) => { if (!open) setSelectedSupportRequest(null); }}>
         <AlertDialogContent className="max-w-2xl rounded-2xl border-rose-100 p-0 overflow-hidden">
           <AlertDialogHeader className="border-b border-slate-100 bg-rose-50/60 px-6 py-5 text-left">
@@ -3686,13 +3664,11 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
         </div>
       )}
 
-      {/* Password Change Modal */}
       {passwordModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={() => setPasswordModal(false)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
           <div className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-red-100 overflow-hidden"
             onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-red-100 bg-red-50/40">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow">
@@ -3707,7 +3683,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                 <X className="h-4 w-4 text-slate-500" />
               </button>
             </div>
-            {/* Body */}
             <div className="px-6 py-5 space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Password</label>
@@ -3746,7 +3721,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                 </p>
               </div>
             </div>
-            {/* Footer */}
             <div className="px-6 py-4 border-t border-red-100 flex gap-3">
               <Button onClick={handleChangePassword}
                 className="flex-1 font-bold rounded-xl shadow-md text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700">
@@ -3760,13 +3734,11 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
         </div>
       )}
 
-      {/* Edit Violation Modal */}
       {editViolationModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={() => setEditViolationModal(null)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
           <div className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-amber-100 overflow-hidden"
             onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-amber-100 bg-amber-50/40">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow">
@@ -3781,7 +3753,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                 <X className="h-4 w-4 text-slate-500" />
               </button>
             </div>
-            {/* Body */}
             <div className="px-6 py-5 space-y-4">
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -3817,7 +3788,6 @@ export function AdminDashboard({ portalMode = "admin" }: { portalMode?: "admin" 
                 </p>
               </div>
             </div>
-            {/* Footer */}
             <div className="px-6 py-4 border-t border-amber-100 flex gap-3">
               <Button onClick={saveViolationEdit}
                 className="flex-1 font-bold rounded-xl shadow-md text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700">

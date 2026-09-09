@@ -20,7 +20,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { LandlordSidebar } from "@/app/landlord/components/LandlordSidebar";
-import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
+import { ImageWithFallback } from "@/app/shared/components/common/ImageWithFallback";
 
 import { VerifiedBadge } from "@/app/shared/components/common/VerifiedBadge";
 import { Badge } from "@/app/shared/components/ui/badge";

@@ -1,5 +1,5 @@
 import { AppLogo } from "@/app/shared/components/common/AppLogo";
-import { ImageWithFallback } from "@/app/shared/components/figma/ImageWithFallback";
+import { ImageWithFallback } from "@/app/shared/components/common/ImageWithFallback";
 import { LandingListingsSection } from "./LandingApartmentPreview";
 import { Button } from "@/app/shared/components/ui/button";
 import locationMapIllustration from "@/assets/landing/location-map-illustration.png";
@@ -182,7 +182,6 @@ export function Landing() {
   return (
     <div className="landing-palette flex min-h-screen flex-col overflow-x-hidden bg-white">
 
-      {/* ─── Sticky Header ──────────────────────────────────── */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled ? "bg-white/95 backdrop-blur-xl border-b border-slate-200" : "bg-white/90 backdrop-blur-xl border-b border-transparent"
@@ -265,7 +264,6 @@ export function Landing() {
         </div>
       </header>
 
-      {/* ─── Hero ────────────────────────────────────────────── */}
       <section className="order-1 bg-white pt-16">
         <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-12">
           <div className="grid grid-cols-1 items-stretch lg:grid-cols-[minmax(0,45fr)_minmax(0,55fr)] lg:gap-10">
@@ -294,10 +292,8 @@ export function Landing() {
               Browse apartments, compare rental options, view locations, and review room, amenity, and verification information.
             </motion.p>
 
-            {/* ── Search panel ── */}
             <motion.div variants={fadeUp} className="relative z-20 w-full max-w-[600px] min-w-0 overflow-hidden rounded-[14px] border border-[#E8DED1] bg-white shadow-[0_2px_10px_rgba(48,40,32,0.04)]">
               <form className="min-w-0" onSubmit={handleLandingSearch}>
-                {/* Main search bar */}
                 <div className="grid grid-cols-2 items-center gap-1.5 p-1.5 sm:flex">
                   <div className="relative col-span-2 min-w-0 flex-1">
                     <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8B735B]" />
@@ -328,7 +324,6 @@ export function Landing() {
                   </Button>
                 </div>
 
-                {/* Quick filters panel */}
                 <AnimatePresence>
                   {showFilters && (
                     <motion.div
@@ -408,12 +403,10 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ─── Featured Listings (preserved component) ─────────── */}
       <div className="order-3 bg-white">
         <LandingListingsSection onBrowseClick={handleProtectedAction} />
       </div>
 
-      {/* ─── Browse by Location ───────────────────────────────── */}
       <section className="landing-location-section order-5 border-y border-[#E8DED1] bg-[#FAF8F5] py-14 md:py-20">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="grid items-center gap-x-8 gap-y-6 md:grid-cols-[.9fr_1.1fr] lg:gap-x-12">
@@ -454,7 +447,6 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ─── Who It's For ────────────────────────────────────── */}
       <section className="order-9 bg-white py-14 md:py-20">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-12">
@@ -485,7 +477,6 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ─── Why Choose Us ───────────────────────────────────── */}
       <section className="order-6 bg-white py-14 md:py-20">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-12">
@@ -519,7 +510,6 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ─── How It Works ────────────────────────────────────── */}
       <section className="order-7 border-y border-slate-100 bg-slate-50/60 py-14 md:py-20">
         <div className="container mx-auto px-4 lg:px-8">
           <AnimatedSection className="text-center mb-14">
@@ -529,7 +519,6 @@ export function Landing() {
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto relative">
-            {/* connector line */}
             <div className="absolute left-1/4 right-1/4 top-[52px] hidden border-t border-dashed border-slate-300 md:block" />
 
             {[
@@ -554,7 +543,6 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ─── CTA ─────────────────────────────────────────────── */}
       <section className="landing-final-cta relative order-10 overflow-hidden border-y border-slate-200 bg-slate-950 py-14 md:py-20">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl" />
@@ -590,11 +578,9 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ─── Footer ──────────────────────────────────────────── */}
       <footer className="order-[11] border-t border-slate-200 bg-white pb-8 pt-16 text-slate-500">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-12">
-            {/* Brand */}
             <div className="lg:col-span-2">
               <div className="flex items-center gap-3 mb-4">
                 <AppLogo className="h-10 w-10 rounded-xl" iconClassName="h-5 w-5" />
@@ -610,7 +596,6 @@ export function Landing() {
               </div>
             </div>
 
-            {/* About / Legal */}
             <div>
               <h4 className="mb-4 text-sm font-black uppercase tracking-widest text-slate-950">About</h4>
               <ul className="space-y-2 text-sm">

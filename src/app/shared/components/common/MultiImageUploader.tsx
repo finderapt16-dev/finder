@@ -244,7 +244,6 @@ export function MultiImageUploader({
 
   return (
     <div className="space-y-4">
-      {/* Upload Area */}
       {images.length < maxImages && (
         <div
           ref={dropZoneRef}
@@ -321,7 +320,6 @@ export function MultiImageUploader({
         </div>
       )}
 
-      {/* Camera Modal */}
       {isCameraActive && (
         <Card className="p-4 border-2 border-blue-200">
           <div className="space-y-3">
@@ -349,10 +347,8 @@ export function MultiImageUploader({
         </Card>
       )}
 
-      {/* Image Preview Gallery */}
       {images.length > 0 && (
         <div className="space-y-4">
-          {/* Large Preview */}
           {previewImage && (
             <Card className="overflow-hidden border-2 border-[#F3EFEA] bg-gradient-to-br from-[#FAF8F5] to-[#FAF8F5]">
               <div className="relative bg-slate-900 aspect-video flex items-center justify-center">
@@ -397,7 +393,6 @@ export function MultiImageUploader({
             </Card>
           )}
 
-          {/* Thumbnails Grid */}
           <div className="space-y-2">
             <h4 className="text-sm font-semibold text-slate-900">
               Images ({images.length}/{maxImages})
@@ -424,7 +419,6 @@ export function MultiImageUploader({
                     onClick={() => setPreviewIndex(idx)}
                   />
 
-                  {/* Hover Overlay */}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                     <button
                       type="button"
@@ -460,7 +454,6 @@ export function MultiImageUploader({
             </div>
           </div>
 
-          {/* Reorder Info */}
           {images.length > 1 && (
             <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded border border-slate-200">
               Drag thumbnails to reorder them. The selected cover photo is saved first.
@@ -469,7 +462,6 @@ export function MultiImageUploader({
         </div>
       )}
 
-      {/* Empty State */}
       {images.length === 0 && (
         <div className="text-center py-8 text-slate-500">
           <ImageIcon className="h-12 w-12 mx-auto mb-2 text-slate-300" />
