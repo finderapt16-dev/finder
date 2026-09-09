@@ -33,7 +33,7 @@ import { listFavoriteApartments, type Apartment } from "@/app/shared/data/apartm
 import { useFavorites } from "@/app/shared/hooks/useFavorites";
 import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
 import { getImageUrl } from "@/app/shared/utils/images";
-import { TenantMobileNavigation } from "@/app/tenant/components/TenantMobileNavigation";
+import { TenantMobileNavigation } from "@/app/tenant/components/navigation/TenantMobileNavigation";
 import { useTenantNotifications } from "@/app/tenant/hooks/useTenantNotifications";
 import {
   getAvailableRoomCount,

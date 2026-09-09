@@ -36,8 +36,8 @@ import { formatApartmentLocation } from "@/app/shared/utils/apartmentLocation";
 import { getImageUrl } from "@/app/shared/utils/images";
 import { isTenantVisibleApartment } from "@/app/shared/utils/listingVisibility";
 import { hasValidApartmentCoordinates, isDefaultMapCenter } from "@/app/shared/utils/mapCoordinates";
-import { TenantMobileNavigation } from "@/app/tenant/components/TenantMobileNavigation";
-import { TenantSidebar } from "@/app/tenant/components/TenantSidebar";
+import { TenantMobileNavigation } from "@/app/tenant/components/navigation/TenantMobileNavigation";
+import { TenantSidebar } from "@/app/tenant/components/navigation/TenantSidebar";
 import { useTenantNotifications } from "@/app/tenant/hooks/useTenantNotifications";
 
 const STATUS_LABEL: Record<string, string> = { available: "Available", occupied: "Occupied", maintenance: "Under Maintenance" };

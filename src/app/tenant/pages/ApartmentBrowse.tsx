@@ -76,8 +76,8 @@ import { geocodeLocationWithinLaPaz, GeocodingError, type GeocodedLocation } fro
 import { findNearbyApartments, formatDistance, parseNearbySearchIntent } from "@/app/shared/utils/geospatialSearch";
 import { toast } from "sonner";
 import { MarketOverview } from "@/app/landlord/pages/MarketOverview";
-import { TenantMobileNavigation } from "@/app/tenant/components/TenantMobileNavigation";
-import { TenantSidebar } from "@/app/tenant/components/TenantSidebar";
+import { TenantMobileNavigation } from "@/app/tenant/components/navigation/TenantMobileNavigation";
+import { TenantSidebar } from "@/app/tenant/components/navigation/TenantSidebar";
 import { useTenantNotifications } from "@/app/tenant/hooks/useTenantNotifications";
 
 type SortOption = TenantPreferenceSortOption;
